@@ -1,4 +1,4 @@
-# Admin Utilities for Galfin
+# Admin Utilities for Ooga
 
 This directory contains SQL scripts for administrative tasks that should be run directly in the Supabase SQL Editor.
 
@@ -244,4 +244,4 @@ If a user belongs to multiple households:
 
 ## 📝 License
 
-These admin utilities are part of the Galfin project and follow the same license terms.
+These admin utilities are part of the Ooga project and follow the same license terms.

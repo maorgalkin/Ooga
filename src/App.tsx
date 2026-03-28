@@ -108,7 +108,7 @@ function AppContent() {
                 </svg>
               </div>
               <div className="flex flex-col">
-                <h1 className="text-lg font-bold text-white drop-shadow-md leading-tight">Galfin</h1>
+                <h1 className="text-lg font-bold text-white drop-shadow-md leading-tight">Ooga</h1>
                 <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">Family Finance</span>
               </div>
               {user && (

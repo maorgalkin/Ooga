@@ -36,7 +36,7 @@ export const renderWithProvider = (
 ) => {
   // Pre-populate localStorage if initial transactions provided
   if (initialTransactions.length > 0) {
-    localStorage.setItem('galfin-transactions', JSON.stringify(initialTransactions));
+    localStorage.setItem('ooga-transactions', JSON.stringify(initialTransactions));
   }
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (

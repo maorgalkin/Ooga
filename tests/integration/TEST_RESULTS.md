@@ -120,7 +120,7 @@ VITE_SUPABASE_TEST_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
 ### Test Database
-- **Project:** Galfin Integration Tests
+- **Project:** Ooga Integration Tests
 - **URL:** https://aeluvsgubqzlwnrhcdaa.supabase.co
 - **Schema:** UNIFIED_SCHEMA.sql (all 11 tables with RLS)
 

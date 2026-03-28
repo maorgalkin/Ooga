@@ -1,7 +1,7 @@
 # Default Budget Values Documentation
 
 ## Overview
-When a user creates a fresh budget in Galfin, default values are applied for categories, limits, and settings.
+When a user creates a fresh budget in Ooga, default values are applied for categories, limits, and settings.
 
 ## Location of Default Values
 

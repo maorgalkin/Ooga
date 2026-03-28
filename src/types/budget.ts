@@ -1,4 +1,4 @@
-// Budget Configuration Types for Galfin Finance Tracker
+// Budget Configuration Types for Ooga Finance Tracker
 // These interfaces define the structure for budget templates and configuration
 
 export interface BudgetCategory {

@@ -8,7 +8,7 @@
 
 ## 🎯 Executive Summary
 
-Galfin implements a **two-state budget system** where each month has:
+Ooga implements a **two-state budget system** where each month has:
 1. **Original Budget** - Immutable baseline snapshot at month creation
 2. **Current Budget** - Permanent editable state for that specific month
 

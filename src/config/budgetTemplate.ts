@@ -4,7 +4,7 @@ export const budgetTemplate: BudgetTemplate = {
   version: "1.0",
   currency: "ILS",
   created: "2025-08-24",
-  description: "Galfin Family Budget Template - Configurable monthly budget limits for expense tracking and financial planning",
+  description: "Ooga Family Budget Template - Configurable monthly budget limits for expense tracking and financial planning",
   
   monthlyBudgets: {
     totalMonthlyLimit: 15000,

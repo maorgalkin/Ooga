@@ -1,4 +1,4 @@
-# 📊 Galfin - Feature Summary
+# 📊 Ooga - Feature Summary
 
 **Last Updated:** November 29, 2025  
 **Platform:** Web Application (React + TypeScript + Supabase)
@@ -7,7 +7,7 @@
 
 ## 🎯 Overview
 
-Galfin is a modern family finance tracker for managing income, expenses, and budgets. Features include transaction tracking, budget management with monthly adjustments, visual analytics, and multi-user household support.
+Ooga is a modern family finance tracker for managing income, expenses, and budgets. Features include transaction tracking, budget management with monthly adjustments, visual analytics, and multi-user household support.
 
 ---
 
@@ -169,5 +169,5 @@ npm run test:ui   # Interactive test UI
 
 ---
 
-**Repository:** https://github.com/maorgalkin/Galfin  
+**Repository:** https://github.com/maorgalkin/Ooga  
 **License:** MIT

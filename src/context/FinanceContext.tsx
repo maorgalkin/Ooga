@@ -64,8 +64,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } catch (error) {
         console.error('Error loading data from Supabase:', error);
         // Fallback to localStorage in case of error
-        const savedTransactions = localStorage.getItem('galfin-transactions');
-        const savedMembers = localStorage.getItem('galfin-members');
+        const savedTransactions = localStorage.getItem('ooga-transactions');
+        const savedMembers = localStorage.getItem('ooga-members');
         
         if (savedTransactions && savedTransactions !== '[]') {
           setTransactions(JSON.parse(savedTransactions));
@@ -93,7 +93,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           id: Date.now().toString(),
         };
         setTransactions(prev => [newTransaction, ...prev]);
-        localStorage.setItem('galfin-transactions', JSON.stringify([newTransaction, ...transactions]));
+        localStorage.setItem('ooga-transactions', JSON.stringify([newTransaction, ...transactions]));
       }
     } catch (error) {
       console.error('Error adding transaction:', error);
@@ -113,7 +113,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Fallback to localStorage
         setTransactions(prev => {
           const updated = prev.map(t => t.id === id ? { ...transaction, id } : t);
-          localStorage.setItem('galfin-transactions', JSON.stringify(updated));
+          localStorage.setItem('ooga-transactions', JSON.stringify(updated));
           return updated;
         });
       }
@@ -132,7 +132,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Fallback to localStorage
         setTransactions(prev => {
           const filtered = prev.filter(t => t.id !== id);
-          localStorage.setItem('galfin-transactions', JSON.stringify(filtered));
+          localStorage.setItem('ooga-transactions', JSON.stringify(filtered));
           return filtered;
         });
       }
@@ -165,7 +165,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
         setFamilyMembers(prev => {
           const updated = [...prev, newMember];
-          localStorage.setItem('galfin-members', JSON.stringify(updated));
+          localStorage.setItem('ooga-members', JSON.stringify(updated));
           return updated;
         });
       }
@@ -184,7 +184,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Fallback to localStorage
         setFamilyMembers(prev => {
           const updated = prev.map(m => m.id === id ? { ...member, id } : m);
-          localStorage.setItem('galfin-members', JSON.stringify(updated));
+          localStorage.setItem('ooga-members', JSON.stringify(updated));
           return updated;
         });
       }

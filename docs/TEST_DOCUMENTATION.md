@@ -1,4 +1,4 @@
-# 🧪 Galfin Test Documentation# 🧪 Galfin Test Documentation
+# 🧪 Ooga Test Documentation# 🧪 Ooga Test Documentation
 
 
 
@@ -138,7 +138,7 @@ npm test -- tests/services
 
 - Schedule adjustments for next month  renderWithProvider(<App />)
 
-- Handle year rollover correctly  expect(await screen.findByText(/Galfin/i)).toBeInTheDocument()
+- Handle year rollover correctly  expect(await screen.findByText(/Ooga/i)).toBeInTheDocument()
 
 - Get pending adjustments for a month})
 
@@ -486,7 +486,7 @@ describe('YourService', () => {#### 2.2 Type Filtering (Hover Interaction)
 
           data: null,  // Clear localStorage
 
-          error: { message: 'Record not found' }  localStorage.removeItem('galfin-transactions')
+          error: { message: 'Record not found' }  localStorage.removeItem('ooga-transactions')
 
         })  
 
@@ -878,7 +878,7 @@ vi.mocked(supabase.from).mockReturnValue({ ... } as any);
 
 ```  // Check localStorage
 
-  const stored = JSON.parse(localStorage.getItem('galfin-transactions') || '[]')
+  const stored = JSON.parse(localStorage.getItem('ooga-transactions') || '[]')
 
 ### Async Tests Timing Out  expect(stored).toContainEqual(
 
@@ -1104,7 +1104,7 @@ test('Dashboard renders within performance budget', async () => {
   renderWithProvider(<App />)
   
   await waitFor(() => {
-    expect(screen.getByText(/Galfin/i)).toBeInTheDocument()
+    expect(screen.getByText(/Ooga/i)).toBeInTheDocument()
   })
   
   const renderTime = performance.now() - startTime
@@ -1130,7 +1130,7 @@ test('Handles 1000+ transactions efficiently', async () => {
     type: 'expense'
   }))
   
-  localStorage.setItem('galfin-transactions', JSON.stringify(transactions))
+  localStorage.setItem('ooga-transactions', JSON.stringify(transactions))
   
   const startTime = performance.now()
   renderWithProvider(<App />)
@@ -1667,7 +1667,7 @@ npm test -- simple.test.tsx  # Single file
 
 **🎉 Happy Testing!**
 
-Well-tested code is reliable code. These tests ensure Galfin remains stable, accessible, and performant.
+Well-tested code is reliable code. These tests ensure Ooga remains stable, accessible, and performant.
 
 ---
 

@@ -37,7 +37,7 @@ describe('Suite 1: User Onboarding', () => {
       // Assert
       expect(testUser).toBeDefined();
       expect(testUser.id).toBeTruthy();
-      expect(testUser.email).toMatch(/^test-\d+-[a-z0-9]+@galfin-test\.local$/);
+      expect(testUser.email).toMatch(/^test-\d+-[a-z0-9]+@ooga-test\.local$/);
     });
 
     it('should be able to sign in as the new user', async () => {

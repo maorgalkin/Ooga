@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Galfin app uses an intelligent color palette system to ensure all budget category colors are distinct and readable. This prevents confusion when viewing multiple categories and ensures good visual accessibility.
+The Ooga app uses an intelligent color palette system to ensure all budget category colors are distinct and readable. This prevents confusion when viewing multiple categories and ensures good visual accessibility.
 
 ## Key Features
 

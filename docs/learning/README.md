@@ -1,6 +1,6 @@
 # Learning Resources
 
-This folder contains detailed explanations and educational materials about the Galfin codebase architecture and patterns.
+This folder contains detailed explanations and educational materials about the Ooga codebase architecture and patterns.
 
 ## Contents
 

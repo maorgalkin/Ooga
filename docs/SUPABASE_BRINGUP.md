@@ -1,4 +1,4 @@
-# 🚀 Supabase Complete Bring-Up Guide for Galfin
+# 🚀 Supabase Complete Bring-Up Guide for Ooga
 
 **Complete Deployment Guide with Real Configuration**  
 **Last Updated:** October 25, 2025  
@@ -42,7 +42,7 @@
 }
 ```
 
-**Already installed in Galfin** - Check `package.json`
+**Already installed in Ooga** - Check `package.json`
 
 ---
 
@@ -97,7 +97,7 @@ Once logged in, you'll see the Supabase dashboard:
 
 3. **Configure Project Settings**
 
-   **Project Name:** `galfin-finance`
+   **Project Name:** `ooga-finance`
    - This is your project identifier
    - Used in URLs and database connections
    - Can be changed later
@@ -188,7 +188,7 @@ Once logged in, you'll see the Supabase dashboard:
 
 ```sql
 -- ============================================
--- GALFIN FINANCE TRACKER - DATABASE SCHEMA
+-- OOGA FINANCE TRACKER - DATABASE SCHEMA
 -- Version: 1.0
 -- Created: October 2025
 -- ============================================
@@ -397,7 +397,7 @@ SELECT 'Row Level Security enabled on all tables' AS status;
 ```sql
 -- ============================================
 -- ROW LEVEL SECURITY POLICIES
--- Galfin Finance Tracker
+-- Ooga Finance Tracker
 -- ============================================
 
 -- ============================================
@@ -593,7 +593,7 @@ ORDER BY tablename, cmd;
 
 ### Step 1: Create .env File
 
-In your Galfin project root directory:
+In your Ooga project root directory:
 
 ```bash
 # Windows PowerShell
@@ -617,8 +617,8 @@ VITE_ENABLE_DEBUG=false
 
 **Real Example (with your actual values):**
 ```env
-# Supabase Configuration for Galfin
-# Project: galfin-finance
+# Supabase Configuration for Ooga
+# Project: ooga-finance
 # Created: October 2025
 
 VITE_SUPABASE_URL=https://kfbxwmhzqvxrjlpncdye.supabase.co
@@ -706,7 +706,7 @@ console.log('Current session:', await supabase.auth.getSession())
 
 2. **Add User Manually (Optional)**
    - Click "Add user"
-   - Enter email: `test@galfin.local`
+   - Enter email: `test@ooga.local`
    - Enter password: `TestPass123!`
    - Check "Auto Confirm User"
    - Click "Create user"
@@ -762,9 +762,9 @@ async function migrateLocalStorageToSupabase() {
   console.log('Starting data migration...')
   
   // Get localStorage data
-  const transactions = JSON.parse(localStorage.getItem('galfin-transactions') || '[]')
-  const familyMembers = JSON.parse(localStorage.getItem('galfin-members') || '[]')
-  const budgetConfig = JSON.parse(localStorage.getItem('galfin-budget-config') || '{}')
+  const transactions = JSON.parse(localStorage.getItem('ooga-transactions') || '[]')
+  const familyMembers = JSON.parse(localStorage.getItem('ooga-members') || '[]')
+  const budgetConfig = JSON.parse(localStorage.getItem('ooga-budget-config') || '{}')
   
   console.log(`Found ${transactions.length} transactions`)
   console.log(`Found ${familyMembers.length} family members`)
@@ -1059,7 +1059,7 @@ psql -h db.xxx.supabase.co -U postgres -d postgres -f backup.sql
 
 ### Project Settings
 ```
-Project Name: galfin-finance
+Project Name: ooga-finance
 Region: [Your selected region]
 Database: PostgreSQL 15
 ```
@@ -1087,7 +1087,7 @@ VITE_SUPABASE_ANON_KEY=[your-anon-key]
 
 **🎉 Congratulations!**
 
-Your Supabase backend for Galfin is now fully operational and production-ready!
+Your Supabase backend for Ooga is now fully operational and production-ready!
 
 **Next Steps:**
 1. Test authentication flow

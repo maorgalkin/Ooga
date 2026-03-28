@@ -140,12 +140,12 @@ const createdTestUsers: TestUser[] = [];
 
 /**
  * Generate a unique test email address.
- * Format: test-{timestamp}-{random}@galfin-test.local
+ * Format: test-{timestamp}-{random}@ooga-test.local
  */
 export function generateTestEmail(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
-  return `test-${timestamp}-${random}@galfin-test.local`;
+  return `test-${timestamp}-${random}@ooga-test.local`;
 }
 
 /**

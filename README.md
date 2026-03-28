@@ -1,4 +1,4 @@
-# Galfin - Family Finance Tracker
+# Ooga - Family Finance Tracker
 
 A modern, intuitive family finance tracking application built with React and TypeScript. Track expenses, manage budgets, and gain insights into your family's financial health.
 
@@ -6,7 +6,7 @@ A modern, intuitive family finance tracking application built with React and Typ
 
 For comprehensive documentation, please refer to:
 
-- **[Complete Feature Summary](docs/COMPLETE_FEATURE_SUMMARY.md)** - Detailed overview of all Galfin features, technology stack, and capabilities
+- **[Complete Feature Summary](docs/COMPLETE_FEATURE_SUMMARY.md)** - Detailed overview of all Ooga features, technology stack, and capabilities
 - **[Supabase Setup Guide](docs/SUPABASE_BRINGUP.md)** - Step-by-step guide for setting up the Supabase backend
 - **[Test Documentation](docs/TEST_DOCUMENTATION.md)** - Complete testing guide, test suites, and best practices
 
@@ -32,8 +32,8 @@ For comprehensive documentation, please refer to:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/maorgalkin/Galfin.git
-   cd Galfin
+   git clone https://github.com/maorgalkin/Ooga.git
+   cd Ooga
    ```
 
 2. Install dependencies:
@@ -174,7 +174,7 @@ For complete technology details, see [Complete Feature Summary](docs/COMPLETE_FE
 
 ## 🧪 Testing
 
-Galfin includes a comprehensive test suite with 50+ tests covering:
+Ooga includes a comprehensive test suite with 50+ tests covering:
 - Basic functionality and startup
 - Dashboard features and filtering
 - Transaction management (add, edit, delete)

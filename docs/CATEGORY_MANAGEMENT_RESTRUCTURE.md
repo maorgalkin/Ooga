@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines a major restructure of the Galfin application to:
+This document outlines a major restructure of the Ooga application to:
 1. Introduce proper category management with ID-based categories
 2. Reorganize navigation and component hierarchy
 3. Enable category operations: rename, merge, split, delete, add

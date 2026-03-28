@@ -1,4 +1,4 @@
-# Integration Tests - Galfin
+# Integration Tests - Ooga
 
 ## Overview
 
@@ -39,7 +39,7 @@ VITE_SUPABASE_TEST_SERVICE_ROLE_KEY=your-service-role-key
 ### 3. Test User Credentials
 
 Tests create temporary users with:
-- Email: `test-{timestamp}@galfin-test.local`
+- Email: `test-{timestamp}@ooga-test.local`
 - Password: `TestPassword123!`
 
 ## Running Integration Tests

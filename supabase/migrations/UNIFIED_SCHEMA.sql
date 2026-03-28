@@ -1,9 +1,9 @@
 -- ============================================================================
--- GALFIN UNIFIED DATABASE SCHEMA
+-- OOGA UNIFIED DATABASE SCHEMA
 -- ============================================================================
 -- Version: 1.0.0
 -- Created: December 2025
--- Description: Complete database schema for Galfin family finance tracker
+-- Description: Complete database schema for Ooga family finance tracker
 -- 
 -- This script creates all tables, indexes, RLS policies, functions, and triggers
 -- needed for a fresh Supabase project.
@@ -761,7 +761,7 @@ DO $$
 BEGIN
   RAISE NOTICE '';
   RAISE NOTICE '╔══════════════════════════════════════════════════════════════════╗';
-  RAISE NOTICE '║  ✅ GALFIN DATABASE SCHEMA CREATED SUCCESSFULLY                  ║';
+  RAISE NOTICE '║  ✅ OOGA DATABASE SCHEMA CREATED SUCCESSFULLY                  ║';
   RAISE NOTICE '╠══════════════════════════════════════════════════════════════════╣';
   RAISE NOTICE '║                                                                   ║';
   RAISE NOTICE '║  Tables Created:                                                 ║';

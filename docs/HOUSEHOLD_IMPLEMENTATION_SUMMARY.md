@@ -3,7 +3,7 @@
 ## 🎢 The Roller Coaster Journey
 
 ### What We Built
-Transformed Galfin from single-user to multi-user household sharing system where multiple users can share transactions, budgets, and financial data.
+Transformed Ooga from single-user to multi-user household sharing system where multiple users can share transactions, budgets, and financial data.
 
 ### The Journey
 
