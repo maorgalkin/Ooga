@@ -84,3 +84,17 @@ export type {
 } from './category';
 
 export { DEFAULT_CATEGORY_COLORS, getNextCategoryColor } from './category';
+
+export interface BankImportSession {
+  id: string;
+  user_id: string;
+  household_id: string;
+  status: 'pending' | 'logging_in' | 'awaiting_otp' | 'importing' | 'complete' | 'error';
+  started_at: string;
+  completed_at: string | null;
+  date_range_start: string | null;
+  date_range_end: string | null;
+  transactions_imported: number;
+  transactions_skipped: number;
+  error_message: string | null;
+}

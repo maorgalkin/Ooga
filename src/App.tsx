@@ -109,7 +109,7 @@ function AppContent() {
               </div>
               <div className="flex flex-col">
                 <h1 className="text-lg font-bold text-white drop-shadow-md leading-tight">Ooga</h1>
-                <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">Family Finance</span>
+                <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">Take the Cake</span>
               </div>
               {user && (
                 <span className="hidden md:inline ml-2 text-xs text-white/70 drop-shadow">

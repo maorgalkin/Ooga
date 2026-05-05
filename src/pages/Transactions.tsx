@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Download } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget } from '../hooks/useBudgets';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -8,6 +9,7 @@ import { TransactionFilterTree } from '../components/transactions/TransactionFil
 import { TransactionFilters } from '../components/dashboard/TransactionFilters';
 import { TransactionsList } from '../components/dashboard/TransactionsList';
 import EditTransactionModal from '../components/EditTransactionModal';
+import BankImportModal from '../components/BankImportModal';
 import { formatCurrencyFromSettings } from '../utils/formatCurrency';
 import { getHeadingColor, getSubheadingColor } from '../utils/themeColors';
 import type { Transaction } from '../types';
@@ -18,9 +20,10 @@ import type { Transaction } from '../types';
  * Features month carousel, multi-dimensional filtering, and transaction editing
  */
 export const Transactions: React.FC = () => {
-  const { transactions, familyMembers } = useFinance();
+  const { transactions, familyMembers, refreshTransactions } = useFinance();
   const { data: personalBudget } = useActiveBudget();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [showBankImport, setShowBankImport] = useState(false);
   
   // Initialize with month index from filter hook
   const [monthIndex, setMonthIndex] = useState(0);
@@ -77,13 +80,23 @@ export const Transactions: React.FC = () => {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className={`text-3xl font-bold ${getHeadingColor('blue')} mb-2`}>
-          Transactions
-        </h1>
-        <p className={getSubheadingColor('blue')}>
-          View and manage your transaction history
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className={`text-3xl font-bold ${getHeadingColor('blue')} mb-2`}>
+            Transactions
+          </h1>
+          <p className={getSubheadingColor('blue')}>
+            View and manage your transaction history
+          </p>
+        </div>
+        <button
+          onClick={() => setShowBankImport(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm"
+          title="Import from Discount Bank"
+        >
+          <Download className="w-4 h-4" />
+          <span className="hidden sm:inline">Import from Bank</span>
+        </button>
       </div>
       
       {/* Month Carousel */}
@@ -152,6 +165,14 @@ export const Transactions: React.FC = () => {
         <EditTransactionModal
           transaction={editingTransaction}
           onClose={() => setEditingTransaction(null)}
+        />
+      )}
+
+      {/* Bank Import Modal */}
+      {showBankImport && (
+        <BankImportModal
+          onClose={() => setShowBankImport(false)}
+          onImportComplete={() => refreshTransactions()}
         />
       )}
     </div>
