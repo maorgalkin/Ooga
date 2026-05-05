@@ -1,4 +1,16 @@
-const SCRAPER_URL = import.meta.env.VITE_SCRAPER_SERVICE_URL ?? 'http://localhost:3001';
+import { supabase } from '../lib/supabase';
+
+// If no explicit URL is configured, use the same hostname as the page
+// (works on any device on the LAN — phone, tablet, Mac).
+function getScraperUrl(): string {
+  if (import.meta.env.VITE_SCRAPER_SERVICE_URL) {
+    return import.meta.env.VITE_SCRAPER_SERVICE_URL as string;
+  }
+  const { protocol, hostname } = window.location;
+  return `${protocol}//${hostname}:3001`;
+}
+
+const SCRAPER_URL = getScraperUrl();
 const SCRAPER_API_KEY = import.meta.env.VITE_SCRAPER_API_KEY ?? '';
 
 export type ImportStatus =
@@ -15,27 +27,22 @@ export interface ImportStatusResponse {
   error: string | null;
 }
 
-function headers(): Record<string, string> {
+function baseHeaders(): Record<string, string> {
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
   if (SCRAPER_API_KEY) h['x-api-key'] = SCRAPER_API_KEY;
   return h;
 }
 
-function userAuthHeader(): Record<string, string> {
-  // The Supabase session token is stored in localStorage by the Supabase JS client.
-  // We pass it to the scraper so it can look up the user + household.
-  const raw = localStorage.getItem(
-    `sb-${import.meta.env.VITE_SUPABASE_URL?.match(/\/\/([^.]+)/)?.[1]}-auth-token`
-  );
-  const parsed = raw ? (JSON.parse(raw) as { access_token?: string }) : null;
-  const token = parsed?.access_token ?? '';
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function startImport(months = 3): Promise<string> {
   const res = await fetch(`${SCRAPER_URL}/scrape/start`, {
     method: 'POST',
-    headers: { ...headers(), ...userAuthHeader() },
+    headers: { ...baseHeaders(), ...(await authHeaders()) },
     body: JSON.stringify({ months }),
   });
 
@@ -51,7 +58,7 @@ export async function startImport(months = 3): Promise<string> {
 export async function submitOtp(sessionId: string, code: string): Promise<void> {
   const res = await fetch(`${SCRAPER_URL}/scrape/otp`, {
     method: 'POST',
-    headers: headers(),
+    headers: baseHeaders(),
     body: JSON.stringify({ sessionId, code }),
   });
 
@@ -63,7 +70,7 @@ export async function submitOtp(sessionId: string, code: string): Promise<void> 
 
 export async function getImportStatus(sessionId: string): Promise<ImportStatusResponse> {
   const res = await fetch(`${SCRAPER_URL}/scrape/status/${sessionId}`, {
-    headers: headers(),
+    headers: baseHeaders(),
   });
 
   if (!res.ok) {
