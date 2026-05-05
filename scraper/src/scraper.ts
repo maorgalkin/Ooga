@@ -1,8 +1,6 @@
 import { createScraper, CompanyTypes } from 'israeli-bank-scrapers';
 import {
-  createSession,
   updateSession,
-  getSession,
 } from './session-manager.js';
 import {
   pushTransactions,
@@ -40,27 +38,21 @@ export async function startScrape(
   // Store dbSessionId on the in-memory session
   updateSession(sessionId, { status: 'logging_in' });
 
-  const otpProvider = (): Promise<string> =>
-    new Promise((resolve) => {
-      updateSession(sessionId, {
-        status: 'awaiting_otp',
-        otpResolver: resolve,
-      });
-    });
-
   try {
+    // Discount Bank uses Puppeteer; --no-sandbox is required inside Docker
     const scraper = createScraper({
       companyId: CompanyTypes.discount,
       startDate,
       combineInstallments: false,
       showBrowser: false,
-      // @ts-expect-error — otpProvider is supported in v6 but types may lag
-      otpProvider,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
+    // Discount Bank login: id = national ID, password = password, num = access code (קוד גישה)
     const credentials = {
-      username: process.env.DISCOUNT_BANK_USERNAME!,
+      id: process.env.DISCOUNT_BANK_USERNAME!,
       password: process.env.DISCOUNT_BANK_PASSWORD!,
+      num: process.env.DISCOUNT_BANK_NUM!,
     };
 
     updateSession(sessionId, { status: 'importing' });
