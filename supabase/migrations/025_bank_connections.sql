@@ -26,13 +26,26 @@ CREATE TABLE IF NOT EXISTS bank_connections (
 -- RLS: users can only access their own connections
 ALTER TABLE bank_connections ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view their own connections"
-  ON bank_connections FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'bank_connections'
+    AND policyname = 'Users can view their own connections'
+  ) THEN
+    CREATE POLICY "Users can view their own connections"
+      ON bank_connections FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
 
-CREATE POLICY "Users can delete their own connections"
-  ON bank_connections FOR DELETE
-  USING (auth.uid() = user_id);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'bank_connections'
+    AND policyname = 'Users can delete their own connections'
+  ) THEN
+    CREATE POLICY "Users can delete their own connections"
+      ON bank_connections FOR DELETE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Scraper service uses service_role and bypasses RLS for insert/update.
 -- No client-side insert/update policy needed.

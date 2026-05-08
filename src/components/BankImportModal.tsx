@@ -3,6 +3,7 @@ import { X, Download, Loader2, CheckCircle2, AlertCircle, PlusCircle } from 'luc
 import {
   startImport,
   getImportStatus,
+  submitOtp,
   listConnections,
   type BankConnection,
 } from '../services/bankImportService';
@@ -14,7 +15,7 @@ interface Props {
   onAddAccount?: () => void;
 }
 
-type Step = 'loading' | 'confirm' | 'no_accounts' | 'logging_in' | 'importing' | 'review' | 'complete' | 'error';
+type Step = 'loading' | 'confirm' | 'no_accounts' | 'logging_in' | 'awaiting_otp' | 'importing' | 'review' | 'complete' | 'error';
 
 export default function BankImportModal({ onClose, onImportComplete, onAddAccount }: Props) {
   const [step, setStep] = useState<Step>('loading');
@@ -23,6 +24,9 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
   const [dbSessionId, setDbSessionId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSubmitting, setOtpSubmitting] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -43,13 +47,15 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
     pollRef.current = setInterval(async () => {
       try {
         const status = await getImportStatus(sid);
-        if (status.status === 'importing') {
+        if (status.status === 'awaiting_otp') {
+          stopPolling();
+          setStep('awaiting_otp');
+        } else if (status.status === 'importing') {
           setStep('importing');
         } else if (status.status === 'complete' && status.result) {
           stopPolling();
           setResult(status.result);
           setDbSessionId(status.dbSessionId ?? null);
-          // Go to review if we have a DB session to load transactions from
           setStep(status.dbSessionId ? 'review' : 'complete');
           onImportComplete?.(status.result.imported);
         } else if (status.status === 'error') {
@@ -69,6 +75,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
     setStep('logging_in');
     try {
       const sid = await startImport(months);
+      setSessionId(sid);
       startPolling(sid);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to connect to scraper service');
@@ -76,8 +83,24 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
     }
   };
 
+  const handleOtpSubmit = async () => {
+    if (!sessionId || !otpCode.trim()) return;
+    setOtpSubmitting(true);
+    try {
+      await submitOtp(sessionId, otpCode.trim());
+      setOtpCode('');
+      setStep('importing');
+      startPolling(sessionId);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to submit OTP');
+      setStep('error');
+    } finally {
+      setOtpSubmitting(false);
+    }
+  };
+
   const providerLabel = (p: string) =>
-    ({ discount: 'Discount Bank', visaCal: 'Visa Cal', isracard: 'Isracard', max: 'Max', amex: 'Amex' }[p] ?? p);
+    ({ discount: 'Discount Bank', visaCal: 'Visa Cal', visaCalFast: 'Visa Cal (Fast)', isracard: 'Isracard', max: 'Max', amex: 'Amex' }[p] ?? p);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -193,6 +216,39 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
 
           {step === 'logging_in' && (
             <SpinnerStep message="Connecting to banks…" detail="Logging in to all connected accounts" />
+          )}
+          {step === 'awaiting_otp' && (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-2 pb-1 text-center">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <span className="text-xl">📱</span>
+                </div>
+                <p className="font-medium text-gray-900 dark:text-white">SMS verification required</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Visa Cal sent a one-time code to your registered phone. Enter it below to continue.
+                </p>
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={8}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                onKeyDown={(e) => e.key === 'Enter' && handleOtpSubmit()}
+                placeholder="Enter OTP code"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm text-center tracking-widest"
+                autoFocus
+              />
+              <button
+                onClick={handleOtpSubmit}
+                disabled={!otpCode.trim() || otpSubmitting}
+                className="w-full px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                {otpSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Verify
+              </button>
+            </div>
           )}
           {step === 'importing' && (
             <SpinnerStep message="Importing transactions…" detail="Fetching from all accounts — this may take a minute" />

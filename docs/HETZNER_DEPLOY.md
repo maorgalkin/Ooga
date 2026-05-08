@@ -251,6 +251,8 @@ You'll be asked for:
 - Agree to terms of service: `A`
 - Share email with EFF (optional): `N`
 
+> If fails with SERVFAIL: It happens occasionally. Retrey: certbot --nginx -d api.haooga.com
+
 certbot modifies `/etc/nginx/sites-available/ooga-scraper` automatically to:
 - Redirect all HTTP → HTTPS
 - Add SSL certificate and key paths
@@ -294,7 +296,11 @@ Tell your frontend where the scraper lives:
    | Variable | Value |
    |----------|-------|
    | `VITE_SCRAPER_SERVICE_URL` | `https://api.haooga.com` |
-   | `VITE_SCRAPER_API_KEY` | *(the `SCRAPER_API_KEY` from your `.env.scraper`)* |
+
+   > **Do NOT add `VITE_SCRAPER_API_KEY`.** `VITE_*` variables are baked into the
+   > public JS bundle and visible to anyone in DevTools. The scraper is protected
+   > by Supabase JWT validation on every route — that is the real auth.
+   > Leave `SCRAPER_API_KEY` empty in `.env.scraper` on the server.
 4. Go to **Deployments** → click the three dots on the latest deployment → **Redeploy**
 
 ---

@@ -11,6 +11,7 @@ import {
   getUserConnections,
   updateConnectionLastSync,
 } from './supabase-push.js';
+import { VisaCalFastScraper, type VisaCalFastCredentials } from './scrapers/visa-cal-fast.js';
 
 function mapTransaction(tx: Transaction): TransactionRow {
   return {
@@ -57,16 +58,42 @@ export async function startScrape(
     // Run all scrapers in parallel
     const results = await Promise.allSettled(
       connections.map(async (conn) => {
-        const scraper = createScraper({
-          companyId: conn.provider as CompanyTypes,
-          startDate,
-          combineInstallments: false,
-          showBrowser: false,
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        });
-
         console.log(`→ Scraping ${conn.displayName} (${conn.provider})`);
-        const result = await scraper.scrape(conn.credentials as never);
+
+        let result;
+
+        if (conn.provider === 'visaCalFast') {
+          // Use the custom fast-access scraper with OTP support
+          const requestOtp = (): Promise<string> =>
+            new Promise((resolve) => {
+              updateSession(sessionId, { status: 'awaiting_otp', otpResolver: resolve });
+            });
+
+          const scraper = new VisaCalFastScraper(
+            {
+              companyId: 'visaCal' as CompanyTypes,
+              startDate,
+              combineInstallments: false,
+              showBrowser: false,
+              args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            },
+            requestOtp,
+          );
+
+          result = await scraper.scrape(conn.credentials as never);
+          // Resume from awaiting_otp back to importing once scraper finishes
+          updateSession(sessionId, { status: 'importing', otpResolver: undefined });
+        } else {
+          const scraper = createScraper({
+            companyId: conn.provider as CompanyTypes,
+            startDate,
+            combineInstallments: false,
+            showBrowser: false,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+          });
+
+          result = await scraper.scrape(conn.credentials as never);
+        }
 
         if (!result.success) {
           throw new Error(`${conn.displayName}: ${result.errorMessage ?? 'Scrape failed'}`);

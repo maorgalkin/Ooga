@@ -44,6 +44,15 @@ const PROVIDERS: Provider[] = [
     ],
   },
   {
+    id: 'visaCalFast',
+    label: 'Visa Cal (Fast Access)',
+    icon: 'card',
+    fields: [
+      { key: 'id', label: 'National ID (ת.ז.)', placeholder: '123456789', type: 'text', inputMode: 'numeric' },
+      { key: 'last4Digits', label: 'Last 4 digits of card', placeholder: '1234', type: 'text', inputMode: 'numeric', hint: 'Login requires SMS OTP — your phone will receive a code during import' },
+    ],
+  },
+  {
     id: 'isracard',
     label: 'Isracard',
     icon: 'card',
