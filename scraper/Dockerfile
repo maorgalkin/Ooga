@@ -29,10 +29,13 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 COPY . .
 RUN npm run build
+
+# Remove devDependencies from the final image (types, tsc, etc. not needed at runtime)
+RUN npm prune --omit=dev
 
 EXPOSE 3001
 
