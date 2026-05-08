@@ -366,17 +366,129 @@ No extra server cost — one machine, many services.
 
 ---
 
+## Local Development vs Production — Key Differences
+
+Understanding which environment you're running in matters a lot for debugging.
+
+### Local Development (your Mac)
+
+```
+Your browser (localhost:5173)
+        │
+        ▼
+Vite dev server (npm run dev)
+        │  http
+        ▼
+Docker scraper on localhost:3001   (docker-compose.yml)
+        │
+        ▼
+Supabase (cloud)
+```
+
+**How to run locally:**
+```bash
+# 1. Start Docker Desktop (the GUI app)
+# 2. In the repo root:
+docker-compose up --build      # uses docker-compose.yml (dev settings)
+# 3. In another terminal:
+npm run dev                    # starts Vite on localhost:5173
+```
+
+**Environment file:** `scraper/.env.scraper` (at repo root level)
+
+**Test the scraper locally:**
+```bash
+curl http://localhost:3001/health
+```
+
+**`.env.local`** (frontend, not committed) must contain:
+```
+VITE_SCRAPER_SERVICE_URL=http://localhost:3001
+```
+
+> ⚠️ The local Docker compose (`docker-compose.yml`) exposes port `3001:3001` directly  
+> (no nginx). This is fine for local dev — never expose this to the internet.
+
+---
+
+### Production (Hetzner + Vercel)
+
+```
+Your browser / iPhone (any device, any network)
+        │  HTTPS
+        ▼
+Vercel (galfin.vercel.app)  ──HTTPS──▶  api.haooga.com (Hetzner)
+                                              │
+                                         nginx (port 443)   ← SSL terminates here
+                                              │  http
+                                         Docker scraper (127.0.0.1:3001)
+                                              │
+                                         Supabase (cloud)
+```
+
+**How the production scraper runs:**
+- Docker only binds to `127.0.0.1:3001` — not reachable from the internet
+- nginx listens on public ports 80/443 and proxies to Docker
+- SSL certificate managed by certbot (auto-renews)
+- Container restarts automatically on reboot (`restart: always`)
+
+**Environment file:** `/opt/ooga/scraper/.env.scraper` (on the Hetzner server only)
+
+**Test from the server (SSH'd in):**
+```bash
+curl http://localhost:3001/health           # tests Docker directly
+curl https://api.haooga.com/health          # tests full nginx → Docker path
+```
+
+**Test from anywhere:**
+```bash
+curl https://api.haooga.com/health
+# Should return: {"ok":true,"service":"ooga-scraper"}
+```
+
+**Vercel environment variables** (Settings → Environment Variables):
+| Variable | Value |
+|----------|-------|
+| `VITE_SCRAPER_SERVICE_URL` | `https://api.haooga.com` |
+
+> ⚠️ Do NOT set `VITE_SCRAPER_API_KEY` in Vercel — `VITE_*` variables are baked
+> into the public JS bundle and visible to anyone who opens DevTools.
+
+---
+
 ## Troubleshooting
+
+### Docker container health check (run on the Hetzner server)
+
+```bash
+# Is the container actually running?
+docker compose -f docker-compose.prod.yml ps
+
+# What is it saying? (most useful first step)
+docker compose -f docker-compose.prod.yml logs --tail=50
+
+# Is something listening on port 3001?
+ss -tlnp | grep 3001
+```
+
+**Common container failures:**
+
+| Log message | Cause | Fix |
+|-------------|-------|-----|
+| `ENOTFOUND mlrwvwdcqljzxytzustd.supabase.co` | Wrong Supabase URL in `.env.scraper` | Fix the URL |
+| `Error: Missing required env var` | A required variable not set in `.env.scraper` | Add the missing variable |
+| `address already in use` | Another process using port 3001 | `kill $(lsof -ti:3001)` then restart |
+| Container exits immediately | Crash on startup — check logs | `docker compose logs` |
+| `curl: (7) Failed to connect` | Container not running or wrong port | Check `docker compose ps` |
+
+### nginx / domain issues
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
 | `ping api.haooga.com` shows wrong IP | DNS not propagated | Wait 5 min, try again |
 | `curl http://api.haooga.com` connection refused | nginx not running | `systemctl start nginx` |
-| certbot fails: "could not connect to api.haooga.com" | DNS still pointing to GoDaddy | Wait for Cloudflare to activate |
+| certbot fails: SERVFAIL | Transient Let's Encrypt DNS glitch | Retry: `certbot --nginx -d api.haooga.com` |
 | certbot fails: "Connection refused on port 80" | nginx not running | `systemctl start nginx` |
 | `curl https://api.haooga.com/health` fails | SSL not set up yet | Complete Step 7 first |
-| Scraper container not starting | Bad `.env.scraper` values | `docker compose logs` for details |
-| `ENOTFOUND mlrwvwdcqljzxytzustd.supabase.co` | `.env.scraper` has wrong Supabase URL | Check and fix the URL |
 | Browser shows CORS error | `VITE_SCRAPER_SERVICE_URL` has trailing slash | Remove trailing slash from Vercel env var |
-| Import hangs, no Docker logs | Docker container stopped | `docker compose -f docker-compose.prod.yml up -d` |
 
