@@ -14,8 +14,16 @@
  * tab and inspect the form elements to verify / update these selectors.
  */
 
-import VisaCalScraper from 'israeli-bank-scrapers/lib/scrapers/visa-cal.js';
+import { createRequire } from 'module';
 import type { ScraperOptions, ScraperScrapingResult } from 'israeli-bank-scrapers/lib/scrapers/interface.js';
+
+// israeli-bank-scrapers is CJS. In an ESM context the default import gets double-wrapped:
+//   import X from '...'  →  X === { default: VisaCalScraper }   (not the class)
+// createRequire bypasses ESM interop and returns the CJS export directly.
+const _require = createRequire(import.meta.url);
+const _mod = _require('israeli-bank-scrapers/lib/scrapers/visa-cal.js');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const VisaCalScraper: any = _mod.default ?? _mod;
 import { ScraperErrorTypes } from 'israeli-bank-scrapers/lib/scrapers/errors.js';
 import {
   waitUntilElementFound,
@@ -83,7 +91,7 @@ async function findSelector(
   );
 }
 
-export class VisaCalFastScraper extends VisaCalScraper {
+export class VisaCalFastScraper extends (VisaCalScraper as new (...args: any[]) => any) {
   private readonly requestOtp: () => Promise<string>;
 
   constructor(options: ScraperOptions, requestOtp: () => Promise<string>) {
