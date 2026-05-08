@@ -166,16 +166,20 @@ Paste the following, filling in your real values:
 SUPABASE_URL=https://mlrwvwdcqljzxytzustd.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<your service role key from Supabase dashboard>
 ENCRYPTION_KEY=<generate below>
-SCRAPER_API_KEY=<generate below>
+SCRAPER_API_KEY=
 PORT=3001
 NODE_ENV=production
 ```
 
-**Generate the two secret values** (run these on the server, copy the output):
+**Generate `ENCRYPTION_KEY`** (run this on the server, copy the output):
 ```bash
-openssl rand -hex 32   # use this as ENCRYPTION_KEY
-openssl rand -hex 32   # use a different run for SCRAPER_API_KEY
+openssl rand -hex 32
 ```
+
+> **Leave `SCRAPER_API_KEY` empty.** Every route already validates your Supabase JWT
+> (`Authorization: Bearer <token>`). Setting `SCRAPER_API_KEY` requires the frontend
+> to also send it — but `VITE_*` env vars are baked into the public JS bundle.
+> The JWT is the real auth; the API key adds nothing here.
 
 > **Where to find `SUPABASE_SERVICE_ROLE_KEY`:**
 > Supabase dashboard → your project → Settings → API → `service_role` key (the long one)
