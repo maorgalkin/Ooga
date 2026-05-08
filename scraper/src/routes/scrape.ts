@@ -89,6 +89,7 @@ router.get('/status/:sessionId', (req: Request, res: Response) => {
 
   res.json({
     sessionId: session.id,
+    dbSessionId: session.dbSessionId ?? null,
     status: session.status,
     result: session.result ?? null,
     error: session.error ?? null,

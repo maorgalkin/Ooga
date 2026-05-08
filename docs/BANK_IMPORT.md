@@ -1,120 +1,151 @@
-# Bank Import — Discount Bank Integration
+# Bank Import — Multi-Provider Integration
 
 ## Overview
 
-Ooga can automatically import transactions from Israeli Discount Bank using the open-source [`israeli-bank-scrapers`](https://github.com/eshaham/israeli-bank-scrapers) library. The scraper uses Puppeteer (headless Chrome) to log in to the bank's website, so it runs in a dedicated Docker microservice separate from the frontend.
+Ooga can automatically import transactions from Israeli banks and credit cards using the open-source [`israeli-bank-scrapers`](https://github.com/eshaham/israeli-bank-scrapers) library. The scraper uses Puppeteer (headless Chrome) to log in to each institution's website.
+
+A dedicated Docker microservice handles scraping. Credentials are stored encrypted in Supabase — never in plaintext.
+
+---
+
+## What Data Is Available
+
+| Source | What you get |
+|---|---|
+| **Discount Bank** (checking account) | Salary, rent, ATM, lump-sum credit card debit |
+| **Visa Cal / Isracard / Max** (credit cards) | Individual merchant transactions, installment details, foreign currency, charge date |
+
+For household budgeting, connecting your credit card gives the richest data (individual merchants, installment breakdown).
+
+---
+
+## Supported Providers
+
+| Provider | `companyId` | Credentials |
+|---|---|---|
+| Discount Bank | `discount` | National ID, password, access code (קוד גישה) |
+| Visa Cal | `visaCal` | Username, password |
+| Isracard | `isracard` | National ID, last 6 card digits, password |
+| Amex Israel | `amex` | National ID, last 6 card digits, password |
+| Max (Leumi Card) | `max` | Username, password |
+| Bank Hapoalim | `hapoalim` | User code, password |
+| Bank Leumi | `leumi` | Username, password |
 
 ---
 
 ## Architecture
 
 ```
-[Mobile / Web App]
-       │ HTTP REST
-       ▼
+[React App / Settings → Connected Accounts]
+  ↕ Add / delete / test connections
+  ↕ "Import from Bank" button
+        │
+        ▼
 [Scraper Microservice — Docker]
   Node.js + Express
   israeli-bank-scrapers + Puppeteer
-  Credentials via Docker env vars / secrets
-       │ Supabase service role key
-       ▼
+  AES-256-GCM credential encryption
+        │ Supabase service role key
+        ▼
 [Supabase PostgreSQL]
-  transactions table
-  bank_import_sessions table
+  bank_connections — encrypted per-user credentials
+  transactions — extended with credit-card fields
+  bank_import_sessions — import audit log
 ```
-
-**The scraper service is never exposed to the public internet without an API key.**
 
 ---
 
 ## Local Development Setup
 
-### 1. Copy and fill in credentials
+### 1. Generate an encryption key
 
 ```bash
-cp scraper/.env.example .env.scraper
-# Edit .env.scraper with your Discount Bank credentials and Supabase service role key
+openssl rand -hex 32
 ```
 
-### 2. Start the scraper with Docker Compose
+### 2. Copy and fill in `scraper/.env.scraper`
 
 ```bash
-docker-compose up --build
+cp scraper/.env.example scraper/.env.scraper
+# Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ENCRYPTION_KEY
 ```
 
-The scraper will be available at `http://localhost:3001`.
+The `ENCRYPTION_KEY` is the 64-character hex string from step 1.
 
-### 3. Configure the frontend
+### 3. Apply the DB migrations
 
-Add to your `.env.local`:
-
-```
-VITE_SCRAPER_SERVICE_URL=http://localhost:3001
-VITE_SCRAPER_API_KEY=   # leave empty for local dev if SCRAPER_API_KEY is empty
-```
-
-### 4. Apply the database migration
-
-Run `024_bank_import.sql` in your Supabase SQL editor or via the Supabase CLI:
+Run `024_bank_import.sql` and `025_bank_connections.sql` in your Supabase SQL editor:
 
 ```bash
 supabase db push
 ```
 
+### 4. Start the scraper with Docker
+
+```bash
+docker-compose up --build
+```
+
+Scraper will be available at `http://localhost:3001`.
+
+### 5. Configure the frontend
+
+Add to `.env.local`:
+
+```
+VITE_SCRAPER_SERVICE_URL=http://localhost:3001
+```
+
+Access the app at `http://localhost:5173` (bank import requires local dev — see below).
+
+### 6. Connect your accounts
+
+Go to **Budget → Settings → Connected Accounts** → **Add Account**.  
+Choose your provider, enter credentials, and click **Test & Save**.
+
 ---
 
 ## Import Flow
 
-1. Tap **Import from Bank** in the Transactions tab.
-2. Choose how many months to import (1–12).
-3. Tap **Start Import** — the scraper logs in to Discount Bank.
-4. **Enter the OTP** sent to your phone (120s countdown).
-5. Scraper fetches all transactions and pushes them to Supabase.
-6. A summary screen shows how many transactions were imported and how many duplicates were skipped.
+1. Click **Import from Bank** in the Transactions tab.
+2. Choose the import period (1–12 months).
+3. Click **Start Import** — all connected accounts are scraped in parallel.
+4. A summary shows how many transactions were imported and how many duplicates were skipped.
 
-All imported transactions are assigned the category **Uncategorized** and the source flag `bank_import`. Categorize them using the normal transaction editing flow.
+All imported transactions are assigned **Uncategorized** and `source = 'bank_import'`.
 
-**Duplicate detection:** A transaction is considered a duplicate if the same user has an existing transaction with the same `date + amount + description` hash. Duplicates are silently skipped.
+**Duplicate detection:** SHA-256 of `date + chargedAmount + description`. Same user + same hash = skipped.
 
 ---
 
 ## Production Deployment
 
-The scraper service is a standard Docker container. You can deploy it to:
+The scraper service is a standard Docker container deployable to Railway, Fly.io, Render, or a VPS.
 
-| Provider | Notes |
-|---|---|
-| **Railway** | `railway up` — easiest, free tier available |
-| **Fly.io** | `fly deploy` — good for always-on services |
-| **Render** | Docker deploy via web UI |
-| **Self-hosted VPS** | `docker-compose up -d` |
-
-### Environment variables to set in production
+### Environment variables (production)
 
 | Variable | Description |
 |---|---|
-| `DISCOUNT_BANK_USERNAME` | Your Discount Bank ID number |
-| `DISCOUNT_BANK_PASSWORD` | Your Discount Bank password |
 | `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
-| `SCRAPER_API_KEY` | A long random string — set the same value in `VITE_SCRAPER_API_KEY` on Vercel |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (bypasses RLS) |
+| `ENCRYPTION_KEY` | 64-character hex string — generate with `openssl rand -hex 32` |
+| `SCRAPER_API_KEY` | Optional bearer token to protect the scraper endpoints |
 | `PORT` | Default: `3001` |
 
-### Frontend env vars (Vercel)
+### Why bank import requires local dev (for now)
 
-| Variable | Value |
-|---|---|
-| `VITE_SCRAPER_SERVICE_URL` | Your deployed scraper URL |
-| `VITE_SCRAPER_API_KEY` | Same as `SCRAPER_API_KEY` above |
+The app is deployed on Vercel (HTTPS). Calling an HTTP Docker service from an HTTPS page is blocked by browser mixed-content rules. Solutions:
+- **Local**: Access via `http://localhost:5173` with `VITE_SCRAPER_SERVICE_URL=http://localhost:3001`
+- **Production**: Deploy the Docker service with HTTPS (Railway/Fly.io provide this automatically) and set `VITE_SCRAPER_SERVICE_URL` on Vercel
 
 ---
 
 ## Security Notes
 
-- **Credentials are only stored as Docker env vars / secrets** — never in Supabase or the frontend.
-- The scraper service uses a Supabase **service role key** to insert transactions. This key bypasses Row Level Security — never expose it to clients.
-- The `SCRAPER_API_KEY` is a simple bearer token to prevent unauthorised callers from triggering imports. For production, always set a strong random value.
-- The scraper service logs **never** log credentials. Puppeteer runs headless with no screenshots saved.
+- **Credentials encrypted at rest**: AES-256-GCM with a key that lives only in the scraper's environment. Supabase stores only the ciphertext + IV + auth tag.
+- **Service role key**: Never exposed to clients. The scraper is the only service that holds it.
+- **Credential isolation**: Each user's credentials are separate rows — household members cannot see each other's bank credentials.
+- **No logging of credentials**: Puppeteer runs headless, no screenshots.
 
 ---
 
@@ -122,16 +153,10 @@ The scraper service is a standard Docker container. You can deploy it to:
 
 | Problem | Solution |
 |---|---|
-| "Session not found or expired" | Sessions expire after 10 minutes. Start a new import. |
-| OTP expired (countdown reaches 0) | Close the modal and start again. |
-| Scraper fails at login | Check credentials in `.env.scraper`. Discount Bank may have updated its site — check the [library's GitHub issues](https://github.com/eshaham/israeli-bank-scrapers/issues). |
-| Docker build fails | Ensure Docker has enough memory (≥2GB). Puppeteer needs Chromium. |
+| "No accounts connected" | Add an account in Settings → Connected Accounts first |
+| Connection test fails | Check your credentials on the bank's website. Ensure the scraper Docker is running. |
+| "Missing or placeholder env var: ENCRYPTION_KEY" | Add ENCRYPTION_KEY to `scraper/.env.scraper` (64 hex chars) |
+| Docker build fails | Ensure Docker has ≥2GB memory. Puppeteer needs Chromium. |
+| Import returns 0 transactions | The date range may have no data. Try a longer period. |
+| Partial errors in import | One scraper failed but others succeeded. Check Docker logs for details. |
 
----
-
-## Future Work
-
-- **Auto-category mapping** — match bank transaction descriptions to Ooga categories using keyword rules
-- **Scheduled imports** — cron-triggered automatic sync
-- **Multi-bank support** — Leumi, Hapoalim, and others via the same library
-- **Multi-account selection** — choose which bank accounts to import (checking, savings, credit card)

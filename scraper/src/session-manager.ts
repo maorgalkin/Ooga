@@ -10,6 +10,8 @@ export interface ScrapeSession {
   };
   error?: string;
   createdAt: Date;
+  /** Supabase bank_import_sessions.id — set once the DB record is created */
+  dbSessionId?: string;
 }
 
 const sessions = new Map<string, ScrapeSession>();

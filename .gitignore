@@ -17,6 +17,7 @@ dist-ssr
 .env.local
 .env.*.local
 .env.scraper
+scraper/.env.scraper
 
 # Editor directories and files
 .vscode/*

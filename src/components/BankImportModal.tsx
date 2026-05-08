@@ -1,86 +1,67 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Download, Loader2, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Download, Loader2, CheckCircle2, AlertCircle, PlusCircle } from 'lucide-react';
 import {
   startImport,
-  submitOtp,
   getImportStatus,
-  type ImportStatus,
+  listConnections,
+  type BankConnection,
 } from '../services/bankImportService';
+import ImportReviewStep from './ImportReviewStep';
 
 interface Props {
   onClose: () => void;
   onImportComplete?: (imported: number) => void;
+  onAddAccount?: () => void;
 }
 
-type Step = 'confirm' | 'logging_in' | 'awaiting_otp' | 'importing' | 'complete' | 'error';
+type Step = 'loading' | 'confirm' | 'no_accounts' | 'logging_in' | 'importing' | 'review' | 'complete' | 'error';
 
-const OTP_TIMEOUT_SECS = 120;
-
-export default function BankImportModal({ onClose, onImportComplete }: Props) {
-  const [step, setStep] = useState<Step>('confirm');
+export default function BankImportModal({ onClose, onImportComplete, onAddAccount }: Props) {
+  const [step, setStep] = useState<Step>('loading');
   const [months, setMonths] = useState(3);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [otp, setOtp] = useState('');
-  const [otpCountdown, setOtpCountdown] = useState(OTP_TIMEOUT_SECS);
+  const [connections, setConnections] = useState<BankConnection[]>([]);
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [dbSessionId, setDbSessionId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [submittingOtp, setSubmittingOtp] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-    if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
   }, []);
 
-  // Poll for status updates
+  useEffect(() => {
+    listConnections()
+      .then((conns) => {
+        setConnections(conns);
+        setStep(conns.length === 0 ? 'no_accounts' : 'confirm');
+      })
+      .catch(() => setStep('confirm'));
+  }, []);
+
   const startPolling = useCallback((sid: string) => {
     pollRef.current = setInterval(async () => {
       try {
         const status = await getImportStatus(sid);
-        handleStatusUpdate(status.status, status.result, status.error);
+        if (status.status === 'importing') {
+          setStep('importing');
+        } else if (status.status === 'complete' && status.result) {
+          stopPolling();
+          setResult(status.result);
+          setDbSessionId(status.dbSessionId ?? null);
+          // Go to review if we have a DB session to load transactions from
+          setStep(status.dbSessionId ? 'review' : 'complete');
+          onImportComplete?.(status.result.imported);
+        } else if (status.status === 'error') {
+          stopPolling();
+          setErrorMsg(status.error ?? 'An unexpected error occurred');
+          setStep('error');
+        }
       } catch {
         // transient failure — keep polling
       }
     }, 2000);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleStatusUpdate = (
-    status: ImportStatus,
-    res: { imported: number; skipped: number } | null,
-    err: string | null
-  ) => {
-    if (status === 'awaiting_otp' && step !== 'awaiting_otp') {
-      stopPolling();
-      setStep('awaiting_otp');
-      startOtpCountdown();
-    } else if (status === 'importing') {
-      setStep('importing');
-    } else if (status === 'complete' && res) {
-      stopPolling();
-      setResult(res);
-      setStep('complete');
-      onImportComplete?.(res.imported);
-    } else if (status === 'error') {
-      stopPolling();
-      setErrorMsg(err ?? 'An unexpected error occurred');
-      setStep('error');
-    }
-  };
-
-  const startOtpCountdown = () => {
-    setOtpCountdown(OTP_TIMEOUT_SECS);
-    countdownRef.current = setInterval(() => {
-      setOtpCountdown((c) => {
-        if (c <= 1) {
-          clearInterval(countdownRef.current!);
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
-  };
+  }, [stopPolling, onImportComplete]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
@@ -88,7 +69,6 @@ export default function BankImportModal({ onClose, onImportComplete }: Props) {
     setStep('logging_in');
     try {
       const sid = await startImport(months);
-      setSessionId(sid);
       startPolling(sid);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to connect to scraper service');
@@ -96,31 +76,20 @@ export default function BankImportModal({ onClose, onImportComplete }: Props) {
     }
   };
 
-  const handleOtpSubmit = async () => {
-    if (!sessionId || !otp.trim()) return;
-    setSubmittingOtp(true);
-    try {
-      await submitOtp(sessionId, otp.trim());
-      setStep('importing');
-      if (countdownRef.current) { clearInterval(countdownRef.current); }
-      startPolling(sessionId);
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to submit OTP');
-      setStep('error');
-    } finally {
-      setSubmittingOtp(false);
-    }
-  };
+  const providerLabel = (p: string) =>
+    ({ discount: 'Discount Bank', visaCal: 'Visa Cal', isracard: 'Isracard', max: 'Max', amex: 'Amex' }[p] ?? p);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
+      <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full transition-all ${
+        step === 'review' ? 'max-w-2xl' : 'max-w-md'
+      }`}>
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <Download className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Import from Discount Bank
+              {step === 'review' ? 'Review Transactions' : 'Import from Bank'}
             </h2>
           </div>
           <button
@@ -133,23 +102,111 @@ export default function BankImportModal({ onClose, onImportComplete }: Props) {
 
         {/* Body */}
         <div className="p-5">
+          {step === 'loading' && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+          )}
+
+          {step === 'no_accounts' && (
+            <div className="flex flex-col items-center gap-4 py-4 text-center">
+              <AlertCircle className="w-10 h-10 text-amber-500" />
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">No accounts connected</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Add a bank or credit card account in Settings before importing.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full pt-1">
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+                {onAddAccount && (
+                  <button
+                    onClick={() => { onClose(); onAddAccount(); }}
+                    className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <PlusCircle className="w-4 h-4" /> Add Account
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {step === 'confirm' && (
-            <ConfirmStep months={months} onMonthsChange={setMonths} onStart={handleStart} onCancel={onClose} />
+            <div className="space-y-4">
+              {connections.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                    Connected accounts ({connections.length})
+                  </p>
+                  <ul className="space-y-1">
+                    {connections.map((c) => (
+                      <li key={c.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                        <span>{c.display_name}</span>
+                        <span className="text-gray-400 dark:text-gray-500 text-xs">({providerLabel(c.provider)})</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Import period
+                </label>
+                <select
+                  value={months}
+                  onChange={(e) => setMonths(Number(e.target.value))}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
+                >
+                  {[1, 2, 3, 6, 12].map((m) => (
+                    <option key={m} value={m}>Last {m} month{m > 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+              </div>
+
+              <p className="text-xs text-gray-500 dark:text-gray-500">
+                Imported transactions start as <strong>Uncategorized</strong>. Duplicates are skipped.
+              </p>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleStart}
+                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+                >
+                  Start Import
+                </button>
+              </div>
+            </div>
           )}
+
           {step === 'logging_in' && (
-            <SpinnerStep message="Connecting to Discount Bank…" detail="Logging in with your credentials" />
-          )}
-          {step === 'awaiting_otp' && (
-            <OtpStep
-              otp={otp}
-              countdown={otpCountdown}
-              submitting={submittingOtp}
-              onChange={setOtp}
-              onSubmit={handleOtpSubmit}
-            />
+            <SpinnerStep message="Connecting to banks…" detail="Logging in to all connected accounts" />
           )}
           {step === 'importing' && (
-            <SpinnerStep message="Importing transactions…" detail="This may take up to a minute" />
+            <SpinnerStep message="Importing transactions…" detail="Fetching from all accounts — this may take a minute" />
+          )}
+          {step === 'review' && result && dbSessionId && (
+            <ImportReviewStep
+              dbSessionId={dbSessionId}
+              result={result}
+              onDone={(kept) => {
+                setResult((r) => r ? { ...r, imported: kept } : r);
+                setStep('complete');
+              }}
+              onSkip={() => setStep('complete')}
+            />
           )}
           {step === 'complete' && result && (
             <CompleteStep result={result} onClose={onClose} />
@@ -165,63 +222,6 @@ export default function BankImportModal({ onClose, onImportComplete }: Props) {
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function ConfirmStep({
-  months,
-  onMonthsChange,
-  onStart,
-  onCancel,
-}: {
-  months: number;
-  onMonthsChange: (m: number) => void;
-  onStart: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-gray-600 dark:text-gray-400">
-        Fetch transactions from your Discount Bank account and import them into Ooga.
-        New transactions are added automatically — duplicates are skipped.
-      </p>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Import period
-        </label>
-        <select
-          value={months}
-          onChange={(e) => onMonthsChange(Number(e.target.value))}
-          className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
-        >
-          {[1, 2, 3, 6, 12].map((m) => (
-            <option key={m} value={m}>
-              Last {m} month{m > 1 ? 's' : ''}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <p className="text-xs text-gray-500 dark:text-gray-500">
-        All imported transactions will be categorised as <strong>Uncategorized</strong> — you can edit them afterwards.
-      </p>
-
-      <div className="flex gap-3 pt-1">
-        <button
-          onClick={onCancel}
-          className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={onStart}
-          className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
-        >
-          Start Import
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function SpinnerStep({ message, detail }: { message: string; detail: string }) {
   return (
     <div className="flex flex-col items-center gap-4 py-6">
@@ -234,83 +234,7 @@ function SpinnerStep({ message, detail }: { message: string; detail: string }) {
   );
 }
 
-function OtpStep({
-  otp,
-  countdown,
-  submitting,
-  onChange,
-  onSubmit,
-}: {
-  otp: string;
-  countdown: number;
-  submitting: boolean;
-  onChange: (v: string) => void;
-  onSubmit: () => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
-
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') onSubmit();
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col items-center gap-3 py-2">
-        <KeyRound className="w-10 h-10 text-amber-500" />
-        <div className="text-center">
-          <p className="font-medium text-gray-900 dark:text-white">Enter your OTP</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            A code was sent to your phone by Discount Bank
-          </p>
-        </div>
-      </div>
-
-      <input
-        ref={inputRef}
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        maxLength={8}
-        value={otp}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))}
-        onKeyDown={handleKey}
-        placeholder="______"
-        className="w-full text-center text-2xl tracking-[0.5em] font-mono rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-3"
-      />
-
-      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-        <span>Code expires in</span>
-        <span className={`font-medium ${countdown <= 30 ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
-          {countdown}s
-        </span>
-      </div>
-
-      <button
-        onClick={onSubmit}
-        disabled={otp.length < 4 || submitting || countdown === 0}
-        className="w-full px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
-      >
-        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-        Confirm Code
-      </button>
-
-      {countdown === 0 && (
-        <p className="text-xs text-center text-red-500">
-          OTP expired. Please close and try again.
-        </p>
-      )}
-    </div>
-  );
-}
-
-function CompleteStep({
-  result,
-  onClose,
-}: {
-  result: { imported: number; skipped: number };
-  onClose: () => void;
-}) {
+function CompleteStep({ result, onClose }: { result: { imported: number; skipped: number }; onClose: () => void }) {
   return (
     <div className="flex flex-col items-center gap-4 py-4">
       <CheckCircle2 className="w-12 h-12 text-green-500" />
@@ -318,9 +242,7 @@ function CompleteStep({
         <p className="font-semibold text-gray-900 dark:text-white text-lg">Import complete!</p>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           <span className="font-medium text-green-600">{result.imported}</span> transactions imported
-          {result.skipped > 0 && (
-            <>, <span className="font-medium">{result.skipped}</span> duplicates skipped</>
-          )}
+          {result.skipped > 0 && <>, <span className="font-medium">{result.skipped}</span> duplicates skipped</>}
         </p>
         {result.imported > 0 && (
           <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
@@ -330,7 +252,7 @@ function CompleteStep({
       </div>
       <button
         onClick={onClose}
-        className="w-full px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors"
+        className="mt-2 px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
       >
         Done
       </button>
@@ -338,21 +260,13 @@ function CompleteStep({
   );
 }
 
-function ErrorStep({
-  message,
-  onRetry,
-  onClose,
-}: {
-  message: string;
-  onRetry: () => void;
-  onClose: () => void;
-}) {
+function ErrorStep({ message, onRetry, onClose }: { message: string; onRetry: () => void; onClose: () => void }) {
   return (
     <div className="flex flex-col items-center gap-4 py-4">
       <AlertCircle className="w-12 h-12 text-red-500" />
       <div className="text-center">
         <p className="font-semibold text-gray-900 dark:text-white">Import failed</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs">{message}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 break-words">{message}</p>
       </div>
       <div className="flex gap-3 w-full">
         <button

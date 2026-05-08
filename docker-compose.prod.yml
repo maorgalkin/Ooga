@@ -1,0 +1,22 @@
+# Production compose — for use on Hetzner (or any Linux VPS)
+# Usage: docker compose -f docker-compose.prod.yml up -d
+#
+# Differences from docker-compose.yml (dev):
+#   - No SYS_ADMIN cap or seccomp:unconfined (not needed; Puppeteer uses --no-sandbox)
+#   - Binds only to 127.0.0.1 so nginx is the only public entry point
+#   - Reads .env.scraper from the same directory
+
+services:
+  scraper:
+    build:
+      context: ./scraper
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:3001:3001"
+    env_file:
+      - path: scraper/.env.scraper
+        required: true
+    environment:
+      PORT: "3001"
+      NODE_ENV: "production"
+    restart: always

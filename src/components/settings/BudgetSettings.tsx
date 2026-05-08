@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { BudgetHistory } from './BudgetHistory';
 import { useActiveBudget, useUpdatePersonalBudget } from '../../hooks/useBudgets';
+import ConnectedAccountsSettings from '../ConnectedAccountsSettings';
 import HouseholdSettingsModal from '../HouseholdSettingsModal';
 import * as HouseholdService from '../../services/householdService';
 import type { Household } from '../../services/householdService';
@@ -361,6 +362,11 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
             </label>
           </div>
         </div>
+      </div>
+
+      {/* Connected Bank Accounts Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <ConnectedAccountsSettings />
       </div>
 
       {/* Budget History Section */}

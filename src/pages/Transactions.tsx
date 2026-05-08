@@ -20,7 +20,7 @@ import type { Transaction } from '../types';
  * Features month carousel, multi-dimensional filtering, and transaction editing
  */
 export const Transactions: React.FC = () => {
-  const { transactions, familyMembers, refreshTransactions } = useFinance();
+  const { transactions, familyMembers, deleteTransaction, refreshTransactions } = useFinance();
   const { data: personalBudget } = useActiveBudget();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [showBankImport, setShowBankImport] = useState(false);
@@ -155,6 +155,9 @@ export const Transactions: React.FC = () => {
             personalBudget={personalBudget}
             formatCurrency={formatCurrency}
             onEditTransaction={setEditingTransaction}
+            onDeleteTransactions={async (ids) => {
+              await Promise.all(ids.map(id => deleteTransaction(id)));
+            }}
             emptyMessage="No transactions match your filters"
           />
         </div>
