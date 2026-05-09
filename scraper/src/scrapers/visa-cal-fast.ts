@@ -193,6 +193,17 @@ export class VisaCalFastScraper extends (VisaCalScraper as new (...args: any[]) 
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Login failed';
       console.error('[VisaCalFast] Login error:', msg);
+      // Take a screenshot so we can see what the page looks like at failure
+      try {
+        const screenshot = await page.screenshot({ encoding: 'base64', type: 'jpeg', quality: 60 });
+        console.error('[VisaCalFast] Page screenshot at failure (base64 JPEG, copy and open in browser):');
+        console.error(`data:image/jpeg;base64,${screenshot}`);
+        const pageTitle = await page.title().catch(() => 'unknown');
+        const pageUrl = await page.url().catch(() => 'unknown');
+        console.error(`[VisaCalFast] Page title: ${pageTitle}, URL: ${pageUrl}`);
+      } catch (ssErr) {
+        console.error('[VisaCalFast] Could not take screenshot:', ssErr);
+      }
       return { success: false, errorMessage: msg, errorType: ScraperErrorTypes.General };
     }
   }
