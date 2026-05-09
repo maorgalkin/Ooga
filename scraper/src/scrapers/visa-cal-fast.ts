@@ -128,7 +128,18 @@ export class VisaCalFastScraper extends (VisaCalScraper as new (...args: any[]) 
       );
 
       // Navigate to the CAL homepage
-      await page.goto(LOGIN_URL, { waitUntil: 'load' });
+      await page.goto(LOGIN_URL, { waitUntil: 'networkidle2', timeout: 30_000 });
+
+      // Debug: log page state immediately after load
+      const loadedUrl = page.url();
+      const loadedTitle = await page.title();
+      console.log(`[VisaCalFast] Page loaded — URL: ${loadedUrl}, title: "${loadedTitle}"`);
+      try {
+        const snap = await page.screenshot({ encoding: 'base64', type: 'jpeg', quality: 50 }) as string;
+        console.log(`[VisaCalFast] Post-load screenshot: data:image/jpeg;base64,${snap}`);
+      } catch (snapErr) {
+        console.log('[VisaCalFast] Could not take post-load screenshot:', snapErr);
+      }
 
       // Open the login popup
       await waitUntilElementFound(page, '#ccLoginDesktopBtn', true);
@@ -195,11 +206,10 @@ export class VisaCalFastScraper extends (VisaCalScraper as new (...args: any[]) 
       console.error('[VisaCalFast] Login error:', msg);
       // Take a screenshot so we can see what the page looks like at failure
       try {
-        const screenshot = await page.screenshot({ encoding: 'base64', type: 'jpeg', quality: 60 });
-        console.error('[VisaCalFast] Page screenshot at failure (base64 JPEG, copy and open in browser):');
-        console.error(`data:image/jpeg;base64,${screenshot}`);
-        const pageTitle = await page.title().catch(() => 'unknown');
-        const pageUrl = await page.url().catch(() => 'unknown');
+        const screenshot = await page.screenshot({ encoding: 'base64', type: 'jpeg', quality: 60 }) as string;
+        console.error(`[VisaCalFast] Failure screenshot: data:image/jpeg;base64,${screenshot}`);
+        const pageTitle = await page.title();
+        const pageUrl = page.url();
         console.error(`[VisaCalFast] Page title: ${pageTitle}, URL: ${pageUrl}`);
       } catch (ssErr) {
         console.error('[VisaCalFast] Could not take screenshot:', ssErr);
