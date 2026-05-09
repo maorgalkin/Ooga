@@ -33,6 +33,13 @@ function mapTransaction(tx: Transaction): TransactionRow {
   };
 }
 
+// Optional SOCKS5/HTTP proxy for geo-restricted scrapers (e.g., Israeli banks from non-IL servers)
+// Set PUPPETEER_PROXY=socks5://HOST:PORT in .env.scraper
+const proxyArg = process.env.PUPPETEER_PROXY
+  ? [`--proxy-server=${process.env.PUPPETEER_PROXY}`]
+  : [];
+const BASE_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', ...proxyArg];
+
 export async function startScrape(
   sessionId: string,
   userId: string,
@@ -75,7 +82,7 @@ export async function startScrape(
               startDate,
               combineInstallments: false,
               showBrowser: false,
-              args: ['--no-sandbox', '--disable-setuid-sandbox'],
+              args: BASE_ARGS,
             },
             requestOtp,
           );
@@ -89,7 +96,7 @@ export async function startScrape(
             startDate,
             combineInstallments: false,
             showBrowser: false,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            args: BASE_ARGS,
           });
 
           result = await scraper.scrape(conn.credentials as never);
