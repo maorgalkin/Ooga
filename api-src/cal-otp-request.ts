@@ -20,27 +20,59 @@ const AUTH_SITE_ID = '5B5160DD-F84A-4D72-B67E-65891BA194FF';
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 /**
- * GET the send-otp page first to obtain the BIG-IP TS session cookie.
- * Without this cookie, F5 BIG-IP WAF rejects the OTP PUT request.
+ * BIG-IP cookie challenge flow:
+ * 1. GET /send-otp → BIG-IP returns 302 with Set-Cookie: TS=<challenge>
+ * 2. Follow redirect manually WITH the TS cookie → BIG-IP validates + allows
+ * 3. Use that TS cookie in the subsequent PUT request
+ *
+ * Node fetch doesn't carry cookies across redirects, so we handle manually.
  */
-async function getBigIpCookie(): Promise<string> {
-  const res = await fetch(SEND_OTP_PAGE, {
-    method: 'GET',
-    headers: {
-      'user-agent': BROWSER_UA,
-      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'accept-language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
-    },
-    redirect: 'follow',
-  });
+async function getBigIpCookie(): Promise<{ cookie: string; diagnostics: Record<string, unknown> }> {
+  const cookieJar: Record<string, string> = {};
+  const diagnostics: Record<string, unknown> = {};
+  let url = SEND_OTP_PAGE;
 
-  // Collect all Set-Cookie headers — Node fetch collapses them with commas
-  const setCookie = res.headers.get('set-cookie') ?? '';
-  // Extract TS cookie (BIG-IP session token): name starts with "TS" followed by hex
-  const tsMatch = setCookie.match(/TS[0-9a-f]+=\S+?(?=;|,|$)/);
-  const tsCookie = tsMatch ? tsMatch[0] : '';
-  console.log('[cal-otp-request] BIG-IP cookie obtained:', tsCookie ? tsCookie.slice(0, 20) + '...' : '(none)');
-  return tsCookie;
+  for (let hop = 0; hop < 6; hop++) {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'user-agent': BROWSER_UA,
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'accept-language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
+        'cookie': Object.entries(cookieJar).map(([k, v]) => `${k}=${v}`).join('; '),
+      },
+      redirect: 'manual',
+    });
+
+    diagnostics[`hop${hop}`] = { status: res.status, url };
+
+    // Collect Set-Cookie headers
+    const setCookie = res.headers.get('set-cookie') ?? '';
+    if (setCookie) {
+      for (const part of setCookie.split(/,(?=[^;]+=[^;]*)/)) {
+        const m = part.trim().match(/^([^=]+)=([^;]*)/);
+        if (m) cookieJar[m[1].trim()] = m[2].trim();
+      }
+    }
+
+    if (res.status >= 200 && res.status < 300) break;
+
+    if (res.status >= 300 && res.status < 400) {
+      let loc = res.headers.get('location') ?? '';
+      if (loc.startsWith('/')) loc = 'https://connect.cal-online.co.il' + loc;
+      url = loc || url;
+    } else {
+      // Unexpected status — stop
+      diagnostics['blocked'] = { status: res.status, body: (await res.text()).slice(0, 200) };
+      break;
+    }
+  }
+
+  const tsKey = Object.keys(cookieJar).find(k => k.startsWith('TS'));
+  const cookie = tsKey ? `${tsKey}=${cookieJar[tsKey]}` : '';
+  diagnostics['cookies'] = Object.keys(cookieJar);
+  console.log('[cal-otp-request] Cookie fetch diagnostics:', JSON.stringify(diagnostics));
+  return { cookie, diagnostics };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -65,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Step 1: Get BIG-IP TS session cookie (required by F5 WAF on connect.cal-online.co.il)
-    const tsCookie = await getBigIpCookie();
+    const { cookie: tsCookie, diagnostics: cookieDiag } = await getBigIpCookie();
 
     // Step 2: PUT /otp — sends SMS to the user's phone
     const calRes = await fetch(OTP_URL, {
@@ -99,6 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         calStatus: calRes.status,
         detail: body,
         rawPreview: rawText.slice(0, 300),
+        cookieDiag,
       });
     }
 

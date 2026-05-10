@@ -176,20 +176,43 @@ var SEND_OTP_PAGE = "https://connect.cal-online.co.il/send-otp";
 var AUTH_SITE_ID = "5B5160DD-F84A-4D72-B67E-65891BA194FF";
 var BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 async function getBigIpCookie() {
-  const res = await fetch(SEND_OTP_PAGE, {
-    method: "GET",
-    headers: {
-      "user-agent": BROWSER_UA,
-      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "accept-language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7"
-    },
-    redirect: "follow"
-  });
-  const setCookie = res.headers.get("set-cookie") ?? "";
-  const tsMatch = setCookie.match(/TS[0-9a-f]+=\S+?(?=;|,|$)/);
-  const tsCookie = tsMatch ? tsMatch[0] : "";
-  console.log("[cal-otp-request] BIG-IP cookie obtained:", tsCookie ? tsCookie.slice(0, 20) + "..." : "(none)");
-  return tsCookie;
+  const cookieJar = {};
+  const diagnostics = {};
+  let url = SEND_OTP_PAGE;
+  for (let hop = 0; hop < 6; hop++) {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "user-agent": BROWSER_UA,
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "accept-language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
+        "cookie": Object.entries(cookieJar).map(([k, v]) => `${k}=${v}`).join("; ")
+      },
+      redirect: "manual"
+    });
+    diagnostics[`hop${hop}`] = { status: res.status, url };
+    const setCookie = res.headers.get("set-cookie") ?? "";
+    if (setCookie) {
+      for (const part of setCookie.split(/,(?=[^;]+=[^;]*)/)) {
+        const m = part.trim().match(/^([^=]+)=([^;]*)/);
+        if (m) cookieJar[m[1].trim()] = m[2].trim();
+      }
+    }
+    if (res.status >= 200 && res.status < 300) break;
+    if (res.status >= 300 && res.status < 400) {
+      let loc = res.headers.get("location") ?? "";
+      if (loc.startsWith("/")) loc = "https://connect.cal-online.co.il" + loc;
+      url = loc || url;
+    } else {
+      diagnostics["blocked"] = { status: res.status, body: (await res.text()).slice(0, 200) };
+      break;
+    }
+  }
+  const tsKey = Object.keys(cookieJar).find((k) => k.startsWith("TS"));
+  const cookie = tsKey ? `${tsKey}=${cookieJar[tsKey]}` : "";
+  diagnostics["cookies"] = Object.keys(cookieJar);
+  console.log("[cal-otp-request] Cookie fetch diagnostics:", JSON.stringify(diagnostics));
+  return { cookie, diagnostics };
 }
 async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -207,7 +230,7 @@ async function handler(req, res) {
     if (!calUserId || !last4Digits) {
       return res.status(400).json({ error: "Stored credentials missing userId or last4Digits" });
     }
-    const tsCookie = await getBigIpCookie();
+    const { cookie: tsCookie, diagnostics: cookieDiag } = await getBigIpCookie();
     const calRes = await fetch(OTP_URL, {
       method: "PUT",
       headers: {
@@ -238,7 +261,8 @@ async function handler(req, res) {
         error: "Cal API rejected OTP request",
         calStatus: calRes.status,
         detail: body,
-        rawPreview: rawText.slice(0, 300)
+        rawPreview: rawText.slice(0, 300),
+        cookieDiag
       });
     }
     const calSessionToken = body.token ?? body.result?.token ?? body.data?.token ?? body.sessionToken ?? body.result?.sessionToken;
