@@ -1,9 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Step 1: does importing @supabase/supabase-js crash?
-import { createClient } from '@supabase/supabase-js';
-
 export default function handler(_req: VercelRequest, res: VercelResponse) {
-  const c = createClient('https://x.supabase.co', 'fake');
-  res.json({ ok: true, ts: Date.now(), hasClient: !!c, commit: '8e83417' });
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createClient } = require('@supabase/supabase-js');
+    const c = createClient('https://x.supabase.co', 'fake');
+    res.json({ ok: true, node: process.version, hasClient: !!c, commit: '29f7471' });
+  } catch (err) {
+    res.status(500).json({ error: String(err), node: process.version });
+  }
 }
