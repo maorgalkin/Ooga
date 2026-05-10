@@ -28,9 +28,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { connectionId } = req.body as { connectionId?: string };
     if (!connectionId) return res.status(400).json({ error: 'connectionId is required' });
 
-    // Load and decrypt stored credentials { userId, last4Digits }
+    // Load and decrypt stored credentials { id (national ID), last4Digits }
+    // The field is stored as 'id' by AddBankAccountModal (key: 'id' for national ID)
     const creds = await loadCredentials(connectionId, userId);
-    const { userId: calUserId, last4Digits } = creds;
+    const calUserId = creds.id ?? creds.userId; // 'id' is the national ID field
+    const { last4Digits } = creds;
     if (!calUserId || !last4Digits) {
       return res.status(400).json({ error: 'Stored credentials missing userId or last4Digits' });
     }

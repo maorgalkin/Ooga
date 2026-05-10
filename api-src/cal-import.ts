@@ -373,10 +373,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'connectionId, calSessionToken, and otpCode are required' });
     }
 
-    // Load credentials to get the custID (national ID)
+    // Load credentials — stored as { id: "<national_id>", last4Digits: "..." }
     const creds = await loadCredentials(connectionId, userId);
-    const custID = creds.userId;
-    if (!custID) return res.status(400).json({ error: 'Stored credentials missing userId' });
+    const custID = creds.id ?? creds.userId; // 'id' is the national ID field key used by AddBankAccountModal
+    if (!custID) return res.status(400).json({ error: 'Stored credentials missing national ID (id field)' });
 
     // Get household_id
     const supabase = getAdminClient();

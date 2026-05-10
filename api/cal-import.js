@@ -165,7 +165,8 @@ function decrypt(ciphertext) {
 async function loadCredentials(connectionId, userId) {
   const supabase = getAdminClient();
   const { data, error } = await supabase.from("bank_connections").select("credentials_encrypted").eq("id", connectionId).eq("user_id", userId).single();
-  if (error || !data) throw new Error("Connection not found");
+  if (error) throw new Error(`Connection not found (db: ${error.message})`);
+  if (!data) throw new Error("Connection not found (no row returned)");
   return JSON.parse(decrypt(data.credentials_encrypted));
 }
 
@@ -376,8 +377,8 @@ async function handler(req, res) {
       return res.status(400).json({ error: "connectionId, calSessionToken, and otpCode are required" });
     }
     const creds = await loadCredentials(connectionId, userId);
-    const custID = creds.userId;
-    if (!custID) return res.status(400).json({ error: "Stored credentials missing userId" });
+    const custID = creds.id ?? creds.userId;
+    if (!custID) return res.status(400).json({ error: "Stored credentials missing national ID (id field)" });
     const supabase = getAdminClient();
     const { data: hh } = await supabase.from("household_members").select("household_id").eq("user_id", userId).limit(1).single();
     if (!hh) return res.status(400).json({ error: "No household found for user" });

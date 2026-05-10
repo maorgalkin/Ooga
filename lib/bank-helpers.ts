@@ -13,6 +13,7 @@ export async function loadCredentials(
     .eq('user_id', userId)
     .single();
 
-  if (error || !data) throw new Error('Connection not found');
+  if (error) throw new Error(`Connection not found (db: ${error.message})`);
+  if (!data) throw new Error('Connection not found (no row returned)');
   return JSON.parse(decrypt((data as Record<string, string>).credentials_encrypted)) as Record<string, string>;
 }

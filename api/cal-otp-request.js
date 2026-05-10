@@ -165,7 +165,8 @@ function decrypt(ciphertext) {
 async function loadCredentials(connectionId, userId) {
   const supabase = getAdminClient();
   const { data, error } = await supabase.from("bank_connections").select("credentials_encrypted").eq("id", connectionId).eq("user_id", userId).single();
-  if (error || !data) throw new Error("Connection not found");
+  if (error) throw new Error(`Connection not found (db: ${error.message})`);
+  if (!data) throw new Error("Connection not found (no row returned)");
   return JSON.parse(decrypt(data.credentials_encrypted));
 }
 
@@ -183,7 +184,8 @@ async function handler(req, res) {
     const { connectionId } = req.body;
     if (!connectionId) return res.status(400).json({ error: "connectionId is required" });
     const creds = await loadCredentials(connectionId, userId);
-    const { userId: calUserId, last4Digits } = creds;
+    const calUserId = creds.id ?? creds.userId;
+    const { last4Digits } = creds;
     if (!calUserId || !last4Digits) {
       return res.status(400).json({ error: "Stored credentials missing userId or last4Digits" });
     }
