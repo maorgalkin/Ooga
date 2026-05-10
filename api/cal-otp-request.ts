@@ -10,8 +10,8 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth, AuthError } from './supabase-admin';
-import { loadCredentials } from './connections';
+import { requireAuth, AuthError } from '../lib/supabase-admin';
+import { loadCredentials } from '../lib/bank-helpers';
 
 const OTP_URL = 'https://connect.cal-online.co.il/col-rest/calconnect/authentication/otp';
 const AUTH_SITE_ID = '5B5160DD-F84A-4D72-B67E-65891BA194FF';

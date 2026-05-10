@@ -12,8 +12,8 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth, getAdminClient, AuthError } from './supabase-admin';
-import { loadCredentials } from './connections';
+import { requireAuth, getAdminClient, AuthError } from '../lib/supabase-admin';
+import { loadCredentials } from '../lib/bank-helpers';
 import { createHash } from 'crypto';
 
 // ─── Cal API constants ──────────────────────────────────────────────────────

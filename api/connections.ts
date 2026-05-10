@@ -7,8 +7,8 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getAdminClient, requireAuth, AuthError } from './supabase-admin';
-import { encrypt, decrypt } from './crypto-utils';
+import { getAdminClient, requireAuth, AuthError } from '../lib/supabase-admin';
+import { encrypt, decrypt } from '../lib/crypto-utils';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -99,22 +99,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-/**
- * Exported helper: load and decrypt credentials for a given connection.
- * Used by import functions.
- */
-export async function loadCredentials(
-  connectionId: string,
-  userId: string
-): Promise<Record<string, string>> {
-  const supabase = getAdminClient();
-  const { data, error } = await supabase
-    .from('bank_connections')
-    .select('credentials_encrypted')
-    .eq('id', connectionId)
-    .eq('user_id', userId)
-    .single();
 
-  if (error || !data) throw new Error('Connection not found');
-  return JSON.parse(decrypt(data.credentials_encrypted)) as Record<string, string>;
-}
