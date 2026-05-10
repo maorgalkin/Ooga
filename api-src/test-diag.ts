@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getAdminClient } from './_lib/supabase-admin';
+import { getAdminClient } from '../lib/supabase-admin';
 
 export default function handler(_req: VercelRequest, res: VercelResponse) {
   try {
