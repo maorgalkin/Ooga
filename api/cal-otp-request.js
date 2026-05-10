@@ -46,6 +46,7 @@ var QueryBuilder = class {
   }
   single() {
     this._single = true;
+    if (!this._limit) this._limit = 1;
     return this;
   }
   insert(body) {
@@ -80,7 +81,6 @@ var QueryBuilder = class {
     };
     if (prefer.length) headers["Prefer"] = prefer.join(",");
     if (this._single && this._method === "GET") {
-      headers["Accept"] = "application/vnd.pgsql.single-object+json";
     }
     const qs = params.toString();
     const endpoint = `${this._url}/rest/v1/${this._table}${qs ? "?" + qs : ""}`;

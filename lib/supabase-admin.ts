@@ -47,7 +47,7 @@ class QueryBuilder {
     this._order = `${col}.${opts?.ascending === false ? 'desc' : 'asc'}`;
     return this;
   }
-  single(): this { this._single = true; return this; }
+  single(): this { this._single = true; if (!this._limit) this._limit = 1; return this; }
 
   insert(body: Row | Row[]): this {
     this._method = 'POST';
@@ -79,7 +79,8 @@ class QueryBuilder {
     };
     if (prefer.length) headers['Prefer'] = prefer.join(',');
     if (this._single && this._method === 'GET') {
-      headers['Accept'] = 'application/vnd.pgsql.single-object+json';
+      // Don't send application/vnd.pgsql.single-object+json — PostgREST returns 406
+      // when 0 rows match. Instead, rely on limit=1 + unwrap below.
     }
 
     const qs = params.toString();
@@ -99,7 +100,7 @@ class QueryBuilder {
     if (res.status === 204) return { data: null, error: null };
 
     const data = await res.json();
-    // POST with return=representation returns array; unwrap for .single()
+    // When .single() is used, unwrap array → first element (or null if empty)
     if (this._single && Array.isArray(data)) return { data: data[0] ?? null, error: null };
     return { data, error: null };
   }
