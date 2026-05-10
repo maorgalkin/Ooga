@@ -26,12 +26,19 @@ const FRAMES_URL = 'https://api.cal-online.co.il/Frames/api/Frames/GetFrameStatu
 const PENDING_URL = 'https://api.cal-online.co.il/Transactions/api/approvals/getClearanceRequests';
 const TXN_URL = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
 
-// Candidate endpoints for discovering the user's cards
+// Candidate endpoints for discovering the user's cards (tried in order)
 const CARDS_ENDPOINT_CANDIDATES = [
-  'https://api.cal-online.co.il/Cards/api/Cards/GetCards',
-  'https://api.cal-online.co.il/Cards/api/Cards/GetUserCards',
-  'https://api.cal-online.co.il/api/init',
-  'https://api.cal-online.co.il/api/Init',
+  // Most likely: init/cards endpoints on api domain
+  { method: 'GET',  url: 'https://api.cal-online.co.il/api/init' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/api/Init' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/Cards/api/Cards/GetCards' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/Cards/api/Cards/GetUserCards' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/api/v1/init' },
+  { method: 'POST', url: 'https://api.cal-online.co.il/api/init' },
+  // Connect domain variants
+  { method: 'GET',  url: 'https://connect.cal-online.co.il/col-rest/calconnect/cards' },
+  { method: 'GET',  url: 'https://connect.cal-online.co.il/col-rest/calconnect/userCards' },
 ];
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -131,9 +138,11 @@ function extractString(obj: Record<string, unknown>, path: string[]): string | n
  * Discover the user's card IDs.
  *
  * Strategy (in order):
- * 1. Check if the OTP verify response included cards.
- * 2. Try known candidate card endpoints.
- * 3. Throw with helpful debug info if all fail.
+ * 1. Check if OTP verify response included cards.
+ * 2. Try known candidate card endpoints (GET + POST variants).
+ * 3. Try Frames endpoint with empty array.
+ * 4. If OTP response has a `hash` field, treat it as cardUniqueId (fallback).
+ * 5. Throw with full diagnostics to help identify the right endpoint.
  */
 async function getCards(
   calToken: string,
@@ -147,46 +156,76 @@ async function getCards(
   }
 
   // Strategy 2: Try candidate endpoints
-  const headers = calAuthHeaders(calToken, TXN_SITE_ID);
-  for (const url of CARDS_ENDPOINT_CANDIDATES) {
+  const authHeaders = calAuthHeaders(calToken, TXN_SITE_ID);
+  const diagnostics: Record<string, unknown> = {};
+
+  for (const { method, url } of CARDS_ENDPOINT_CANDIDATES) {
     try {
-      const res = await fetch(url, { method: 'GET', headers });
-      if (!res.ok) continue;
+      const res = await fetch(url, {
+        method,
+        headers: authHeaders,
+        body: method === 'POST' ? JSON.stringify({}) : undefined,
+      });
       const body = await res.json().catch(() => null);
-      if (!body) continue;
+      diagnostics[`${method} ${url}`] = { status: res.status, keys: body && typeof body === 'object' ? Object.keys(body) : body };
+      if (!res.ok || !body) continue;
       const cards = extractCardsFromObject(body as Record<string, unknown>);
       if (cards && cards.length > 0) {
-        console.log(`[cal-import] Cards found at: ${url}`);
+        console.log(`[cal-import] Cards found at: ${method} ${url}`);
         return cards;
       }
-    } catch {
-      // try next
+    } catch (e) {
+      diagnostics[`${method} ${url}`] = { error: (e as Error).message };
     }
   }
 
-  // Strategy 3: Try POST to Frames with empty array — some APIs return all cards
+  // Strategy 3: POST to Frames with empty array
   try {
     const res = await fetch(FRAMES_URL, {
       method: 'POST',
-      headers,
+      headers: authHeaders,
       body: JSON.stringify({ cardsForFrameData: [] }),
     });
-    if (res.ok) {
-      const body = await res.json().catch(() => null) as Record<string, unknown>;
-      if (body) {
-        const cards = extractCardsFromObject(body);
-        if (cards && cards.length > 0) {
-          console.log('[cal-import] Cards found via Frames endpoint with empty array');
-          return cards;
-        }
+    const body = await res.json().catch(() => null) as Record<string, unknown>;
+    diagnostics['POST FRAMES/empty'] = { status: res.status, keys: body ? Object.keys(body) : null };
+    if (res.ok && body) {
+      const cards = extractCardsFromObject(body);
+      if (cards && cards.length > 0) {
+        console.log('[cal-import] Cards found via Frames endpoint with empty array');
+        return cards;
       }
     }
-  } catch { /* ignore */ }
+  } catch (e) {
+    diagnostics['POST FRAMES/empty'] = { error: (e as Error).message };
+  }
+
+  // Strategy 4: hash from OTP response may be the cardUniqueId
+  const hash = typeof otpResponse.hash === 'string' ? otpResponse.hash : null;
+  if (hash) {
+    console.log('[cal-import] Trying OTP response hash as cardUniqueId:', hash);
+    // Verify by attempting a frames call with it
+    try {
+      const res = await fetch(FRAMES_URL, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ cardsForFrameData: [{ cardUniqueId: hash }] }),
+      });
+      if (res.ok) {
+        const body = await res.json().catch(() => null) as Record<string, unknown>;
+        diagnostics['POST FRAMES/hash'] = { status: res.status, keys: body ? Object.keys(body) : null };
+        // If we got a valid-looking response, use the hash as the card ID
+        if (body) {
+          console.log('[cal-import] Using hash as cardUniqueId — Frames responded OK');
+          return [{ cardUniqueId: hash, last4Digits: 'unknown' }];
+        }
+      }
+    } catch { /* ignore */ }
+  }
 
   throw new Error(
-    'Could not discover card IDs. Please capture a DevTools network request to api.cal-online.co.il ' +
-    'that occurs after logging in to cal-online.co.il and share it. ' +
-    `OTP response keys: ${Object.keys(otpResponse).join(', ')}`
+    'Could not discover card IDs.\n' +
+    `OTP response keys: ${Object.keys(otpResponse).join(', ')}\n` +
+    `Diagnostics: ${JSON.stringify(diagnostics, null, 2)}`
   );
 }
 

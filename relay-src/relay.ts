@@ -81,7 +81,7 @@ const server = createServer(async (nodeReq: IncomingMessage, nodeRes: ServerResp
     return;
   }
 
-  const url = (nodeReq.url ?? '/').split('?')[0];
+  const url = (nodeReq.url ?? '/').split('?')[0].replace(/^\/api/, '');
   const body = await readBody(nodeReq).catch(() => ({}));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const req = makeVercelReq(nodeReq, body) as any;

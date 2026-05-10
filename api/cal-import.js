@@ -179,10 +179,17 @@ var FRAMES_URL = "https://api.cal-online.co.il/Frames/api/Frames/GetFrameStatus"
 var PENDING_URL = "https://api.cal-online.co.il/Transactions/api/approvals/getClearanceRequests";
 var TXN_URL = "https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails";
 var CARDS_ENDPOINT_CANDIDATES = [
-  "https://api.cal-online.co.il/Cards/api/Cards/GetCards",
-  "https://api.cal-online.co.il/Cards/api/Cards/GetUserCards",
-  "https://api.cal-online.co.il/api/init",
-  "https://api.cal-online.co.il/api/Init"
+  // Most likely: init/cards endpoints on api domain
+  { method: "GET", url: "https://api.cal-online.co.il/api/init" },
+  { method: "GET", url: "https://api.cal-online.co.il/api/Init" },
+  { method: "GET", url: "https://api.cal-online.co.il/Cards/api/Cards/GetCards" },
+  { method: "GET", url: "https://api.cal-online.co.il/Cards/api/Cards/GetUserCards" },
+  { method: "GET", url: "https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards" },
+  { method: "GET", url: "https://api.cal-online.co.il/api/v1/init" },
+  { method: "POST", url: "https://api.cal-online.co.il/api/init" },
+  // Connect domain variants
+  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/cards" },
+  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/userCards" }
 ];
 function calAuthHeaders(calToken, siteId) {
   return {
@@ -234,41 +241,69 @@ async function getCards(calToken, otpResponse) {
     console.log("[cal-import] Cards found in OTP verify response");
     return cardsFromAuth;
   }
-  const headers = calAuthHeaders(calToken, TXN_SITE_ID);
-  for (const url of CARDS_ENDPOINT_CANDIDATES) {
+  const authHeaders = calAuthHeaders(calToken, TXN_SITE_ID);
+  const diagnostics = {};
+  for (const { method, url } of CARDS_ENDPOINT_CANDIDATES) {
     try {
-      const res = await fetch(url, { method: "GET", headers });
-      if (!res.ok) continue;
+      const res = await fetch(url, {
+        method,
+        headers: authHeaders,
+        body: method === "POST" ? JSON.stringify({}) : void 0
+      });
       const body = await res.json().catch(() => null);
-      if (!body) continue;
+      diagnostics[`${method} ${url}`] = { status: res.status, keys: body && typeof body === "object" ? Object.keys(body) : body };
+      if (!res.ok || !body) continue;
       const cards = extractCardsFromObject(body);
       if (cards && cards.length > 0) {
-        console.log(`[cal-import] Cards found at: ${url}`);
+        console.log(`[cal-import] Cards found at: ${method} ${url}`);
         return cards;
       }
-    } catch {
+    } catch (e) {
+      diagnostics[`${method} ${url}`] = { error: e.message };
     }
   }
   try {
     const res = await fetch(FRAMES_URL, {
       method: "POST",
-      headers,
+      headers: authHeaders,
       body: JSON.stringify({ cardsForFrameData: [] })
     });
-    if (res.ok) {
-      const body = await res.json().catch(() => null);
-      if (body) {
-        const cards = extractCardsFromObject(body);
-        if (cards && cards.length > 0) {
-          console.log("[cal-import] Cards found via Frames endpoint with empty array");
-          return cards;
-        }
+    const body = await res.json().catch(() => null);
+    diagnostics["POST FRAMES/empty"] = { status: res.status, keys: body ? Object.keys(body) : null };
+    if (res.ok && body) {
+      const cards = extractCardsFromObject(body);
+      if (cards && cards.length > 0) {
+        console.log("[cal-import] Cards found via Frames endpoint with empty array");
+        return cards;
       }
     }
-  } catch {
+  } catch (e) {
+    diagnostics["POST FRAMES/empty"] = { error: e.message };
+  }
+  const hash = typeof otpResponse.hash === "string" ? otpResponse.hash : null;
+  if (hash) {
+    console.log("[cal-import] Trying OTP response hash as cardUniqueId:", hash);
+    try {
+      const res = await fetch(FRAMES_URL, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ cardsForFrameData: [{ cardUniqueId: hash }] })
+      });
+      if (res.ok) {
+        const body = await res.json().catch(() => null);
+        diagnostics["POST FRAMES/hash"] = { status: res.status, keys: body ? Object.keys(body) : null };
+        if (body) {
+          console.log("[cal-import] Using hash as cardUniqueId \u2014 Frames responded OK");
+          return [{ cardUniqueId: hash, last4Digits: "unknown" }];
+        }
+      }
+    } catch {
+    }
   }
   throw new Error(
-    `Could not discover card IDs. Please capture a DevTools network request to api.cal-online.co.il that occurs after logging in to cal-online.co.il and share it. OTP response keys: ${Object.keys(otpResponse).join(", ")}`
+    `Could not discover card IDs.
+OTP response keys: ${Object.keys(otpResponse).join(", ")}
+Diagnostics: ${JSON.stringify(diagnostics, null, 2)}`
   );
 }
 function extractCardsFromObject(obj) {
