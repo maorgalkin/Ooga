@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Download, Loader2, CheckCircle2, AlertCircle, PlusCircle } from 'lucide-react';
 import {
-  startImport,
-  getImportStatus,
-  submitOtp,
   listConnections,
+  requestCalOtp,
+  importCalTransactions,
   type BankConnection,
 } from '../services/bankImportService';
 import ImportReviewStep from './ImportReviewStep';
@@ -15,7 +14,7 @@ interface Props {
   onAddAccount?: () => void;
 }
 
-type Step = 'loading' | 'confirm' | 'no_accounts' | 'logging_in' | 'awaiting_otp' | 'importing' | 'review' | 'complete' | 'error';
+type Step = 'loading' | 'confirm' | 'no_accounts' | 'requesting_otp' | 'awaiting_otp' | 'importing' | 'review' | 'complete' | 'error';
 
 export default function BankImportModal({ onClose, onImportComplete, onAddAccount }: Props) {
   const [step, setStep] = useState<Step>('loading');
@@ -24,15 +23,10 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
   const [dbSessionId, setDbSessionId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [calSessionToken, setCalSessionToken] = useState<string | null>(null);
+  const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null);
   const [otpCode, setOtpCode] = useState('');
   const [otpSubmitting, setOtpSubmitting] = useState(false);
-
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-  }, []);
 
   useEffect(() => {
     listConnections()
@@ -43,56 +37,40 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       .catch(() => setStep('confirm'));
   }, []);
 
-  const startPolling = useCallback((sid: string) => {
-    pollRef.current = setInterval(async () => {
-      try {
-        const status = await getImportStatus(sid);
-        if (status.status === 'awaiting_otp') {
-          stopPolling();
-          setStep('awaiting_otp');
-        } else if (status.status === 'importing') {
-          setStep('importing');
-        } else if (status.status === 'complete' && status.result) {
-          stopPolling();
-          setResult(status.result);
-          setDbSessionId(status.dbSessionId ?? null);
-          setStep(status.dbSessionId ? 'review' : 'complete');
-          onImportComplete?.(status.result.imported);
-        } else if (status.status === 'error') {
-          stopPolling();
-          setErrorMsg(status.error ?? 'An unexpected error occurred');
-          setStep('error');
-        }
-      } catch {
-        // transient failure — keep polling
-      }
-    }, 2000);
-  }, [stopPolling, onImportComplete]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => () => stopPolling(), [stopPolling]);
-
   const handleStart = async () => {
-    setStep('logging_in');
+    // Find the first visaCalFast connection (or use the first connection)
+    const conn = connections.find((c) => c.provider === 'visaCalFast') ?? connections[0];
+    if (!conn) { setStep('no_accounts'); return; }
+
+    setActiveConnectionId(conn.id);
+    setStep('requesting_otp');
     try {
-      const sid = await startImport(months);
-      setSessionId(sid);
-      startPolling(sid);
+      const token = await requestCalOtp(conn.id);
+      setCalSessionToken(token);
+      setStep('awaiting_otp');
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to connect to scraper service');
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to request OTP');
       setStep('error');
     }
   };
 
   const handleOtpSubmit = async () => {
-    if (!sessionId || !otpCode.trim()) return;
+    if (!activeConnectionId || !calSessionToken || !otpCode.trim()) return;
     setOtpSubmitting(true);
+    setStep('importing');
     try {
-      await submitOtp(sessionId, otpCode.trim());
-      setOtpCode('');
-      setStep('importing');
-      startPolling(sessionId);
+      const { dbSessionId: sid, imported, skipped } = await importCalTransactions(
+        activeConnectionId,
+        calSessionToken,
+        otpCode.trim(),
+        months
+      );
+      setResult({ imported, skipped });
+      setDbSessionId(sid ?? null);
+      setStep(sid ? 'review' : 'complete');
+      onImportComplete?.(imported);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to submit OTP');
+      setErrorMsg(err instanceof Error ? err.message : 'Import failed');
       setStep('error');
     } finally {
       setOtpSubmitting(false);
@@ -214,9 +192,10 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
             </div>
           )}
 
-          {step === 'logging_in' && (
-            <SpinnerStep message="Connecting to banks…" detail="Logging in to all connected accounts" />
+          {step === 'requesting_otp' && (
+            <SpinnerStep message="Sending SMS code…" detail="Requesting a one-time code from Visa Cal" />
           )}
+
           {step === 'awaiting_otp' && (
             <div className="space-y-4">
               <div className="flex flex-col items-center gap-2 pb-1 text-center">
@@ -246,13 +225,15 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 className="w-full px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
                 {otpSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                Verify
+                Verify &amp; Import
               </button>
             </div>
           )}
+
           {step === 'importing' && (
-            <SpinnerStep message="Importing transactions…" detail="Fetching from all accounts — this may take a minute" />
+            <SpinnerStep message="Importing transactions…" detail="Verifying OTP and fetching from Visa Cal — this may take up to 30 seconds" />
           )}
+
           {step === 'review' && result && dbSessionId && (
             <ImportReviewStep
               dbSessionId={dbSessionId}
@@ -341,3 +322,4 @@ function ErrorStep({ message, onRetry, onClose }: { message: string; onRetry: ()
     </div>
   );
 }
+

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Building2, CreditCard, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { addConnection, testConnection } from '../services/bankImportService';
+import { addConnection } from '../services/bankImportService';
 
 interface Props {
   onClose: () => void;
@@ -121,8 +121,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
     if (!selectedProvider) return;
     setStep('testing');
     try {
-      const conn = await addConnection(selectedProvider.id, creds, displayName);
-      await testConnection(conn.id);
+      await addConnection(selectedProvider.id, creds, displayName);
       setStep('success');
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to save connection');

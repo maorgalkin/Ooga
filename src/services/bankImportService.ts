@@ -1,32 +1,11 @@
 import { supabase } from '../lib/supabase';
 
-// If no explicit URL is configured, use the same hostname as the page
-// (works on any device on the LAN — phone, tablet, Mac).
-function getScraperUrl(): string {
-  if (import.meta.env.VITE_SCRAPER_SERVICE_URL) {
-    return import.meta.env.VITE_SCRAPER_SERVICE_URL as string;
-  }
-  const { protocol, hostname } = window.location;
-  return `${protocol}//${hostname}:3001`;
-}
-
-const SCRAPER_URL = getScraperUrl();
-const SCRAPER_API_KEY = import.meta.env.VITE_SCRAPER_API_KEY ?? '';
-
 export type ImportStatus =
   | 'logging_in'
   | 'awaiting_otp'
   | 'importing'
   | 'complete'
   | 'error';
-
-export interface ImportStatusResponse {
-  sessionId: string;
-  dbSessionId: string | null;
-  status: ImportStatus;
-  result: { imported: number; skipped: number } | null;
-  error: string | null;
-}
 
 export interface ReviewTransaction {
   id: string;
@@ -53,80 +32,16 @@ export interface BankConnection {
   created_at: string;
 }
 
-function baseHeaders(): Record<string, string> {
-  const h: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (SCRAPER_API_KEY) h['x-api-key'] = SCRAPER_API_KEY;
-  return h;
-}
-
 async function authHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
 }
 
-async function authedHeaders(): Promise<Record<string, string>> {
-  return { ...baseHeaders(), ...(await authHeaders()) };
-}
-
-// ─── Import ─────────────────────────────────────────────────────────────────
-
-export async function startImport(months = 3): Promise<string> {
-  const res = await fetch(`${SCRAPER_URL}/scrape/start`, {
-    method: 'POST',
-    headers: await authedHeaders(),
-    body: JSON.stringify({ months }),
-  });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error ?? 'Failed to start import');
-  }
-
-  const data = await res.json() as { sessionId: string };
-  return data.sessionId;
-}
-
-export async function submitOtp(sessionId: string, code: string): Promise<void> {
-  const res = await fetch(`${SCRAPER_URL}/scrape/otp`, {
-    method: 'POST',
-    headers: baseHeaders(),
-    body: JSON.stringify({ sessionId, code }),
-  });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error ?? 'Failed to submit OTP');
-  }
-}
-
-export async function getImportStatus(sessionId: string): Promise<ImportStatusResponse> {
-  const res = await fetch(`${SCRAPER_URL}/scrape/status/${sessionId}`, {
-    headers: baseHeaders(),
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to get import status');
-  }
-
-  return res.json() as Promise<ImportStatusResponse>;
-}
-
-export async function checkScraperHealth(): Promise<boolean> {
-  try {
-    const res = await fetch(`${SCRAPER_URL}/health`, { signal: AbortSignal.timeout(8000) });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-// ─── Connection management ───────────────────────────────────────────────────
+// ─── Connection management ────────────────────────────────────────────────────
 
 export async function listConnections(): Promise<BankConnection[]> {
-  const res = await fetch(`${SCRAPER_URL}/connections/list`, {
-    headers: await authedHeaders(),
-  });
+  const res = await fetch('/api/connections', { headers: await authHeaders() });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { error?: string }).error ?? 'Failed to list connections');
@@ -140,9 +55,9 @@ export async function addConnection(
   credentials: Record<string, string>,
   displayName: string
 ): Promise<BankConnection> {
-  const res = await fetch(`${SCRAPER_URL}/connections/add`, {
+  const res = await fetch('/api/connections', {
     method: 'POST',
-    headers: await authedHeaders(),
+    headers: await authHeaders(),
     body: JSON.stringify({ provider, credentials, displayName }),
   });
   if (!res.ok) {
@@ -153,21 +68,10 @@ export async function addConnection(
   return data.connection;
 }
 
-export async function testConnection(connectionId: string): Promise<void> {
-  const res = await fetch(`${SCRAPER_URL}/connections/test/${connectionId}`, {
-    method: 'POST',
-    headers: await authedHeaders(),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error ?? 'Connection test failed');
-  }
-}
-
 export async function deleteConnection(connectionId: string): Promise<void> {
-  const res = await fetch(`${SCRAPER_URL}/connections/${connectionId}`, {
+  const res = await fetch(`/api/connections?id=${connectionId}`, {
     method: 'DELETE',
-    headers: await authedHeaders(),
+    headers: await authHeaders(),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -175,7 +79,49 @@ export async function deleteConnection(connectionId: string): Promise<void> {
   }
 }
 
-// ─── Import review (direct Supabase queries) ─────────────────────────────────
+// ─── Cal import flow ──────────────────────────────────────────────────────────
+
+/**
+ * Step 1: Trigger SMS OTP for the given connection.
+ * Returns calSessionToken — a UUID to send back with the OTP code.
+ */
+export async function requestCalOtp(connectionId: string): Promise<string> {
+  const res = await fetch('/api/cal-otp-request', {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ connectionId }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? 'Failed to request OTP');
+  }
+  const data = await res.json() as { calSessionToken: string };
+  return data.calSessionToken;
+}
+
+/**
+ * Step 2: Verify OTP, fetch all transactions, push to Supabase.
+ * This is a single long-running request (up to Vercel's function timeout).
+ */
+export async function importCalTransactions(
+  connectionId: string,
+  calSessionToken: string,
+  otpCode: string,
+  months: number
+): Promise<{ dbSessionId: string; imported: number; skipped: number }> {
+  const res = await fetch('/api/cal-import', {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ connectionId, calSessionToken, otpCode, months }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? 'Import failed');
+  }
+  return res.json() as Promise<{ dbSessionId: string; imported: number; skipped: number }>;
+}
+
+// ─── Import review (direct Supabase queries) ──────────────────────────────────
 
 export async function fetchImportedTransactions(dbSessionId: string): Promise<ReviewTransaction[]> {
   const { data, error } = await supabase
