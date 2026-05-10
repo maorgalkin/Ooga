@@ -32,6 +32,7 @@ if (entryPoints.length === 0) {
 
 await mkdir(outDir, { recursive: true });
 
+// Bundle Vercel serverless functions
 await build({
   entryPoints,
   bundle: true,
@@ -43,4 +44,19 @@ await build({
 });
 
 console.log(`✓ Bundled ${entryPoints.length} API functions: api-src/*.ts → api/*.js`);
+
+// Bundle local relay (runs on user's Mac, residential IP, bypasses Cal WAF)
+await build({
+  entryPoints: [path.join(__dirname, 'relay-src', 'relay.ts')],
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  target: 'node20',
+  outfile: path.join(__dirname, 'relay.js'),
+  allowOverwrite: true,
+  // @vercel/node is types-only in relay context — don't try to bundle it
+  external: [],
+});
+
+console.log('✓ Bundled local relay: relay-src/relay.ts → relay.js');
 

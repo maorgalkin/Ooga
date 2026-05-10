@@ -82,23 +82,73 @@ export async function deleteConnection(connectionId: string): Promise<void> {
 // ─── Cal import flow ──────────────────────────────────────────────────────────
 
 /**
+ * Whether the local relay (localhost:9191) should be used.
+ * Set to true after a successful relay-based OTP request, so the subsequent
+ * cal-import call also routes through the relay.
+ */
+let _useRelay = false;
+
+/** Returns 'http://localhost:9191' if relay is active, else '' (relative = Vercel). */
+function baseUrl() { return _useRelay ? 'http://localhost:9191' : ''; }
+
+/** Check if a Cal API response body is a WAF-blocked HTML page. */
+function isWafBlock(body: { rawPreview?: string; calStatus?: number }): boolean {
+  return body.calStatus === 400 && typeof body.rawPreview === 'string' &&
+    (body.rawPreview.includes('Request Rejected') || body.rawPreview.includes('BIG-IP'));
+}
+
+/**
  * Step 1: Trigger SMS OTP for the given connection.
  * Returns calSessionToken — a UUID to send back with the OTP code.
+ *
+ * Automatically retries via local relay (localhost:9191) if Vercel's IP
+ * is WAF-blocked by Cal's F5 BIG-IP.
  */
 export async function requestCalOtp(connectionId: string): Promise<string> {
-  const res = await fetch('/api/cal-otp-request', {
-    method: 'POST',
-    headers: await authHeaders(),
-    body: JSON.stringify({ connectionId }),
-  });
+  const headers = await authHeaders();
+  const body = JSON.stringify({ connectionId });
+
+  async function attempt(base: string): Promise<Response> {
+    return fetch(`${base}/api/cal-otp-request`, { method: 'POST', headers, body });
+  }
+
+  let res = await attempt(baseUrl());
+
+  // Auto-retry via relay if Vercel is WAF-blocked
+  if (!res.ok && !_useRelay) {
+    const errBody = await res.json().catch(() => ({})) as { rawPreview?: string; calStatus?: number };
+    if (isWafBlock(errBody)) {
+      console.info('[bankImport] Vercel IP blocked by Cal WAF — retrying via local relay');
+      try {
+        const relayRes = await attempt('http://localhost:9191');
+        if (relayRes.ok) {
+          _useRelay = true;
+          res = relayRes;
+        } else {
+          const relayErr = await relayRes.json().catch(() => ({})) as { error?: string };
+          throw new Error(
+            `Cal API blocked on Vercel (IP blocked). Local relay also failed: ${relayErr.error ?? relayRes.status}.\n` +
+            `Start the relay: node --env-file=.env.relay relay.js`
+          );
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message.includes('relay also failed')) throw e;
+        // Connection refused = relay not running
+        throw new Error(
+          'Cal API blocked on Vercel (WAF/IP block).\n' +
+          'Start the local relay on your Mac:\n  node --env-file=.env.relay relay.js\nThen try again.'
+        );
+      }
+    }
+  }
+
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { error?: string; detail?: unknown; calStatus?: number; rawPreview?: string; cookieDiag?: unknown };
+    const errBody = await res.json().catch(() => ({})) as { error?: string; detail?: unknown; calStatus?: number; rawPreview?: string };
     const extra = [
-      body.calStatus ? `HTTP ${body.calStatus}` : null,
-      body.cookieDiag ? `cookies:${JSON.stringify(body.cookieDiag)}` : null,
-      body.rawPreview ? body.rawPreview.slice(0, 150) : (body.detail ? JSON.stringify(body.detail) : null),
+      errBody.calStatus ? `HTTP ${errBody.calStatus}` : null,
+      errBody.rawPreview ? errBody.rawPreview.slice(0, 150) : (errBody.detail ? JSON.stringify(errBody.detail) : null),
     ].filter(Boolean).join(' | ');
-    throw new Error((body.error ?? 'Failed to request OTP') + (extra ? ` — ${extra}` : ''));
+    throw new Error((errBody.error ?? 'Failed to request OTP') + (extra ? ` — ${extra}` : ''));
   }
   const data = await res.json() as { calSessionToken: string };
   return data.calSessionToken;
@@ -106,7 +156,7 @@ export async function requestCalOtp(connectionId: string): Promise<string> {
 
 /**
  * Step 2: Verify OTP, fetch all transactions, push to Supabase.
- * This is a single long-running request (up to Vercel's function timeout).
+ * Routes through the local relay if OTP was relay-assisted (_useRelay flag).
  */
 export async function importCalTransactions(
   connectionId: string,
@@ -114,7 +164,7 @@ export async function importCalTransactions(
   otpCode: string,
   months: number
 ): Promise<{ dbSessionId: string; imported: number; skipped: number }> {
-  const res = await fetch('/api/cal-import', {
+  const res = await fetch(`${baseUrl()}/api/cal-import`, {
     method: 'POST',
     headers: await authHeaders(),
     body: JSON.stringify({ connectionId, calSessionToken, otpCode, months }),
