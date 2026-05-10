@@ -82,12 +82,16 @@ function calAuthHeaders(calToken: string, siteId: string) {
 /**
  * Verify the OTP with Cal and return the calConnectToken used for API calls.
  * Also returns the full response body so we can search for card data.
+ *
+ * The OTP verify response returns { token, hash, innerLoginType }.
+ * The `token` is NOT directly usable as calConnectToken for api.cal-online.co.il.
+ * We try a token-exchange step using `hash` to get the real API token.
  */
 async function verifyOtp(
   custID: string,
   otpCode: string,
   calSessionToken: string
-): Promise<{ calToken: string; fullResponse: Record<string, unknown> }> {
+): Promise<{ calToken: string; hash: string | null; fullResponse: Record<string, unknown> }> {
   const res = await fetch(OTP_URL, {
     method: 'POST',
     headers: {
@@ -107,13 +111,19 @@ async function verifyOtp(
     throw new Error(`OTP verification failed: ${msg}`);
   }
 
-  // Extract the auth token — try multiple possible response shapes
-  const calToken =
+  const otpToken = extractString(body, ['token']) ?? null;
+  const hash = extractString(body, ['hash']) ?? null;
+
+  // Try: hash IS the calConnectToken (most likely)
+  // Try: explicit calConnectToken field
+  const explicitToken =
     extractString(body, ['calConnectToken']) ??
-    extractString(body as any, ['auth', 'calConnectToken']) ??   // { auth: { calConnectToken } }
+    extractString(body as any, ['auth', 'calConnectToken']) ??
     extractString(body as any, ['result', 'calConnectToken']) ??
-    extractString(body as any, ['data', 'calConnectToken']) ??
-    extractString(body, ['token']);
+    extractString(body as any, ['data', 'calConnectToken']);
+
+  // Use explicit if found, else hash, else token as last resort
+  const calToken = explicitToken ?? hash ?? otpToken;
 
   if (!calToken) {
     throw new Error(
@@ -121,7 +131,8 @@ async function verifyOtp(
     );
   }
 
-  return { calToken, fullResponse: body };
+  console.log('[cal-import] OTP response token type:', explicitToken ? 'calConnectToken' : hash ? 'hash' : 'token');
+  return { calToken, hash, fullResponse: body };
 }
 
 /** Deep-get a string value from an object using a path of keys. */
@@ -134,18 +145,9 @@ function extractString(obj: Record<string, unknown>, path: string[]): string | n
   return typeof cur === 'string' && cur.length > 0 ? cur : null;
 }
 
-/**
- * Discover the user's card IDs.
- *
- * Strategy (in order):
- * 1. Check if OTP verify response included cards.
- * 2. Try known candidate card endpoints (GET + POST variants).
- * 3. Try Frames endpoint with empty array.
- * 4. If OTP response has a `hash` field, treat it as cardUniqueId (fallback).
- * 5. Throw with full diagnostics to help identify the right endpoint.
- */
 async function getCards(
   calToken: string,
+  otpHash: string | null,
   otpResponse: Record<string, unknown>
 ): Promise<CalCard[]> {
   // Strategy 1: OTP response may already contain cards
@@ -155,69 +157,78 @@ async function getCards(
     return cardsFromAuth;
   }
 
-  // Strategy 2: Try candidate endpoints
-  const authHeaders = calAuthHeaders(calToken, TXN_SITE_ID);
   const diagnostics: Record<string, unknown> = {};
 
-  for (const { method, url } of CARDS_ENDPOINT_CANDIDATES) {
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: authHeaders,
-        body: method === 'POST' ? JSON.stringify({}) : undefined,
-      });
-      const body = await res.json().catch(() => null);
-      diagnostics[`${method} ${url}`] = { status: res.status, keys: body && typeof body === 'object' ? Object.keys(body) : body };
-      if (!res.ok || !body) continue;
-      const cards = extractCardsFromObject(body as Record<string, unknown>);
-      if (cards && cards.length > 0) {
-        console.log(`[cal-import] Cards found at: ${method} ${url}`);
-        return cards;
+  // The OTP verify returns { token, hash, innerLoginType }.
+  // `hash` is likely the calConnectToken for api.cal-online.co.il.
+  // `token` is the auth token for connect.cal-online.co.il.
+  // We try both in different combinations.
+  const tokenCandidates = [
+    { label: 'hash', token: otpHash },
+    { label: 'calToken', token: calToken },
+  ].filter(c => c.token != null) as { label: string; token: string }[];
+
+  // Strategy 2: Try candidate endpoints with each token variant
+  for (const { label, token } of tokenCandidates) {
+    const headers = calAuthHeaders(token, TXN_SITE_ID);
+    for (const { method, url } of CARDS_ENDPOINT_CANDIDATES) {
+      const key = `[${label}] ${method} ${url}`;
+      try {
+        const res = await fetch(url, {
+          method,
+          headers,
+          body: method === 'POST' ? JSON.stringify({}) : undefined,
+        });
+        const body = await res.json().catch(() => null);
+        diagnostics[key] = { status: res.status, keys: body && typeof body === 'object' ? Object.keys(body) : body };
+        if (!res.ok || !body) continue;
+        const cards = extractCardsFromObject(body as Record<string, unknown>);
+        if (cards && cards.length > 0) {
+          console.log(`[cal-import] Cards found at: ${key}`);
+          return cards;
+        }
+      } catch (e) {
+        diagnostics[key] = { error: (e as Error).message };
       }
-    } catch (e) {
-      diagnostics[`${method} ${url}`] = { error: (e as Error).message };
     }
   }
 
-  // Strategy 3: POST to Frames with empty array
-  try {
-    const res = await fetch(FRAMES_URL, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify({ cardsForFrameData: [] }),
-    });
-    const body = await res.json().catch(() => null) as Record<string, unknown>;
-    diagnostics['POST FRAMES/empty'] = { status: res.status, keys: body ? Object.keys(body) : null };
-    if (res.ok && body) {
-      const cards = extractCardsFromObject(body);
-      if (cards && cards.length > 0) {
-        console.log('[cal-import] Cards found via Frames endpoint with empty array');
-        return cards;
-      }
-    }
-  } catch (e) {
-    diagnostics['POST FRAMES/empty'] = { error: (e as Error).message };
-  }
-
-  // Strategy 4: hash from OTP response may be the cardUniqueId
-  const hash = typeof otpResponse.hash === 'string' ? otpResponse.hash : null;
-  if (hash) {
-    console.log('[cal-import] Trying OTP response hash as cardUniqueId:', hash);
-    // Verify by attempting a frames call with it
+  // Strategy 3: POST to Frames with each token variant
+  for (const { label, token } of tokenCandidates) {
+    const key = `[${label}] POST FRAMES/empty`;
     try {
       const res = await fetch(FRAMES_URL, {
         method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify({ cardsForFrameData: [{ cardUniqueId: hash }] }),
+        headers: calAuthHeaders(token, TXN_SITE_ID),
+        body: JSON.stringify({ cardsForFrameData: [] }),
       });
-      if (res.ok) {
-        const body = await res.json().catch(() => null) as Record<string, unknown>;
-        diagnostics['POST FRAMES/hash'] = { status: res.status, keys: body ? Object.keys(body) : null };
-        // If we got a valid-looking response, use the hash as the card ID
-        if (body) {
-          console.log('[cal-import] Using hash as cardUniqueId — Frames responded OK');
-          return [{ cardUniqueId: hash, last4Digits: 'unknown' }];
+      const body = await res.json().catch(() => null) as Record<string, unknown>;
+      diagnostics[key] = { status: res.status, keys: body ? Object.keys(body) : null };
+      if (res.ok && body) {
+        const cards = extractCardsFromObject(body);
+        if (cards && cards.length > 0) {
+          console.log(`[cal-import] Cards found via Frames: ${key}`);
+          return cards;
         }
+      }
+    } catch (e) {
+      diagnostics[key] = { error: (e as Error).message };
+    }
+  }
+
+  // Strategy 4: hash from OTP response may BE the cardUniqueId
+  if (otpHash && calToken !== otpHash) {
+    // Try hash as cardUniqueId with calToken as auth
+    try {
+      const res = await fetch(FRAMES_URL, {
+        method: 'POST',
+        headers: calAuthHeaders(calToken, TXN_SITE_ID),
+        body: JSON.stringify({ cardsForFrameData: [{ cardUniqueId: otpHash }] }),
+      });
+      diagnostics['[calToken] POST FRAMES/hash-as-cardId'] = { status: res.status };
+      if (res.ok) {
+        console.log('[cal-import] Frames accepted hash as cardUniqueId with calToken');
+        return [{ cardUniqueId: otpHash, last4Digits: 'unknown' }];
       }
     } catch { /* ignore */ }
   }
@@ -430,12 +441,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Step 1: Verify OTP and get calConnectToken
     console.log('[cal-import] Verifying OTP…');
-    const { calToken, fullResponse } = await verifyOtp(custID, otpCode, calSessionToken);
+    const { calToken, hash: otpHash, fullResponse } = await verifyOtp(custID, otpCode, calSessionToken);
     console.log('[cal-import] OTP verified, token obtained');
 
-    // Step 2: Get cards
+    // Step 2: Get cards — try both hash and token variants
     console.log('[cal-import] Discovering cards…');
-    const cards = await getCards(calToken, fullResponse);
+    const cards = await getCards(calToken, otpHash, fullResponse);
     console.log(`[cal-import] Found ${cards.length} card(s):`, cards.map((c) => c.last4Digits));
 
     // Step 3: Fetch transactions for all cards × all months

@@ -218,14 +218,17 @@ async function verifyOtp(custID, otpCode, calSessionToken) {
     const msg = extractString(body, ["message", "error", "description"]) ?? `HTTP ${res.status}`;
     throw new Error(`OTP verification failed: ${msg}`);
   }
-  const calToken = extractString(body, ["calConnectToken"]) ?? extractString(body, ["auth", "calConnectToken"]) ?? // { auth: { calConnectToken } }
-  extractString(body, ["result", "calConnectToken"]) ?? extractString(body, ["data", "calConnectToken"]) ?? extractString(body, ["token"]);
+  const otpToken = extractString(body, ["token"]) ?? null;
+  const hash = extractString(body, ["hash"]) ?? null;
+  const explicitToken = extractString(body, ["calConnectToken"]) ?? extractString(body, ["auth", "calConnectToken"]) ?? extractString(body, ["result", "calConnectToken"]) ?? extractString(body, ["data", "calConnectToken"]);
+  const calToken = explicitToken ?? hash ?? otpToken;
   if (!calToken) {
     throw new Error(
       `Could not find calConnectToken in Cal response. Full response: ${JSON.stringify(body)}`
     );
   }
-  return { calToken, fullResponse: body };
+  console.log("[cal-import] OTP response token type:", explicitToken ? "calConnectToken" : hash ? "hash" : "token");
+  return { calToken, hash, fullResponse: body };
 }
 function extractString(obj, path) {
   let cur = obj;
@@ -235,67 +238,72 @@ function extractString(obj, path) {
   }
   return typeof cur === "string" && cur.length > 0 ? cur : null;
 }
-async function getCards(calToken, otpResponse) {
+async function getCards(calToken, otpHash, otpResponse) {
   const cardsFromAuth = extractCardsFromObject(otpResponse);
   if (cardsFromAuth) {
     console.log("[cal-import] Cards found in OTP verify response");
     return cardsFromAuth;
   }
-  const authHeaders = calAuthHeaders(calToken, TXN_SITE_ID);
   const diagnostics = {};
-  for (const { method, url } of CARDS_ENDPOINT_CANDIDATES) {
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: authHeaders,
-        body: method === "POST" ? JSON.stringify({}) : void 0
-      });
-      const body = await res.json().catch(() => null);
-      diagnostics[`${method} ${url}`] = { status: res.status, keys: body && typeof body === "object" ? Object.keys(body) : body };
-      if (!res.ok || !body) continue;
-      const cards = extractCardsFromObject(body);
-      if (cards && cards.length > 0) {
-        console.log(`[cal-import] Cards found at: ${method} ${url}`);
-        return cards;
-      }
-    } catch (e) {
-      diagnostics[`${method} ${url}`] = { error: e.message };
-    }
-  }
-  try {
-    const res = await fetch(FRAMES_URL, {
-      method: "POST",
-      headers: authHeaders,
-      body: JSON.stringify({ cardsForFrameData: [] })
-    });
-    const body = await res.json().catch(() => null);
-    diagnostics["POST FRAMES/empty"] = { status: res.status, keys: body ? Object.keys(body) : null };
-    if (res.ok && body) {
-      const cards = extractCardsFromObject(body);
-      if (cards && cards.length > 0) {
-        console.log("[cal-import] Cards found via Frames endpoint with empty array");
-        return cards;
+  const tokenCandidates = [
+    { label: "hash", token: otpHash },
+    { label: "calToken", token: calToken }
+  ].filter((c) => c.token != null);
+  for (const { label, token } of tokenCandidates) {
+    const headers = calAuthHeaders(token, TXN_SITE_ID);
+    for (const { method, url } of CARDS_ENDPOINT_CANDIDATES) {
+      const key = `[${label}] ${method} ${url}`;
+      try {
+        const res = await fetch(url, {
+          method,
+          headers,
+          body: method === "POST" ? JSON.stringify({}) : void 0
+        });
+        const body = await res.json().catch(() => null);
+        diagnostics[key] = { status: res.status, keys: body && typeof body === "object" ? Object.keys(body) : body };
+        if (!res.ok || !body) continue;
+        const cards = extractCardsFromObject(body);
+        if (cards && cards.length > 0) {
+          console.log(`[cal-import] Cards found at: ${key}`);
+          return cards;
+        }
+      } catch (e) {
+        diagnostics[key] = { error: e.message };
       }
     }
-  } catch (e) {
-    diagnostics["POST FRAMES/empty"] = { error: e.message };
   }
-  const hash = typeof otpResponse.hash === "string" ? otpResponse.hash : null;
-  if (hash) {
-    console.log("[cal-import] Trying OTP response hash as cardUniqueId:", hash);
+  for (const { label, token } of tokenCandidates) {
+    const key = `[${label}] POST FRAMES/empty`;
     try {
       const res = await fetch(FRAMES_URL, {
         method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify({ cardsForFrameData: [{ cardUniqueId: hash }] })
+        headers: calAuthHeaders(token, TXN_SITE_ID),
+        body: JSON.stringify({ cardsForFrameData: [] })
       });
-      if (res.ok) {
-        const body = await res.json().catch(() => null);
-        diagnostics["POST FRAMES/hash"] = { status: res.status, keys: body ? Object.keys(body) : null };
-        if (body) {
-          console.log("[cal-import] Using hash as cardUniqueId \u2014 Frames responded OK");
-          return [{ cardUniqueId: hash, last4Digits: "unknown" }];
+      const body = await res.json().catch(() => null);
+      diagnostics[key] = { status: res.status, keys: body ? Object.keys(body) : null };
+      if (res.ok && body) {
+        const cards = extractCardsFromObject(body);
+        if (cards && cards.length > 0) {
+          console.log(`[cal-import] Cards found via Frames: ${key}`);
+          return cards;
         }
+      }
+    } catch (e) {
+      diagnostics[key] = { error: e.message };
+    }
+  }
+  if (otpHash && calToken !== otpHash) {
+    try {
+      const res = await fetch(FRAMES_URL, {
+        method: "POST",
+        headers: calAuthHeaders(calToken, TXN_SITE_ID),
+        body: JSON.stringify({ cardsForFrameData: [{ cardUniqueId: otpHash }] })
+      });
+      diagnostics["[calToken] POST FRAMES/hash-as-cardId"] = { status: res.status };
+      if (res.ok) {
+        console.log("[cal-import] Frames accepted hash as cardUniqueId with calToken");
+        return [{ cardUniqueId: otpHash, last4Digits: "unknown" }];
       }
     } catch {
     }
@@ -419,10 +427,10 @@ async function handler(req, res) {
     if (!hh) return res.status(400).json({ error: "No household found for user" });
     const householdId = hh.household_id;
     console.log("[cal-import] Verifying OTP\u2026");
-    const { calToken, fullResponse } = await verifyOtp(custID, otpCode, calSessionToken);
+    const { calToken, hash: otpHash, fullResponse } = await verifyOtp(custID, otpCode, calSessionToken);
     console.log("[cal-import] OTP verified, token obtained");
     console.log("[cal-import] Discovering cards\u2026");
-    const cards = await getCards(calToken, fullResponse);
+    const cards = await getCards(calToken, otpHash, fullResponse);
     console.log(`[cal-import] Found ${cards.length} card(s):`, cards.map((c) => c.last4Digits));
     const now = /* @__PURE__ */ new Date();
     const monthYears = [];
