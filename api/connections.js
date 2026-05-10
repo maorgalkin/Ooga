@@ -183,14 +183,9 @@ async function handler(req, res) {
       if (!provider || !credentials) {
         return res.status(400).json({ error: "provider and credentials are required" });
       }
-      const { data: households, error: hhErr } = await supabase.from("household_members").select("household_id").eq("user_id", userId).limit(1).single();
-      if (hhErr || !households) {
-        return res.status(400).json({ error: "No household found for user" });
-      }
       const credentials_encrypted = encrypt(JSON.stringify(credentials));
       const { data: conn, error: insErr } = await supabase.from("bank_connections").insert({
         user_id: userId,
-        household_id: households.household_id,
         provider,
         display_name: displayName ?? provider,
         credentials_encrypted,
