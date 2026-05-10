@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   darkMode: 'media', // Use OS/browser preference for dark mode
   content: [
     "./index.html",
