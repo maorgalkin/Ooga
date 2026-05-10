@@ -206,12 +206,19 @@ async function handler(req, res) {
         recaptcha: ""
       })
     });
-    const body = await calRes.json().catch(() => ({}));
+    const rawText = await calRes.text();
+    let body = {};
+    try {
+      body = JSON.parse(rawText);
+    } catch {
+    }
     if (!calRes.ok) {
-      console.error("[cal-otp-request] Cal API error:", calRes.status, body);
+      console.error("[cal-otp-request] Cal API error:", calRes.status, rawText.slice(0, 500));
       return res.status(502).json({
         error: "Cal API rejected OTP request",
-        detail: body
+        calStatus: calRes.status,
+        detail: body,
+        rawPreview: rawText.slice(0, 300)
       });
     }
     const calSessionToken = body.token ?? body.result?.token ?? body.data?.token ?? body.sessionToken ?? body.result?.sessionToken;

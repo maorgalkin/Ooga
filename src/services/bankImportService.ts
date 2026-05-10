@@ -92,9 +92,12 @@ export async function requestCalOtp(connectionId: string): Promise<string> {
     body: JSON.stringify({ connectionId }),
   });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { error?: string; detail?: unknown };
-    const detail = body.detail ? ` — ${JSON.stringify(body.detail)}` : '';
-    throw new Error((body.error ?? 'Failed to request OTP') + detail);
+    const body = await res.json().catch(() => ({})) as { error?: string; detail?: unknown; calStatus?: number; rawPreview?: string };
+    const extra = [
+      body.calStatus ? `HTTP ${body.calStatus}` : null,
+      body.rawPreview ? body.rawPreview : (body.detail ? JSON.stringify(body.detail) : null),
+    ].filter(Boolean).join(' | ');
+    throw new Error((body.error ?? 'Failed to request OTP') + (extra ? ` — ${extra}` : ''));
   }
   const data = await res.json() as { calSessionToken: string };
   return data.calSessionToken;

@@ -56,14 +56,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
+    const rawText = await calRes.text();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const body = await calRes.json().catch(() => ({})) as any;
+    let body: any = {};
+    try { body = JSON.parse(rawText); } catch { /* non-JSON body */ }
 
     if (!calRes.ok) {
-      console.error('[cal-otp-request] Cal API error:', calRes.status, body);
+      console.error('[cal-otp-request] Cal API error:', calRes.status, rawText.slice(0, 500));
       return res.status(502).json({
         error: 'Cal API rejected OTP request',
+        calStatus: calRes.status,
         detail: body,
+        rawPreview: rawText.slice(0, 300),
       });
     }
 
