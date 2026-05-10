@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS",
+    "module": "ESNext",
     "lib": ["ES2022"],
     "strict": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "outDir": ".vercel/output/functions/api",
     "resolveJsonModule": true,
-    "noEmit": false
+    "noEmit": true
   },
   "include": ["./**/*.ts"]
 }

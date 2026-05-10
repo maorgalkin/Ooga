@@ -54,7 +54,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
-    const body = await calRes.json().catch(() => ({}));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = await calRes.json().catch(() => ({})) as any;
 
     if (!calRes.ok) {
       console.error('[cal-otp-request] Cal API error:', calRes.status, body);
