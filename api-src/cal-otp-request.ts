@@ -14,7 +14,34 @@ import { requireAuth, AuthError } from '../lib/supabase-admin';
 import { loadCredentials } from '../lib/bank-helpers';
 
 const OTP_URL = 'https://connect.cal-online.co.il/col-rest/calconnect/authentication/otp';
+const SEND_OTP_PAGE = 'https://connect.cal-online.co.il/send-otp';
 const AUTH_SITE_ID = '5B5160DD-F84A-4D72-B67E-65891BA194FF';
+
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+/**
+ * GET the send-otp page first to obtain the BIG-IP TS session cookie.
+ * Without this cookie, F5 BIG-IP WAF rejects the OTP PUT request.
+ */
+async function getBigIpCookie(): Promise<string> {
+  const res = await fetch(SEND_OTP_PAGE, {
+    method: 'GET',
+    headers: {
+      'user-agent': BROWSER_UA,
+      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'accept-language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
+    },
+    redirect: 'follow',
+  });
+
+  // Collect all Set-Cookie headers — Node fetch collapses them with commas
+  const setCookie = res.headers.get('set-cookie') ?? '';
+  // Extract TS cookie (BIG-IP session token): name starts with "TS" followed by hex
+  const tsMatch = setCookie.match(/TS[0-9a-f]+=\S+?(?=;|,|$)/);
+  const tsCookie = tsMatch ? tsMatch[0] : '';
+  console.log('[cal-otp-request] BIG-IP cookie obtained:', tsCookie ? tsCookie.slice(0, 20) + '...' : '(none)');
+  return tsCookie;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -37,7 +64,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Stored credentials missing userId or last4Digits' });
     }
 
-    // PUT /otp — sends SMS to the user's phone
+    // Step 1: Get BIG-IP TS session cookie (required by F5 WAF on connect.cal-online.co.il)
+    const tsCookie = await getBigIpCookie();
+
+    // Step 2: PUT /otp — sends SMS to the user's phone
     const calRes = await fetch(OTP_URL, {
       method: 'PUT',
       headers: {
@@ -45,7 +75,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'x-site-id': AUTH_SITE_ID,
         'origin': 'https://connect.cal-online.co.il',
         'referer': 'https://connect.cal-online.co.il/send-otp',
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'user-agent': BROWSER_UA,
+        ...(tsCookie ? { 'cookie': tsCookie } : {}),
       },
       body: JSON.stringify({
         userId: calUserId,
