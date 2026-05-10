@@ -7,8 +7,8 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getAdminClient, requireAuth, AuthError } from './_supabase';
-import { encrypt, decrypt } from './_crypto';
+import { getAdminClient, requireAuth, AuthError } from './supabase-admin';
+import { encrypt, decrypt } from './crypto-utils';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');

@@ -12,7 +12,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth, getAdminClient, AuthError } from './_supabase';
+import { requireAuth, getAdminClient, AuthError } from './supabase-admin';
 import { loadCredentials } from './connections';
 import { createHash } from 'crypto';
 

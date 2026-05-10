@@ -10,7 +10,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth, AuthError } from './_supabase';
+import { requireAuth, AuthError } from './supabase-admin';
 import { loadCredentials } from './connections';
 
 const OTP_URL = 'https://connect.cal-online.co.il/col-rest/calconnect/authentication/otp';
