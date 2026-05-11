@@ -26,19 +26,24 @@ const FRAMES_URL = 'https://api.cal-online.co.il/Frames/api/Frames/GetFrameStatu
 const PENDING_URL = 'https://api.cal-online.co.il/Transactions/api/approvals/getClearanceRequests';
 const TXN_URL = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
 
-// Candidate endpoints for discovering the user's cards (tried in order)
-const CARDS_ENDPOINT_CANDIDATES = [
-  // Most likely: init/cards endpoints on api domain
-  { method: 'GET',  url: 'https://api.cal-online.co.il/api/init' },
-  { method: 'GET',  url: 'https://api.cal-online.co.il/api/Init' },
-  { method: 'GET',  url: 'https://api.cal-online.co.il/Cards/api/Cards/GetCards' },
-  { method: 'GET',  url: 'https://api.cal-online.co.il/Cards/api/Cards/GetUserCards' },
-  { method: 'GET',  url: 'https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards' },
-  { method: 'GET',  url: 'https://api.cal-online.co.il/api/v1/init' },
-  { method: 'POST', url: 'https://api.cal-online.co.il/api/init' },
-  // Connect domain variants
-  { method: 'GET',  url: 'https://connect.cal-online.co.il/col-rest/calconnect/cards' },
-  { method: 'GET',  url: 'https://connect.cal-online.co.il/col-rest/calconnect/userCards' },
+// Candidate endpoints for card discovery.
+// 'domain' controls which auth header style is used:
+//   'api'     → Authorization: CALAuthScheme <token>, X-Site-Id: TXN_SITE_ID
+//   'connect' → calconnecttoken: <token>, x-site-id: AUTH_SITE_ID
+const CARDS_ENDPOINT_CANDIDATES: { method: string; url: string; domain: 'api' | 'connect' }[] = [
+  // api.cal-online.co.il — module-based routing pattern: /<Module>/api/<Module>/<Action>
+  { method: 'GET',  url: 'https://api.cal-online.co.il/Init/api/Init/getInit',              domain: 'api' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/Init/api/Init/GetInit',              domain: 'api' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/Cards/api/Cards/GetCards',           domain: 'api' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/Cards/api/Cards/GetUserCards',       domain: 'api' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards', domain: 'api' },
+  { method: 'GET',  url: 'https://api.cal-online.co.il/api/init',                           domain: 'api' },
+  { method: 'POST', url: 'https://api.cal-online.co.il/Init/api/Init/getInit',              domain: 'api' },
+  // connect.cal-online.co.il — uses calconnecttoken header (different auth scheme than api domain)
+  { method: 'GET',  url: 'https://connect.cal-online.co.il/col-rest/calconnect/cards',      domain: 'connect' },
+  { method: 'GET',  url: 'https://connect.cal-online.co.il/col-rest/calconnect/userCards',  domain: 'connect' },
+  { method: 'GET',  url: 'https://connect.cal-online.co.il/col-rest/calconnect/init',       domain: 'connect' },
+  { method: 'GET',  url: 'https://connect.cal-online.co.il/col-rest/calconnect/getInit',    domain: 'connect' },
 ];
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -68,15 +73,33 @@ interface CalTransaction {
 
 // ─── Cal API helpers ──────────────────────────────────────────────────────────
 
-function calAuthHeaders(calToken: string, siteId: string) {
+/** Headers for api.cal-online.co.il — uses CALAuthScheme + TXN site ID */
+function calApiHeaders(calToken: string) {
   return {
     'Content-Type': 'application/json',
     'Authorization': `CALAuthScheme ${calToken}`,
-    'X-Site-Id': siteId,
+    'X-Site-Id': TXN_SITE_ID,
     'origin': 'https://digital-web.cal-online.co.il',
     'referer': 'https://digital-web.cal-online.co.il/',
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   };
+}
+
+/** Headers for connect.cal-online.co.il — uses calconnecttoken header + AUTH site ID */
+function calConnectHeaders(calToken: string) {
+  return {
+    'Content-Type': 'application/json',
+    'calconnecttoken': calToken,
+    'x-site-id': AUTH_SITE_ID,
+    'origin': 'https://connect.cal-online.co.il',
+    'referer': 'https://connect.cal-online.co.il/',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  };
+}
+
+/** @deprecated — use calApiHeaders or calConnectHeaders */
+function calAuthHeaders(calToken: string, siteId: string) {
+  return calApiHeaders(calToken);
 }
 
 /**
@@ -160,19 +183,20 @@ async function getCards(
   const diagnostics: Record<string, unknown> = {};
 
   // The OTP verify returns { token, hash, innerLoginType }.
-  // `hash` is likely the calConnectToken for api.cal-online.co.il.
-  // `token` is the auth token for connect.cal-online.co.il.
-  // We try both in different combinations.
+  // For api.cal-online.co.il: uses `Authorization: CALAuthScheme <calConnectToken>`
+  // For connect.cal-online.co.il: uses `calconnecttoken: <token>` header (different scheme!)
+  // calToken = hash (primary) or token (fallback)
+  // otpHash = hash field from OTP response (potential cardUniqueId or calConnectToken)
   const tokenCandidates = [
     { label: 'hash', token: otpHash },
     { label: 'calToken', token: calToken },
   ].filter(c => c.token != null) as { label: string; token: string }[];
 
-  // Strategy 2: Try candidate endpoints with each token variant
+  // Strategy 2: Try candidate endpoints with domain-appropriate auth headers
   for (const { label, token } of tokenCandidates) {
-    const headers = calAuthHeaders(token, TXN_SITE_ID);
-    for (const { method, url } of CARDS_ENDPOINT_CANDIDATES) {
+    for (const { method, url, domain } of CARDS_ENDPOINT_CANDIDATES) {
       const key = `[${label}] ${method} ${url}`;
+      const headers = domain === 'connect' ? calConnectHeaders(token) : calApiHeaders(token);
       try {
         const res = await fetch(url, {
           method,
@@ -180,7 +204,10 @@ async function getCards(
           body: method === 'POST' ? JSON.stringify({}) : undefined,
         });
         const body = await res.json().catch(() => null);
-        diagnostics[key] = { status: res.status, keys: body && typeof body === 'object' ? Object.keys(body) : body };
+        const bodyPreview = body && typeof body === 'object'
+          ? { keys: Object.keys(body), snippet: JSON.stringify(body).slice(0, 200) }
+          : body;
+        diagnostics[key] = { status: res.status, body: bodyPreview };
         if (!res.ok || !body) continue;
         const cards = extractCardsFromObject(body as Record<string, unknown>);
         if (cards && cards.length > 0) {
@@ -193,17 +220,17 @@ async function getCards(
     }
   }
 
-  // Strategy 3: POST to Frames with each token variant
+  // Strategy 3: POST to Frames with each token variant (api domain)
   for (const { label, token } of tokenCandidates) {
     const key = `[${label}] POST FRAMES/empty`;
     try {
       const res = await fetch(FRAMES_URL, {
         method: 'POST',
-        headers: calAuthHeaders(token, TXN_SITE_ID),
+        headers: calApiHeaders(token),
         body: JSON.stringify({ cardsForFrameData: [] }),
       });
       const body = await res.json().catch(() => null) as Record<string, unknown>;
-      diagnostics[key] = { status: res.status, keys: body ? Object.keys(body) : null };
+      diagnostics[key] = { status: res.status, body: body ? JSON.stringify(body).slice(0, 200) : null };
       if (res.ok && body) {
         const cards = extractCardsFromObject(body);
         if (cards && cards.length > 0) {
@@ -218,11 +245,10 @@ async function getCards(
 
   // Strategy 4: hash from OTP response may BE the cardUniqueId
   if (otpHash && calToken !== otpHash) {
-    // Try hash as cardUniqueId with calToken as auth
     try {
       const res = await fetch(FRAMES_URL, {
         method: 'POST',
-        headers: calAuthHeaders(calToken, TXN_SITE_ID),
+        headers: calApiHeaders(calToken),
         body: JSON.stringify({ cardsForFrameData: [{ cardUniqueId: otpHash }] }),
       });
       diagnostics['[calToken] POST FRAMES/hash-as-cardId'] = { status: res.status };

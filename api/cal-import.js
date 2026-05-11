@@ -179,27 +179,42 @@ var FRAMES_URL = "https://api.cal-online.co.il/Frames/api/Frames/GetFrameStatus"
 var PENDING_URL = "https://api.cal-online.co.il/Transactions/api/approvals/getClearanceRequests";
 var TXN_URL = "https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails";
 var CARDS_ENDPOINT_CANDIDATES = [
-  // Most likely: init/cards endpoints on api domain
-  { method: "GET", url: "https://api.cal-online.co.il/api/init" },
-  { method: "GET", url: "https://api.cal-online.co.il/api/Init" },
-  { method: "GET", url: "https://api.cal-online.co.il/Cards/api/Cards/GetCards" },
-  { method: "GET", url: "https://api.cal-online.co.il/Cards/api/Cards/GetUserCards" },
-  { method: "GET", url: "https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards" },
-  { method: "GET", url: "https://api.cal-online.co.il/api/v1/init" },
-  { method: "POST", url: "https://api.cal-online.co.il/api/init" },
-  // Connect domain variants
-  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/cards" },
-  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/userCards" }
+  // api.cal-online.co.il — module-based routing pattern: /<Module>/api/<Module>/<Action>
+  { method: "GET", url: "https://api.cal-online.co.il/Init/api/Init/getInit", domain: "api" },
+  { method: "GET", url: "https://api.cal-online.co.il/Init/api/Init/GetInit", domain: "api" },
+  { method: "GET", url: "https://api.cal-online.co.il/Cards/api/Cards/GetCards", domain: "api" },
+  { method: "GET", url: "https://api.cal-online.co.il/Cards/api/Cards/GetUserCards", domain: "api" },
+  { method: "GET", url: "https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards", domain: "api" },
+  { method: "GET", url: "https://api.cal-online.co.il/api/init", domain: "api" },
+  { method: "POST", url: "https://api.cal-online.co.il/Init/api/Init/getInit", domain: "api" },
+  // connect.cal-online.co.il — uses calconnecttoken header (different auth scheme than api domain)
+  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/cards", domain: "connect" },
+  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/userCards", domain: "connect" },
+  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/init", domain: "connect" },
+  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/getInit", domain: "connect" }
 ];
-function calAuthHeaders(calToken, siteId) {
+function calApiHeaders(calToken) {
   return {
     "Content-Type": "application/json",
     "Authorization": `CALAuthScheme ${calToken}`,
-    "X-Site-Id": siteId,
+    "X-Site-Id": TXN_SITE_ID,
     "origin": "https://digital-web.cal-online.co.il",
     "referer": "https://digital-web.cal-online.co.il/",
     "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
   };
+}
+function calConnectHeaders(calToken) {
+  return {
+    "Content-Type": "application/json",
+    "calconnecttoken": calToken,
+    "x-site-id": AUTH_SITE_ID,
+    "origin": "https://connect.cal-online.co.il",
+    "referer": "https://connect.cal-online.co.il/",
+    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  };
+}
+function calAuthHeaders(calToken, siteId) {
+  return calApiHeaders(calToken);
 }
 async function verifyOtp(custID, otpCode, calSessionToken) {
   const res = await fetch(OTP_URL, {
@@ -250,9 +265,9 @@ async function getCards(calToken, otpHash, otpResponse) {
     { label: "calToken", token: calToken }
   ].filter((c) => c.token != null);
   for (const { label, token } of tokenCandidates) {
-    const headers = calAuthHeaders(token, TXN_SITE_ID);
-    for (const { method, url } of CARDS_ENDPOINT_CANDIDATES) {
+    for (const { method, url, domain } of CARDS_ENDPOINT_CANDIDATES) {
       const key = `[${label}] ${method} ${url}`;
+      const headers = domain === "connect" ? calConnectHeaders(token) : calApiHeaders(token);
       try {
         const res = await fetch(url, {
           method,
@@ -260,7 +275,8 @@ async function getCards(calToken, otpHash, otpResponse) {
           body: method === "POST" ? JSON.stringify({}) : void 0
         });
         const body = await res.json().catch(() => null);
-        diagnostics[key] = { status: res.status, keys: body && typeof body === "object" ? Object.keys(body) : body };
+        const bodyPreview = body && typeof body === "object" ? { keys: Object.keys(body), snippet: JSON.stringify(body).slice(0, 200) } : body;
+        diagnostics[key] = { status: res.status, body: bodyPreview };
         if (!res.ok || !body) continue;
         const cards = extractCardsFromObject(body);
         if (cards && cards.length > 0) {
@@ -277,11 +293,11 @@ async function getCards(calToken, otpHash, otpResponse) {
     try {
       const res = await fetch(FRAMES_URL, {
         method: "POST",
-        headers: calAuthHeaders(token, TXN_SITE_ID),
+        headers: calApiHeaders(token),
         body: JSON.stringify({ cardsForFrameData: [] })
       });
       const body = await res.json().catch(() => null);
-      diagnostics[key] = { status: res.status, keys: body ? Object.keys(body) : null };
+      diagnostics[key] = { status: res.status, body: body ? JSON.stringify(body).slice(0, 200) : null };
       if (res.ok && body) {
         const cards = extractCardsFromObject(body);
         if (cards && cards.length > 0) {
@@ -297,7 +313,7 @@ async function getCards(calToken, otpHash, otpResponse) {
     try {
       const res = await fetch(FRAMES_URL, {
         method: "POST",
-        headers: calAuthHeaders(calToken, TXN_SITE_ID),
+        headers: calApiHeaders(calToken),
         body: JSON.stringify({ cardsForFrameData: [{ cardUniqueId: otpHash }] })
       });
       diagnostics["[calToken] POST FRAMES/hash-as-cardId"] = { status: res.status };
