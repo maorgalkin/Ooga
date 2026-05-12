@@ -300,7 +300,8 @@ async function fetchCompletedTransactions(
 function normalizeTransaction(
   tx: CalTransaction,
   cardUniqueId: string,
-  isPending: boolean
+  isPending: boolean,
+  cardLast4: string | null = null
 ): NormalizedTx {
   const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? 0;
   const date = tx.debCrdDate ?? tx.transDate ?? tx.purchaseDate ?? new Date().toISOString();
@@ -324,7 +325,7 @@ function normalizeTransaction(
     installment_number: tx.currentPaymentNum ?? null,
     installment_total: tx.installmentsNumber ?? null,
     memo: tx.transTypeCommentDetails ? String(tx.transTypeCommentDetails) : null,
-    bank_card_last4: null,
+    bank_card_last4: cardLast4,
     dedupe_hash: dedupeHash,
     status: isPending ? 'pending' : 'completed',
     _cardUniqueId: cardUniqueId,
@@ -461,12 +462,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       cards.map(async (card) => {
         // Pending transactions (once per card, not per month)
         const pending = await fetchPendingTransactions(calConnectToken, card.cardUniqueId);
-        allTxns.push(...pending.map((tx) => normalizeTransaction(tx, card.cardUniqueId, true)));
+        allTxns.push(...pending.map((tx) => normalizeTransaction(tx, card.cardUniqueId, true, card.last4Digits)));
 
         // Completed transactions per month
         for (const { month, year } of monthYears) {
           const completed = await fetchCompletedTransactions(calConnectToken, card.cardUniqueId, month, year);
-          allTxns.push(...completed.map((tx) => normalizeTransaction(tx, card.cardUniqueId, false)));
+          allTxns.push(...completed.map((tx) => normalizeTransaction(tx, card.cardUniqueId, false, card.last4Digits)));
         }
       })
     );

@@ -349,7 +349,7 @@ async function fetchCompletedTransactions(calToken, cardUniqueId, month, year) {
   }
   return txns;
 }
-function normalizeTransaction(tx, cardUniqueId, isPending) {
+function normalizeTransaction(tx, cardUniqueId, isPending, cardLast4 = null) {
   const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? 0;
   const date = tx.debCrdDate ?? tx.transDate ?? tx.purchaseDate ?? (/* @__PURE__ */ new Date()).toISOString();
   const description = tx.merchantName ?? "Unknown";
@@ -366,7 +366,7 @@ function normalizeTransaction(tx, cardUniqueId, isPending) {
     installment_number: tx.currentPaymentNum ?? null,
     installment_total: tx.installmentsNumber ?? null,
     memo: tx.transTypeCommentDetails ? String(tx.transTypeCommentDetails) : null,
-    bank_card_last4: null,
+    bank_card_last4: cardLast4,
     dedupe_hash: dedupeHash,
     status: isPending ? "pending" : "completed",
     _cardUniqueId: cardUniqueId
@@ -435,10 +435,10 @@ async function handler(req, res) {
     await Promise.all(
       cards.map(async (card) => {
         const pending = await fetchPendingTransactions(calConnectToken, card.cardUniqueId);
-        allTxns.push(...pending.map((tx) => normalizeTransaction(tx, card.cardUniqueId, true)));
+        allTxns.push(...pending.map((tx) => normalizeTransaction(tx, card.cardUniqueId, true, card.last4Digits)));
         for (const { month, year } of monthYears) {
           const completed = await fetchCompletedTransactions(calConnectToken, card.cardUniqueId, month, year);
-          allTxns.push(...completed.map((tx) => normalizeTransaction(tx, card.cardUniqueId, false)));
+          allTxns.push(...completed.map((tx) => normalizeTransaction(tx, card.cardUniqueId, false, card.last4Digits)));
         }
       })
     );
