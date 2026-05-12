@@ -42,19 +42,25 @@ interface CalTransaction {
   merchantName?: string;
   transactionAmount?: number;
   chargedAmount?: number;
-  authAmount?: number;        // pending transactions use authAmount
-  activityAmount?: number;    // alternate amount field
+  authAmount?: number;
+  activityAmount?: number;
+  trnAmt?: number;            // pending transactions amount field
+  tpaApprovalAmount?: number; // pending transactions approval amount
   debCrdDate?: string;
   transDate?: string;
   purchaseDate?: string;
-  activityDate?: string;      // pending txn date field
+  activityDate?: string;
+  trnPurchaseDate?: string;   // pending transactions date field
   trnCurrencySymbol?: string;
   debCrdCurrencySymbol?: string;
+  currencyCode?: string;
   transTypeCommentDetails?: unknown;
   branchCodeDesc?: string;
   trnTypeCode?: string;
   installmentsNumber?: number;
+  numberOfPayments?: number;  // pending txns installment field
   currentPaymentNum?: number;
+  firstPaymentAmount?: number;
   cardUniqueId?: string;
   [key: string]: unknown;
 }
@@ -315,9 +321,10 @@ function normalizeTransaction(
   isPending: boolean,
   cardLast4: string | null = null
 ): NormalizedTx {
-  const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? tx.authAmount ?? tx.activityAmount ?? 0;
-  const date = tx.debCrdDate ?? tx.activityDate ?? tx.transDate ?? tx.purchaseDate ?? new Date().toISOString();
+  const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? tx.trnAmt ?? tx.authAmount ?? tx.activityAmount ?? 0;
+  const date = tx.debCrdDate ?? tx.trnPurchaseDate ?? tx.activityDate ?? tx.transDate ?? tx.purchaseDate ?? new Date().toISOString();
   const description = tx.merchantName ?? 'Unknown';
+  const installments = tx.installmentsNumber ?? tx.numberOfPayments ?? null;
 
   const dedupeHash = createHash('sha256')
     .update(`${date.slice(0, 10)}|${chargedAmount}|${description}`)
@@ -335,7 +342,7 @@ function normalizeTransaction(
     original_currency: tx.trnCurrencySymbol ?? null,
     processed_date: isPending ? null : (tx.debCrdDate?.slice(0, 10) ?? null),
     installment_number: tx.currentPaymentNum ?? null,
-    installment_total: tx.installmentsNumber ?? null,
+    installment_total: installments,
     memo: tx.transTypeCommentDetails ? String(tx.transTypeCommentDetails) : null,
     bank_card_last4: cardLast4,
     dedupe_hash: dedupeHash,
@@ -373,8 +380,16 @@ async function pushToSupabase(
 ): Promise<{ imported: number; skipped: number }> {
   const supabase = getAdminClient();
 
-  // Dedup: check which hashes already exist
-  const hashes = txns.map((t) => t.dedupe_hash);
+  // Dedup within batch (same date+amount+merchant can appear for multiple cards/months)
+  const seenInBatch = new Set<string>();
+  const dedupedTxns = txns.filter((t) => {
+    if (seenInBatch.has(t.dedupe_hash)) return false;
+    seenInBatch.add(t.dedupe_hash);
+    return true;
+  });
+
+  // Dedup: check which hashes already exist in DB
+  const hashes = dedupedTxns.map((t) => t.dedupe_hash);
   const { data: existing } = await supabase
     .from('transactions')
     .select('dedupe_hash')
@@ -382,7 +397,7 @@ async function pushToSupabase(
     .in('dedupe_hash', hashes);
 
   const existingSet = new Set((existing ?? []).map((r: any) => r.dedupe_hash));
-  const newTxns = txns.filter((t) => !existingSet.has(t.dedupe_hash));
+  const newTxns = dedupedTxns.filter((t) => !existingSet.has(t.dedupe_hash));
 
   if (newTxns.length === 0) {
     return { imported: 0, skipped: txns.length };
@@ -397,7 +412,10 @@ async function pushToSupabase(
     import_session_id: dbSessionId,
   }));
 
-  const { error } = await supabase.from('transactions').insert(rows);
+  const { error } = await supabase.from('transactions').upsert(rows, {
+    onConflict: 'dedupe_hash,household_id',
+    ignoreDuplicates: true,
+  });
   if (error) throw new Error(`Supabase insert failed: ${error.message}`);
 
   return { imported: newTxns.length, skipped: txns.length - newTxns.length };

@@ -360,9 +360,10 @@ async function fetchCompletedTransactions(calToken, cardUniqueId, month, year) {
   return txns;
 }
 function normalizeTransaction(tx, cardUniqueId, isPending, cardLast4 = null) {
-  const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? tx.authAmount ?? tx.activityAmount ?? 0;
-  const date = tx.debCrdDate ?? tx.activityDate ?? tx.transDate ?? tx.purchaseDate ?? (/* @__PURE__ */ new Date()).toISOString();
+  const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? tx.trnAmt ?? tx.authAmount ?? tx.activityAmount ?? 0;
+  const date = tx.debCrdDate ?? tx.trnPurchaseDate ?? tx.activityDate ?? tx.transDate ?? tx.purchaseDate ?? (/* @__PURE__ */ new Date()).toISOString();
   const description = tx.merchantName ?? "Unknown";
+  const installments = tx.installmentsNumber ?? tx.numberOfPayments ?? null;
   const dedupeHash = createHash("sha256").update(`${date.slice(0, 10)}|${chargedAmount}|${description}`).digest("hex");
   return {
     date: date.slice(0, 10),
@@ -374,7 +375,7 @@ function normalizeTransaction(tx, cardUniqueId, isPending, cardLast4 = null) {
     original_currency: tx.trnCurrencySymbol ?? null,
     processed_date: isPending ? null : tx.debCrdDate?.slice(0, 10) ?? null,
     installment_number: tx.currentPaymentNum ?? null,
-    installment_total: tx.installmentsNumber ?? null,
+    installment_total: installments,
     memo: tx.transTypeCommentDetails ? String(tx.transTypeCommentDetails) : null,
     bank_card_last4: cardLast4,
     dedupe_hash: dedupeHash,
@@ -384,10 +385,16 @@ function normalizeTransaction(tx, cardUniqueId, isPending, cardLast4 = null) {
 }
 async function pushToSupabase(txns, userId, householdId, connectionId, dbSessionId) {
   const supabase = getAdminClient();
-  const hashes = txns.map((t) => t.dedupe_hash);
+  const seenInBatch = /* @__PURE__ */ new Set();
+  const dedupedTxns = txns.filter((t) => {
+    if (seenInBatch.has(t.dedupe_hash)) return false;
+    seenInBatch.add(t.dedupe_hash);
+    return true;
+  });
+  const hashes = dedupedTxns.map((t) => t.dedupe_hash);
   const { data: existing } = await supabase.from("transactions").select("dedupe_hash").eq("household_id", householdId).in("dedupe_hash", hashes);
   const existingSet = new Set((existing ?? []).map((r) => r.dedupe_hash));
-  const newTxns = txns.filter((t) => !existingSet.has(t.dedupe_hash));
+  const newTxns = dedupedTxns.filter((t) => !existingSet.has(t.dedupe_hash));
   if (newTxns.length === 0) {
     return { imported: 0, skipped: txns.length };
   }
@@ -399,7 +406,10 @@ async function pushToSupabase(txns, userId, householdId, connectionId, dbSession
     bank_connection_id: connectionId,
     import_session_id: dbSessionId
   }));
-  const { error } = await supabase.from("transactions").insert(rows);
+  const { error } = await supabase.from("transactions").upsert(rows, {
+    onConflict: "dedupe_hash,household_id",
+    ignoreDuplicates: true
+  });
   if (error) throw new Error(`Supabase insert failed: ${error.message}`);
   return { imported: newTxns.length, skipped: txns.length - newTxns.length };
 }
