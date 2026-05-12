@@ -272,9 +272,13 @@ async function fetchCompletedTransactions(
     headers: calApiHeaders(calToken),
     body: JSON.stringify({ cardUniqueId, month, year }),
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    console.log(`[cal-import] fetchCompleted HTTP ${res.status} for card ${cardUniqueId} ${month}/${year}`);
+    return [];
+  }
   const body = await res.json().catch(() => ({})) as Record<string, unknown>;
   const result = (body as any)?.result;
+  console.log(`[cal-import] fetchCompleted ${month}/${year} card=${cardUniqueId.slice(-4)} result keys: ${result ? Object.keys(result).join(',') : 'null'}`);
   const txns: CalTransaction[] = [];
   // Structure from reverse-engineering: result.bankAccounts[].debitDates[].transactions[]
   // Also try result.cardTransactionList[].txnIsrael/txnAbroad as alternative
@@ -292,6 +296,7 @@ async function fetchCompletedTransactions(
       if (item?.txnAbroad) txns.push(...item.txnAbroad);
     }
   }
+  console.log(`[cal-import] fetchCompleted ${month}/${year} card=${cardUniqueId.slice(-4)} => ${txns.length} txns`);
   return txns;
 }
 

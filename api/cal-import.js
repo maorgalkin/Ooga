@@ -329,9 +329,13 @@ async function fetchCompletedTransactions(calToken, cardUniqueId, month, year) {
     headers: calApiHeaders(calToken),
     body: JSON.stringify({ cardUniqueId, month, year })
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    console.log(`[cal-import] fetchCompleted HTTP ${res.status} for card ${cardUniqueId} ${month}/${year}`);
+    return [];
+  }
   const body = await res.json().catch(() => ({}));
   const result = body?.result;
+  console.log(`[cal-import] fetchCompleted ${month}/${year} card=${cardUniqueId.slice(-4)} result keys: ${result ? Object.keys(result).join(",") : "null"}`);
   const txns = [];
   if (result?.bankAccounts) {
     for (const acct of result.bankAccounts) {
@@ -347,6 +351,7 @@ async function fetchCompletedTransactions(calToken, cardUniqueId, month, year) {
       if (item?.txnAbroad) txns.push(...item.txnAbroad);
     }
   }
+  console.log(`[cal-import] fetchCompleted ${month}/${year} card=${cardUniqueId.slice(-4)} => ${txns.length} txns`);
   return txns;
 }
 function normalizeTransaction(tx, cardUniqueId, isPending, cardLast4 = null) {
