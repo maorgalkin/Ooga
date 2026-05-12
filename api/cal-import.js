@@ -175,24 +175,11 @@ import { createHash } from "crypto";
 var OTP_URL = "https://connect.cal-online.co.il/col-rest/calconnect/authentication/otp";
 var AUTH_SITE_ID = "5B5160DD-F84A-4D72-B67E-65891BA194FF";
 var TXN_SITE_ID = "09031987-273E-2311-906C-8AF85B17C8D9";
+var SSO_FOR_IVR_URL = "https://api.cal-online.co.il/Authentication/api/SSO/GetSSOForIvr";
+var COL_METADATA_URL = "https://api.cal-online.co.il/CalOnlineMetadata.API/api/Contents/GetCOLMetadata";
 var FRAMES_URL = "https://api.cal-online.co.il/Frames/api/Frames/GetFrameStatus";
 var PENDING_URL = "https://api.cal-online.co.il/Transactions/api/approvals/getClearanceRequests";
 var TXN_URL = "https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails";
-var CARDS_ENDPOINT_CANDIDATES = [
-  // api.cal-online.co.il — module-based routing pattern: /<Module>/api/<Module>/<Action>
-  { method: "GET", url: "https://api.cal-online.co.il/Init/api/Init/getInit", domain: "api" },
-  { method: "GET", url: "https://api.cal-online.co.il/Init/api/Init/GetInit", domain: "api" },
-  { method: "GET", url: "https://api.cal-online.co.il/Cards/api/Cards/GetCards", domain: "api" },
-  { method: "GET", url: "https://api.cal-online.co.il/Cards/api/Cards/GetUserCards", domain: "api" },
-  { method: "GET", url: "https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards", domain: "api" },
-  { method: "GET", url: "https://api.cal-online.co.il/api/init", domain: "api" },
-  { method: "POST", url: "https://api.cal-online.co.il/Init/api/Init/getInit", domain: "api" },
-  // connect.cal-online.co.il — uses calconnecttoken header (different auth scheme than api domain)
-  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/cards", domain: "connect" },
-  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/userCards", domain: "connect" },
-  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/init", domain: "connect" },
-  { method: "GET", url: "https://connect.cal-online.co.il/col-rest/calconnect/getInit", domain: "connect" }
-];
 function calApiHeaders(calToken) {
   return {
     "Content-Type": "application/json",
@@ -202,19 +189,6 @@ function calApiHeaders(calToken) {
     "referer": "https://digital-web.cal-online.co.il/",
     "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
   };
-}
-function calConnectHeaders(calToken) {
-  return {
-    "Content-Type": "application/json",
-    "calconnecttoken": calToken,
-    "x-site-id": AUTH_SITE_ID,
-    "origin": "https://connect.cal-online.co.il",
-    "referer": "https://connect.cal-online.co.il/",
-    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-  };
-}
-function calAuthHeaders(calToken, siteId) {
-  return calApiHeaders(calToken);
 }
 async function verifyOtp(custID, otpCode, calSessionToken) {
   const res = await fetch(OTP_URL, {
@@ -233,17 +207,35 @@ async function verifyOtp(custID, otpCode, calSessionToken) {
     const msg = extractString(body, ["message", "error", "description"]) ?? `HTTP ${res.status}`;
     throw new Error(`OTP verification failed: ${msg}`);
   }
-  const otpToken = extractString(body, ["token"]) ?? null;
-  const hash = extractString(body, ["hash"]) ?? null;
-  const explicitToken = extractString(body, ["calConnectToken"]) ?? extractString(body, ["auth", "calConnectToken"]) ?? extractString(body, ["result", "calConnectToken"]) ?? extractString(body, ["data", "calConnectToken"]);
-  const calToken = explicitToken ?? hash ?? otpToken;
-  if (!calToken) {
+  const otpToken = extractString(body, ["token"]);
+  if (!otpToken) {
+    throw new Error(`OTP verify response missing 'token'. Keys: ${Object.keys(body).join(", ")}`);
+  }
+  console.log("[cal-import] OTP verified. Response keys:", Object.keys(body).join(", "));
+  return { otpToken, fullResponse: body };
+}
+async function getSsoForIvr(otpToken, sessionID) {
+  const res = await fetch(SSO_FOR_IVR_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Site-Id": TXN_SITE_ID,
+      "origin": "https://digital-web.cal-online.co.il",
+      "referer": "https://digital-web.cal-online.co.il/",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    },
+    body: JSON.stringify({ otpToken, sessionID })
+  });
+  const body = await res.json().catch(() => ({}));
+  console.log("[cal-import] GetSSOForIvr status:", res.status, "keys:", Object.keys(body).join(", "));
+  const calConnectToken = extractString(body, ["result", "calConnectToken"]) ?? extractString(body, ["calConnectToken"]) ?? extractString(body, ["auth", "calConnectToken"]);
+  if (!calConnectToken) {
     throw new Error(
-      `Could not find calConnectToken in Cal response. Full response: ${JSON.stringify(body)}`
+      `GetSSOForIvr failed (HTTP ${res.status}). Response: ${JSON.stringify(body).slice(0, 500)}`
     );
   }
-  console.log("[cal-import] OTP response token type:", explicitToken ? "calConnectToken" : hash ? "hash" : "token");
-  return { calToken, hash, fullResponse: body };
+  console.log("[cal-import] Got calConnectToken from GetSSOForIvr");
+  return calConnectToken;
 }
 function extractString(obj, path) {
   let cur = obj;
@@ -253,82 +245,43 @@ function extractString(obj, path) {
   }
   return typeof cur === "string" && cur.length > 0 ? cur : null;
 }
-async function getCards(calToken, otpHash, otpResponse) {
-  const cardsFromAuth = extractCardsFromObject(otpResponse);
-  if (cardsFromAuth) {
-    console.log("[cal-import] Cards found in OTP verify response");
-    return cardsFromAuth;
-  }
-  const diagnostics = {};
-  const tokenCandidates = [
-    { label: "hash", token: otpHash },
-    { label: "calToken", token: calToken }
-  ].filter((c) => c.token != null);
-  for (const { label, token } of tokenCandidates) {
-    for (const { method, url, domain } of CARDS_ENDPOINT_CANDIDATES) {
-      const key = `[${label}] ${method} ${url}`;
-      const headers = domain === "connect" ? calConnectHeaders(token) : calApiHeaders(token);
-      try {
-        const res = await fetch(url, {
-          method,
-          headers,
-          body: method === "POST" ? JSON.stringify({}) : void 0
-        });
-        const body = await res.json().catch(() => null);
-        const bodyPreview = body && typeof body === "object" ? { keys: Object.keys(body), snippet: JSON.stringify(body).slice(0, 200) } : body;
-        diagnostics[key] = { status: res.status, body: bodyPreview };
-        if (!res.ok || !body) continue;
-        const cards = extractCardsFromObject(body);
-        if (cards && cards.length > 0) {
-          console.log(`[cal-import] Cards found at: ${key}`);
-          return cards;
-        }
-      } catch (e) {
-        diagnostics[key] = { error: e.message };
+async function getCards(calConnectToken) {
+  try {
+    const res = await fetch(COL_METADATA_URL, {
+      method: "POST",
+      headers: calApiHeaders(calConnectToken),
+      body: JSON.stringify({ module: 1 })
+    });
+    const body = await res.json().catch(() => null);
+    console.log("[cal-import] GetCOLMetadata status:", res.status, "keys:", body ? Object.keys(body).join(", ") : null);
+    if (res.ok && body) {
+      const cards = extractCardsFromObject(body);
+      if (cards && cards.length > 0) {
+        console.log("[cal-import] Cards found via GetCOLMetadata:", cards.length);
+        return cards;
       }
+      console.log("[cal-import] GetCOLMetadata body (no cards found):", JSON.stringify(body).slice(0, 500));
+    } else {
+      console.log("[cal-import] GetCOLMetadata failed:", res.status, JSON.stringify(body).slice(0, 300));
     }
+  } catch (e) {
+    console.log("[cal-import] GetCOLMetadata threw:", e.message);
   }
-  for (const { label, token } of tokenCandidates) {
-    const key = `[${label}] POST FRAMES/empty`;
-    try {
-      const res = await fetch(FRAMES_URL, {
-        method: "POST",
-        headers: calApiHeaders(token),
-        body: JSON.stringify({ cardsForFrameData: [] })
-      });
-      const body = await res.json().catch(() => null);
-      diagnostics[key] = { status: res.status, body: body ? JSON.stringify(body).slice(0, 200) : null };
-      if (res.ok && body) {
-        const cards = extractCardsFromObject(body);
-        if (cards && cards.length > 0) {
-          console.log(`[cal-import] Cards found via Frames: ${key}`);
-          return cards;
-        }
-      }
-    } catch (e) {
-      diagnostics[key] = { error: e.message };
+  try {
+    const res = await fetch(FRAMES_URL, {
+      method: "POST",
+      headers: calApiHeaders(calConnectToken),
+      body: JSON.stringify({ cardsForFrameData: [] })
+    });
+    const body = await res.json().catch(() => null);
+    console.log("[cal-import] Frames/empty status:", res.status, "keys:", body ? Object.keys(body).join(", ") : null);
+    if (res.ok && body) {
+      const cards = extractCardsFromObject(body);
+      if (cards && cards.length > 0) return cards;
     }
+  } catch {
   }
-  if (otpHash && calToken !== otpHash) {
-    try {
-      const res = await fetch(FRAMES_URL, {
-        method: "POST",
-        headers: calApiHeaders(calToken),
-        body: JSON.stringify({ cardsForFrameData: [{ cardUniqueId: otpHash }] })
-      });
-      diagnostics["[calToken] POST FRAMES/hash-as-cardId"] = { status: res.status };
-      if (res.ok) {
-        console.log("[cal-import] Frames accepted hash as cardUniqueId with calToken");
-        return [{ cardUniqueId: otpHash, last4Digits: "unknown" }];
-      }
-    } catch {
-    }
-  }
-  throw new Error(
-    `Could not discover card IDs.
-OTP response keys: ${Object.keys(otpResponse).join(", ")}
-Diagnostics: ${JSON.stringify(diagnostics, null, 2)}`
-  );
+  throw new Error("Could not discover card IDs after GetSSOForIvr succeeded. Check relay logs for GetCOLMetadata response.");
 }
 function extractCardsFromObject(obj) {
   if (!obj || typeof obj !== "object") return null;
@@ -347,7 +300,7 @@ function extractCardsFromObject(obj) {
 async function fetchPendingTransactions(calToken, cardUniqueId) {
   const res = await fetch(PENDING_URL, {
     method: "POST",
-    headers: calAuthHeaders(calToken, TXN_SITE_ID),
+    headers: calApiHeaders(calToken),
     body: JSON.stringify({ cardUniqueIDArray: [cardUniqueId] })
   });
   if (!res.ok) return [];
@@ -359,7 +312,7 @@ async function fetchPendingTransactions(calToken, cardUniqueId) {
 async function fetchCompletedTransactions(calToken, cardUniqueId, month, year) {
   const res = await fetch(TXN_URL, {
     method: "POST",
-    headers: calAuthHeaders(calToken, TXN_SITE_ID),
+    headers: calApiHeaders(calToken),
     body: JSON.stringify({ cardUniqueId, month, year })
   });
   if (!res.ok) return [];
@@ -443,10 +396,12 @@ async function handler(req, res) {
     if (!hh) return res.status(400).json({ error: "No household found for user" });
     const householdId = hh.household_id;
     console.log("[cal-import] Verifying OTP\u2026");
-    const { calToken, hash: otpHash, fullResponse } = await verifyOtp(custID, otpCode, calSessionToken);
-    console.log("[cal-import] OTP verified, token obtained");
+    const { otpToken, fullResponse } = await verifyOtp(custID, otpCode, calSessionToken);
+    console.log("[cal-import] OTP verified");
+    console.log("[cal-import] Exchanging OTP token for calConnectToken via GetSSOForIvr\u2026");
+    const calConnectToken = await getSsoForIvr(otpToken, calSessionToken);
     console.log("[cal-import] Discovering cards\u2026");
-    const cards = await getCards(calToken, otpHash, fullResponse);
+    const cards = await getCards(calConnectToken);
     console.log(`[cal-import] Found ${cards.length} card(s):`, cards.map((c) => c.last4Digits));
     const now = /* @__PURE__ */ new Date();
     const monthYears = [];
@@ -457,10 +412,10 @@ async function handler(req, res) {
     const allTxns = [];
     await Promise.all(
       cards.map(async (card) => {
-        const pending = await fetchPendingTransactions(calToken, card.cardUniqueId);
+        const pending = await fetchPendingTransactions(calConnectToken, card.cardUniqueId);
         allTxns.push(...pending.map((tx) => normalizeTransaction(tx, card.cardUniqueId, true)));
         for (const { month, year } of monthYears) {
-          const completed = await fetchCompletedTransactions(calToken, card.cardUniqueId, month, year);
+          const completed = await fetchCompletedTransactions(calConnectToken, card.cardUniqueId, month, year);
           allTxns.push(...completed.map((tx) => normalizeTransaction(tx, card.cardUniqueId, false)));
         }
       })
