@@ -406,10 +406,7 @@ async function pushToSupabase(txns, userId, householdId, connectionId, dbSession
     bank_connection_id: connectionId,
     import_session_id: dbSessionId
   }));
-  const { error } = await supabase.from("transactions").upsert(rows, {
-    onConflict: "dedupe_hash,household_id",
-    ignoreDuplicates: true
-  });
+  const { error } = await supabase.from("transactions").insert(rows);
   if (error) throw new Error(`Supabase insert failed: ${error.message}`);
   return { imported: newTxns.length, skipped: txns.length - newTxns.length };
 }
