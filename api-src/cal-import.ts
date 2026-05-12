@@ -200,7 +200,10 @@ async function getCards(calConnectToken: string): Promise<CalCard[]> {
     });
     const body = await res.json().catch(() => null) as Record<string, unknown>;
     const statusCode = (body as any)?.statusCode;
-    console.log('[cal-import] GetCOLMetadata HTTP', res.status, 'statusCode:', statusCode, 'body:', JSON.stringify(body).slice(0, 500));
+    console.log('[cal-import] GetCOLMetadata HTTP', res.status, 'statusCode:', statusCode,
+      'top-level keys:', body ? Object.keys(body).join(', ') : null,
+      'result keys:', (body as any)?.result ? Object.keys((body as any).result).join(', ') : null,
+      'body[0..800]:', JSON.stringify(body).slice(0, 800));
 
     if (res.ok && body) {
       const cards = extractCardsFromObject(body);
@@ -236,22 +239,28 @@ async function getCards(calConnectToken: string): Promise<CalCard[]> {
   throw new Error('Could not discover card IDs. Check relay logs for GetCOLMetadata and Frames response bodies.');
 }
 
-/** Search any response object for an array of cards with cardUniqueId. */
-function extractCardsFromObject(obj: Record<string, unknown>): CalCard[] | null {
-  if (!obj || typeof obj !== 'object') return null;
-
-  // Direct: { cards: [{ cardUniqueId, last4Digits }] }
-  for (const key of ['cards', 'result', 'data']) {
-    const val = (obj as any)[key];
-    if (Array.isArray(val) && val.length > 0 && val[0]?.cardUniqueId) {
-      return val.map(({ cardUniqueId, last4Digits }: any) => ({ cardUniqueId, last4Digits }));
+/** Search any response object for an array of cards with cardUniqueId (deep, all keys). */
+function extractCardsFromObject(obj: unknown, depth = 0): CalCard[] | null {
+  if (depth > 6 || obj == null || typeof obj !== 'object') return null;
+  if (Array.isArray(obj)) {
+    if (obj.length > 0 && (obj[0] as any)?.cardUniqueId) {
+      return (obj as any[]).map(({ cardUniqueId, last4Digits }: any) => ({ cardUniqueId, last4Digits }));
     }
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      const nested = extractCardsFromObject(val as Record<string, unknown>);
-      if (nested) return nested;
+    for (const item of obj) {
+      const r = extractCardsFromObject(item, depth + 1);
+      if (r) return r;
     }
+    return null;
   }
-
+  // Check all keys, not just known names
+  for (const key of Object.keys(obj as Record<string, unknown>)) {
+    const val = (obj as Record<string, unknown>)[key];
+    if (Array.isArray(val) && val.length > 0 && (val[0] as any)?.cardUniqueId) {
+      return (val as any[]).map(({ cardUniqueId, last4Digits }: any) => ({ cardUniqueId, last4Digits }));
+    }
+    const nested = extractCardsFromObject(val, depth + 1);
+    if (nested) return nested;
+  }
   return null;
 }
 

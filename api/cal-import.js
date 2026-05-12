@@ -268,7 +268,18 @@ async function getCards(calConnectToken) {
     });
     const body = await res.json().catch(() => null);
     const statusCode = body?.statusCode;
-    console.log("[cal-import] GetCOLMetadata HTTP", res.status, "statusCode:", statusCode, "body:", JSON.stringify(body).slice(0, 500));
+    console.log(
+      "[cal-import] GetCOLMetadata HTTP",
+      res.status,
+      "statusCode:",
+      statusCode,
+      "top-level keys:",
+      body ? Object.keys(body).join(", ") : null,
+      "result keys:",
+      body?.result ? Object.keys(body.result).join(", ") : null,
+      "body[0..800]:",
+      JSON.stringify(body).slice(0, 800)
+    );
     if (res.ok && body) {
       const cards = extractCardsFromObject(body);
       if (cards && cards.length > 0) {
@@ -299,17 +310,25 @@ async function getCards(calConnectToken) {
   }
   throw new Error("Could not discover card IDs. Check relay logs for GetCOLMetadata and Frames response bodies.");
 }
-function extractCardsFromObject(obj) {
-  if (!obj || typeof obj !== "object") return null;
-  for (const key of ["cards", "result", "data"]) {
+function extractCardsFromObject(obj, depth = 0) {
+  if (depth > 6 || obj == null || typeof obj !== "object") return null;
+  if (Array.isArray(obj)) {
+    if (obj.length > 0 && obj[0]?.cardUniqueId) {
+      return obj.map(({ cardUniqueId, last4Digits }) => ({ cardUniqueId, last4Digits }));
+    }
+    for (const item of obj) {
+      const r = extractCardsFromObject(item, depth + 1);
+      if (r) return r;
+    }
+    return null;
+  }
+  for (const key of Object.keys(obj)) {
     const val = obj[key];
     if (Array.isArray(val) && val.length > 0 && val[0]?.cardUniqueId) {
       return val.map(({ cardUniqueId, last4Digits }) => ({ cardUniqueId, last4Digits }));
     }
-    if (val && typeof val === "object" && !Array.isArray(val)) {
-      const nested = extractCardsFromObject(val);
-      if (nested) return nested;
-    }
+    const nested = extractCardsFromObject(val, depth + 1);
+    if (nested) return nested;
   }
   return null;
 }
