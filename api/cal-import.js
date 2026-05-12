@@ -215,27 +215,41 @@ async function verifyOtp(custID, otpCode, calSessionToken) {
   return { otpToken, fullResponse: body };
 }
 async function getSsoForIvr(otpToken, sessionID) {
-  const res = await fetch(SSO_FOR_IVR_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Site-Id": TXN_SITE_ID,
-      "origin": "https://digital-web.cal-online.co.il",
-      "referer": "https://digital-web.cal-online.co.il/",
-      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    },
-    body: JSON.stringify({ otpToken, sessionID })
-  });
-  const body = await res.json().catch(() => ({}));
-  console.log("[cal-import] GetSSOForIvr status:", res.status, "keys:", Object.keys(body).join(", "));
-  const calConnectToken = extractString(body, ["result", "calConnectToken"]) ?? extractString(body, ["calConnectToken"]) ?? extractString(body, ["auth", "calConnectToken"]);
-  if (!calConnectToken) {
-    throw new Error(
-      `GetSSOForIvr failed (HTTP ${res.status}). Response: ${JSON.stringify(body).slice(0, 500)}`
-    );
+  const ssoAttempts = [
+    { siteId: TXN_SITE_ID, label: "TXN_SITE_ID" },
+    { siteId: AUTH_SITE_ID, label: "AUTH_SITE_ID" }
+  ];
+  for (const { siteId, label } of ssoAttempts) {
+    try {
+      const res = await fetch(SSO_FOR_IVR_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Site-Id": siteId,
+          "origin": "https://digital-web.cal-online.co.il",
+          "referer": "https://digital-web.cal-online.co.il/",
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        },
+        body: JSON.stringify({ otpToken, sessionID })
+      });
+      const body = await res.json().catch(() => ({}));
+      const statusCode = body?.statusCode;
+      console.log(
+        `[cal-import] GetSSOForIvr (${label}) HTTP ${res.status} statusCode=${statusCode}`,
+        "body:",
+        JSON.stringify(body).slice(0, 300)
+      );
+      const calConnectToken = extractString(body, ["result", "calConnectToken"]) ?? extractString(body, ["calConnectToken"]) ?? extractString(body, ["auth", "calConnectToken"]);
+      if (calConnectToken) {
+        console.log(`[cal-import] Got calConnectToken via GetSSOForIvr (${label})`);
+        return calConnectToken;
+      }
+    } catch (e) {
+      console.log(`[cal-import] GetSSOForIvr (${label}) threw:`, e.message);
+    }
   }
-  console.log("[cal-import] Got calConnectToken from GetSSOForIvr");
-  return calConnectToken;
+  console.log("[cal-import] GetSSOForIvr exhausted \u2014 trying otpToken directly as calConnectToken");
+  return otpToken;
 }
 function extractString(obj, path) {
   let cur = obj;
@@ -253,7 +267,8 @@ async function getCards(calConnectToken) {
       body: JSON.stringify({ module: 1 })
     });
     const body = await res.json().catch(() => null);
-    console.log("[cal-import] GetCOLMetadata status:", res.status, "keys:", body ? Object.keys(body).join(", ") : null);
+    const statusCode = body?.statusCode;
+    console.log("[cal-import] GetCOLMetadata HTTP", res.status, "statusCode:", statusCode, "body:", JSON.stringify(body).slice(0, 500));
     if (res.ok && body) {
       const cards = extractCardsFromObject(body);
       if (cards && cards.length > 0) {
@@ -274,14 +289,15 @@ async function getCards(calConnectToken) {
       body: JSON.stringify({ cardsForFrameData: [] })
     });
     const body = await res.json().catch(() => null);
-    console.log("[cal-import] Frames/empty status:", res.status, "keys:", body ? Object.keys(body).join(", ") : null);
+    const statusCode = body?.statusCode;
+    console.log("[cal-import] Frames/empty HTTP", res.status, "statusCode:", statusCode, "body:", JSON.stringify(body).slice(0, 400));
     if (res.ok && body) {
       const cards = extractCardsFromObject(body);
       if (cards && cards.length > 0) return cards;
     }
   } catch {
   }
-  throw new Error("Could not discover card IDs after GetSSOForIvr succeeded. Check relay logs for GetCOLMetadata response.");
+  throw new Error("Could not discover card IDs. Check relay logs for GetCOLMetadata and Frames response bodies.");
 }
 function extractCardsFromObject(obj) {
   if (!obj || typeof obj !== "object") return null;

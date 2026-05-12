@@ -122,42 +122,57 @@ async function verifyOtp(
 
 /**
  * Step 3: Exchange the OTP connect-domain token for a calConnectToken usable on api.cal-online.co.il.
- * POST /Authentication/api/SSO/GetSSOForIvr { otpToken, sessionID } → { result: { calConnectToken } }
  *
- * Discovered by reverse-engineering digital-web.cal-online.co.il/main.js:
- *   getSsoForIvr(Re) { return this.httpClient.post(this.ssoBaseUrl+"GetSSOForIvr", Re) }
- *   ssoBaseUrl = "https://api.cal-online.co.il/Authentication/api/SSO/"
+ * Tries multiple strategies in order:
+ * 1. POST GetSSOForIvr {otpToken, sessionID} with TXN_SITE_ID
+ * 2. POST GetSSOForIvr with AUTH_SITE_ID (in case auth domain uses different site)
+ * 3. otpToken directly (the POST /otp token may already be the calConnectToken for web OTP flow)
+ *
+ * Returns the calConnectToken string, or throws if all strategies fail.
  */
 async function getSsoForIvr(otpToken: string, sessionID: string): Promise<string> {
-  const res = await fetch(SSO_FOR_IVR_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Site-Id': TXN_SITE_ID,
-      'origin': 'https://digital-web.cal-online.co.il',
-      'referer': 'https://digital-web.cal-online.co.il/',
-      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    },
-    body: JSON.stringify({ otpToken, sessionID }),
-  });
+  const ssoAttempts = [
+    { siteId: TXN_SITE_ID, label: 'TXN_SITE_ID' },
+    { siteId: AUTH_SITE_ID, label: 'AUTH_SITE_ID' },
+  ];
 
-  const body = await res.json().catch(() => ({})) as Record<string, unknown>;
-  console.log('[cal-import] GetSSOForIvr status:', res.status, 'keys:', Object.keys(body).join(', '));
+  for (const { siteId, label } of ssoAttempts) {
+    try {
+      const res = await fetch(SSO_FOR_IVR_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Site-Id': siteId,
+          'origin': 'https://digital-web.cal-online.co.il',
+          'referer': 'https://digital-web.cal-online.co.il/',
+          'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        },
+        body: JSON.stringify({ otpToken, sessionID }),
+      });
 
-  // Expected: { result: { calConnectToken, ... } }
-  const calConnectToken =
-    extractString(body as any, ['result', 'calConnectToken']) ??
-    extractString(body, ['calConnectToken']) ??
-    extractString(body as any, ['auth', 'calConnectToken']);
+      const body = await res.json().catch(() => ({})) as Record<string, unknown>;
+      const statusCode = (body as any)?.statusCode as number | undefined;
+      console.log(`[cal-import] GetSSOForIvr (${label}) HTTP ${res.status} statusCode=${statusCode}`,
+        'body:', JSON.stringify(body).slice(0, 300));
 
-  if (!calConnectToken) {
-    throw new Error(
-      `GetSSOForIvr failed (HTTP ${res.status}). Response: ${JSON.stringify(body).slice(0, 500)}`
-    );
+      const calConnectToken =
+        extractString(body as any, ['result', 'calConnectToken']) ??
+        extractString(body, ['calConnectToken']) ??
+        extractString(body as any, ['auth', 'calConnectToken']);
+
+      if (calConnectToken) {
+        console.log(`[cal-import] Got calConnectToken via GetSSOForIvr (${label})`);
+        return calConnectToken;
+      }
+    } catch (e) {
+      console.log(`[cal-import] GetSSOForIvr (${label}) threw:`, (e as Error).message);
+    }
   }
 
-  console.log('[cal-import] Got calConnectToken from GetSSOForIvr');
-  return calConnectToken;
+  // Fallback: otpToken (from POST /otp) may itself be the calConnectToken for the web OTP flow.
+  // GetSSOForIvr is used by the IVR integration; web OTP may not need it.
+  console.log('[cal-import] GetSSOForIvr exhausted — trying otpToken directly as calConnectToken');
+  return otpToken;
 }
 
 /** Deep-get a string value from an object using a path of keys. */
@@ -184,7 +199,8 @@ async function getCards(calConnectToken: string): Promise<CalCard[]> {
       body: JSON.stringify({ module: 1 }),
     });
     const body = await res.json().catch(() => null) as Record<string, unknown>;
-    console.log('[cal-import] GetCOLMetadata status:', res.status, 'keys:', body ? Object.keys(body).join(', ') : null);
+    const statusCode = (body as any)?.statusCode;
+    console.log('[cal-import] GetCOLMetadata HTTP', res.status, 'statusCode:', statusCode, 'body:', JSON.stringify(body).slice(0, 500));
 
     if (res.ok && body) {
       const cards = extractCardsFromObject(body);
@@ -209,14 +225,15 @@ async function getCards(calConnectToken: string): Promise<CalCard[]> {
       body: JSON.stringify({ cardsForFrameData: [] }),
     });
     const body = await res.json().catch(() => null) as Record<string, unknown>;
-    console.log('[cal-import] Frames/empty status:', res.status, 'keys:', body ? Object.keys(body).join(', ') : null);
+    const statusCode = (body as any)?.statusCode;
+    console.log('[cal-import] Frames/empty HTTP', res.status, 'statusCode:', statusCode, 'body:', JSON.stringify(body).slice(0, 400));
     if (res.ok && body) {
       const cards = extractCardsFromObject(body);
       if (cards && cards.length > 0) return cards;
     }
   } catch { /* ignore */ }
 
-  throw new Error('Could not discover card IDs after GetSSOForIvr succeeded. Check relay logs for GetCOLMetadata response.');
+  throw new Error('Could not discover card IDs. Check relay logs for GetCOLMetadata and Frames response bodies.');
 }
 
 /** Search any response object for an array of cards with cardUniqueId. */
