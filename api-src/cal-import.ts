@@ -187,56 +187,79 @@ function extractString(obj: Record<string, unknown>, path: string[]): string | n
 
 /**
  * Step 4: Fetch cards using calConnectToken.
- * Primary: POST CalOnlineMetadata.API/api/Contents/GetCOLMetadata {module:1}
- * Fallback: POST Frames/api/Frames/GetFrameStatus with empty array
+ *
+ * GetCOLMetadata {module:1} returns only navigation metadata (no cards).
+ * Cards are loaded separately via a dedicated endpoint.
+ * Tries multiple known patterns; logs status for all so we can identify
+ * the correct one from relay logs.
  */
 async function getCards(calConnectToken: string): Promise<CalCard[]> {
-  // Primary: CalOnlineMetadata init endpoint (discovered from main.js bundle)
-  try {
-    const res = await fetch(COL_METADATA_URL, {
-      method: 'POST',
-      headers: calApiHeaders(calConnectToken),
-      body: JSON.stringify({ module: 1 }),
-    });
-    const body = await res.json().catch(() => null) as Record<string, unknown>;
-    const statusCode = (body as any)?.statusCode;
-    console.log('[cal-import] GetCOLMetadata HTTP', res.status, 'statusCode:', statusCode,
-      'top-level keys:', body ? Object.keys(body).join(', ') : null,
-      'result keys:', (body as any)?.result ? Object.keys((body as any).result).join(', ') : null,
-      'body[0..800]:', JSON.stringify(body).slice(0, 800));
-
-    if (res.ok && body) {
-      const cards = extractCardsFromObject(body);
-      if (cards && cards.length > 0) {
-        console.log('[cal-import] Cards found via GetCOLMetadata:', cards.length);
-        return cards;
+  // ── Attempt 1: GetCOLMetadata with different module values ─────────────────
+  for (const module of [2, 3, 4, 5]) {
+    try {
+      const res = await fetch(COL_METADATA_URL, {
+        method: 'POST',
+        headers: calApiHeaders(calConnectToken),
+        body: JSON.stringify({ module }),
+      });
+      const body = await res.json().catch(() => null) as Record<string, unknown>;
+      console.log(`[cal-import] GetCOLMetadata module=${module} HTTP ${res.status}`,
+        'result keys:', (body as any)?.result ? Object.keys((body as any).result).join(', ') : null,
+        'snippet:', JSON.stringify(body).slice(0, 300));
+      if (res.ok && body) {
+        const cards = extractCardsFromObject(body);
+        if (cards && cards.length > 0) {
+          console.log(`[cal-import] Cards found via GetCOLMetadata module=${module}:`, cards.length);
+          return cards;
+        }
       }
-      // Metadata returned but no cards in expected fields — log full structure
-      console.log('[cal-import] GetCOLMetadata body (no cards found):', JSON.stringify(body).slice(0, 500));
-    } else {
-      console.log('[cal-import] GetCOLMetadata failed:', res.status, JSON.stringify(body).slice(0, 300));
-    }
-  } catch (e) {
-    console.log('[cal-import] GetCOLMetadata threw:', (e as Error).message);
+    } catch { /* ignore */ }
   }
 
-  // Fallback: Frames with empty array — server may return cards list on 200
-  try {
-    const res = await fetch(FRAMES_URL, {
-      method: 'POST',
-      headers: calApiHeaders(calConnectToken),
-      body: JSON.stringify({ cardsForFrameData: [] }),
-    });
-    const body = await res.json().catch(() => null) as Record<string, unknown>;
-    const statusCode = (body as any)?.statusCode;
-    console.log('[cal-import] Frames/empty HTTP', res.status, 'statusCode:', statusCode, 'body:', JSON.stringify(body).slice(0, 400));
-    if (res.ok && body) {
-      const cards = extractCardsFromObject(body);
-      if (cards && cards.length > 0) return cards;
-    }
-  } catch { /* ignore */ }
+  // ── Attempt 2: Dedicated cards endpoints (all tried with working token) ─────
+  const cardCandidates: Array<{ url: string; method: string; body?: unknown }> = [
+    // Cards module — various action names
+    { url: 'https://api.cal-online.co.il/Cards/api/Cards/GetCards', method: 'POST', body: {} },
+    { url: 'https://api.cal-online.co.il/Cards/api/Cards/GetCards', method: 'GET' },
+    { url: 'https://api.cal-online.co.il/Cards/api/Cards/GetUserCards', method: 'POST', body: {} },
+    { url: 'https://api.cal-online.co.il/Cards/api/Cards/GetUserCards', method: 'GET' },
+    // UserCards module
+    { url: 'https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards', method: 'GET' },
+    { url: 'https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards', method: 'POST', body: {} },
+    // Dashboard cards
+    { url: 'https://api.cal-online.co.il/Dashboard/api/Dashboard/GetDashboardCards', method: 'GET' },
+    { url: 'https://api.cal-online.co.il/Dashboard/api/Dashboard/GetDashboardCards', method: 'POST', body: {} },
+    // Card lobby (seen in metadata as webCardLobby)
+    { url: 'https://api.cal-online.co.il/CardLobby/api/CardLobby/GetCardLobby', method: 'GET' },
+    { url: 'https://api.cal-online.co.il/CardLobby/api/CardLobby/GetCardLobby', method: 'POST', body: {} },
+    // Init module
+    { url: 'https://api.cal-online.co.il/Init/api/Init/GetInit', method: 'GET' },
+    { url: 'https://api.cal-online.co.il/Init/api/Init/GetInit', method: 'POST', body: {} },
+  ];
 
-  throw new Error('Could not discover card IDs. Check relay logs for GetCOLMetadata and Frames response bodies.');
+  for (const { url, method, body: reqBody } of cardCandidates) {
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: calApiHeaders(calConnectToken),
+        ...(reqBody !== undefined ? { body: JSON.stringify(reqBody) } : {}),
+      });
+      const body = await res.json().catch(() => null) as Record<string, unknown>;
+      const sc = (body as any)?.statusCode;
+      console.log(`[cal-import] ${method} ${url.replace('https://api.cal-online.co.il', '')} HTTP ${res.status} sc=${sc}`,
+        'result keys:', (body as any)?.result ? Object.keys((body as any).result).join(', ') : null,
+        'snippet:', JSON.stringify(body).slice(0, 200));
+      if (res.ok && body) {
+        const cards = extractCardsFromObject(body);
+        if (cards && cards.length > 0) {
+          console.log(`[cal-import] Cards found via ${url}:`, cards.length);
+          return cards;
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  throw new Error('Could not discover card IDs. Review relay logs for endpoint statuses and result keys.');
 }
 
 /** Search any response object for an array of cards with cardUniqueId (deep, all keys). */

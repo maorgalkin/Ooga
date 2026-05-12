@@ -177,7 +177,6 @@ var AUTH_SITE_ID = "5B5160DD-F84A-4D72-B67E-65891BA194FF";
 var TXN_SITE_ID = "09031987-273E-2311-906C-8AF85B17C8D9";
 var SSO_FOR_IVR_URL = "https://api.cal-online.co.il/Authentication/api/SSO/GetSSOForIvr";
 var COL_METADATA_URL = "https://api.cal-online.co.il/CalOnlineMetadata.API/api/Contents/GetCOLMetadata";
-var FRAMES_URL = "https://api.cal-online.co.il/Frames/api/Frames/GetFrameStatus";
 var PENDING_URL = "https://api.cal-online.co.il/Transactions/api/approvals/getClearanceRequests";
 var TXN_URL = "https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails";
 function calApiHeaders(calToken) {
@@ -260,55 +259,77 @@ function extractString(obj, path) {
   return typeof cur === "string" && cur.length > 0 ? cur : null;
 }
 async function getCards(calConnectToken) {
-  try {
-    const res = await fetch(COL_METADATA_URL, {
-      method: "POST",
-      headers: calApiHeaders(calConnectToken),
-      body: JSON.stringify({ module: 1 })
-    });
-    const body = await res.json().catch(() => null);
-    const statusCode = body?.statusCode;
-    console.log(
-      "[cal-import] GetCOLMetadata HTTP",
-      res.status,
-      "statusCode:",
-      statusCode,
-      "top-level keys:",
-      body ? Object.keys(body).join(", ") : null,
-      "result keys:",
-      body?.result ? Object.keys(body.result).join(", ") : null,
-      "body[0..800]:",
-      JSON.stringify(body).slice(0, 800)
-    );
-    if (res.ok && body) {
-      const cards = extractCardsFromObject(body);
-      if (cards && cards.length > 0) {
-        console.log("[cal-import] Cards found via GetCOLMetadata:", cards.length);
-        return cards;
+  for (const module of [2, 3, 4, 5]) {
+    try {
+      const res = await fetch(COL_METADATA_URL, {
+        method: "POST",
+        headers: calApiHeaders(calConnectToken),
+        body: JSON.stringify({ module })
+      });
+      const body = await res.json().catch(() => null);
+      console.log(
+        `[cal-import] GetCOLMetadata module=${module} HTTP ${res.status}`,
+        "result keys:",
+        body?.result ? Object.keys(body.result).join(", ") : null,
+        "snippet:",
+        JSON.stringify(body).slice(0, 300)
+      );
+      if (res.ok && body) {
+        const cards = extractCardsFromObject(body);
+        if (cards && cards.length > 0) {
+          console.log(`[cal-import] Cards found via GetCOLMetadata module=${module}:`, cards.length);
+          return cards;
+        }
       }
-      console.log("[cal-import] GetCOLMetadata body (no cards found):", JSON.stringify(body).slice(0, 500));
-    } else {
-      console.log("[cal-import] GetCOLMetadata failed:", res.status, JSON.stringify(body).slice(0, 300));
+    } catch {
     }
-  } catch (e) {
-    console.log("[cal-import] GetCOLMetadata threw:", e.message);
   }
-  try {
-    const res = await fetch(FRAMES_URL, {
-      method: "POST",
-      headers: calApiHeaders(calConnectToken),
-      body: JSON.stringify({ cardsForFrameData: [] })
-    });
-    const body = await res.json().catch(() => null);
-    const statusCode = body?.statusCode;
-    console.log("[cal-import] Frames/empty HTTP", res.status, "statusCode:", statusCode, "body:", JSON.stringify(body).slice(0, 400));
-    if (res.ok && body) {
-      const cards = extractCardsFromObject(body);
-      if (cards && cards.length > 0) return cards;
+  const cardCandidates = [
+    // Cards module — various action names
+    { url: "https://api.cal-online.co.il/Cards/api/Cards/GetCards", method: "POST", body: {} },
+    { url: "https://api.cal-online.co.il/Cards/api/Cards/GetCards", method: "GET" },
+    { url: "https://api.cal-online.co.il/Cards/api/Cards/GetUserCards", method: "POST", body: {} },
+    { url: "https://api.cal-online.co.il/Cards/api/Cards/GetUserCards", method: "GET" },
+    // UserCards module
+    { url: "https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards", method: "GET" },
+    { url: "https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards", method: "POST", body: {} },
+    // Dashboard cards
+    { url: "https://api.cal-online.co.il/Dashboard/api/Dashboard/GetDashboardCards", method: "GET" },
+    { url: "https://api.cal-online.co.il/Dashboard/api/Dashboard/GetDashboardCards", method: "POST", body: {} },
+    // Card lobby (seen in metadata as webCardLobby)
+    { url: "https://api.cal-online.co.il/CardLobby/api/CardLobby/GetCardLobby", method: "GET" },
+    { url: "https://api.cal-online.co.il/CardLobby/api/CardLobby/GetCardLobby", method: "POST", body: {} },
+    // Init module
+    { url: "https://api.cal-online.co.il/Init/api/Init/GetInit", method: "GET" },
+    { url: "https://api.cal-online.co.il/Init/api/Init/GetInit", method: "POST", body: {} }
+  ];
+  for (const { url, method, body: reqBody } of cardCandidates) {
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: calApiHeaders(calConnectToken),
+        ...reqBody !== void 0 ? { body: JSON.stringify(reqBody) } : {}
+      });
+      const body = await res.json().catch(() => null);
+      const sc = body?.statusCode;
+      console.log(
+        `[cal-import] ${method} ${url.replace("https://api.cal-online.co.il", "")} HTTP ${res.status} sc=${sc}`,
+        "result keys:",
+        body?.result ? Object.keys(body.result).join(", ") : null,
+        "snippet:",
+        JSON.stringify(body).slice(0, 200)
+      );
+      if (res.ok && body) {
+        const cards = extractCardsFromObject(body);
+        if (cards && cards.length > 0) {
+          console.log(`[cal-import] Cards found via ${url}:`, cards.length);
+          return cards;
+        }
+      }
+    } catch {
     }
-  } catch {
   }
-  throw new Error("Could not discover card IDs. Check relay logs for GetCOLMetadata and Frames response bodies.");
+  throw new Error("Could not discover card IDs. Review relay logs for endpoint statuses and result keys.");
 }
 function extractCardsFromObject(obj, depth = 0) {
   if (depth > 6 || obj == null || typeof obj !== "object") return null;
