@@ -42,9 +42,12 @@ interface CalTransaction {
   merchantName?: string;
   transactionAmount?: number;
   chargedAmount?: number;
+  authAmount?: number;        // pending transactions use authAmount
+  activityAmount?: number;    // alternate amount field
   debCrdDate?: string;
   transDate?: string;
   purchaseDate?: string;
+  activityDate?: string;      // pending txn date field
   trnCurrencySymbol?: string;
   debCrdCurrencySymbol?: string;
   transTypeCommentDetails?: unknown;
@@ -258,7 +261,11 @@ async function fetchPendingTransactions(
   const body = await res.json().catch(() => ({})) as Record<string, unknown>;
   const list = body?.result as any;
   if (!list?.cardsList) return [];
-  return list.cardsList.flatMap((c: any) => c.authDetalisList ?? []) as CalTransaction[];
+  const txns = list.cardsList.flatMap((c: any) => c.authDetalisList ?? []) as CalTransaction[];
+  if (txns.length > 0) {
+    console.log('[cal-import] Pending txn sample keys:', Object.keys(txns[0] as any).join(','));
+  }
+  return txns;
 }
 
 async function fetchCompletedTransactions(
@@ -270,24 +277,24 @@ async function fetchCompletedTransactions(
   const res = await fetch(TXN_URL, {
     method: 'POST',
     headers: calApiHeaders(calToken),
-    body: JSON.stringify({ cardUniqueId, month, year }),
+    body: JSON.stringify({ cardUniqueId, month: String(month), year: String(year) }),
   });
   if (!res.ok) {
-    console.log(`[cal-import] fetchCompleted HTTP ${res.status} for card ${cardUniqueId} ${month}/${year}`);
+    const errBody = await res.text().catch(() => '');
+    console.log(`[cal-import] fetchCompleted HTTP ${res.status} for card ${cardUniqueId} ${month}/${year} body: ${errBody.slice(0, 200)}`);
     return [];
   }
   const body = await res.json().catch(() => ({})) as Record<string, unknown>;
   const result = (body as any)?.result;
   console.log(`[cal-import] fetchCompleted ${month}/${year} card=${cardUniqueId.slice(-4)} result keys: ${result ? Object.keys(result).join(',') : 'null'}`);
   const txns: CalTransaction[] = [];
-  // Structure from reverse-engineering: result.bankAccounts[].debitDates[].transactions[]
-  // Also try result.cardTransactionList[].txnIsrael/txnAbroad as alternative
+  // Confirmed structure: result.bankAccounts[0].debitDates[0].txnIsrael / txnAbroad
   if (result?.bankAccounts) {
     for (const acct of result.bankAccounts) {
       for (const dd of acct?.debitDates ?? []) {
-        if (dd?.transactions) txns.push(...dd.transactions);
         if (dd?.txnIsrael) txns.push(...dd.txnIsrael);
         if (dd?.txnAbroad) txns.push(...dd.txnAbroad);
+        if (dd?.transactions) txns.push(...dd.transactions); // fallback
       }
     }
   } else if (result?.cardTransactionList) {
@@ -308,8 +315,8 @@ function normalizeTransaction(
   isPending: boolean,
   cardLast4: string | null = null
 ): NormalizedTx {
-  const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? 0;
-  const date = tx.debCrdDate ?? tx.transDate ?? tx.purchaseDate ?? new Date().toISOString();
+  const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? tx.authAmount ?? tx.activityAmount ?? 0;
+  const date = tx.debCrdDate ?? tx.activityDate ?? tx.transDate ?? tx.purchaseDate ?? new Date().toISOString();
   const description = tx.merchantName ?? 'Unknown';
 
   const dedupeHash = createHash('sha256')

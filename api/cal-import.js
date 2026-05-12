@@ -321,16 +321,21 @@ async function fetchPendingTransactions(calToken, cardUniqueId) {
   const body = await res.json().catch(() => ({}));
   const list = body?.result;
   if (!list?.cardsList) return [];
-  return list.cardsList.flatMap((c) => c.authDetalisList ?? []);
+  const txns = list.cardsList.flatMap((c) => c.authDetalisList ?? []);
+  if (txns.length > 0) {
+    console.log("[cal-import] Pending txn sample keys:", Object.keys(txns[0]).join(","));
+  }
+  return txns;
 }
 async function fetchCompletedTransactions(calToken, cardUniqueId, month, year) {
   const res = await fetch(TXN_URL, {
     method: "POST",
     headers: calApiHeaders(calToken),
-    body: JSON.stringify({ cardUniqueId, month, year })
+    body: JSON.stringify({ cardUniqueId, month: String(month), year: String(year) })
   });
   if (!res.ok) {
-    console.log(`[cal-import] fetchCompleted HTTP ${res.status} for card ${cardUniqueId} ${month}/${year}`);
+    const errBody = await res.text().catch(() => "");
+    console.log(`[cal-import] fetchCompleted HTTP ${res.status} for card ${cardUniqueId} ${month}/${year} body: ${errBody.slice(0, 200)}`);
     return [];
   }
   const body = await res.json().catch(() => ({}));
@@ -340,9 +345,9 @@ async function fetchCompletedTransactions(calToken, cardUniqueId, month, year) {
   if (result?.bankAccounts) {
     for (const acct of result.bankAccounts) {
       for (const dd of acct?.debitDates ?? []) {
-        if (dd?.transactions) txns.push(...dd.transactions);
         if (dd?.txnIsrael) txns.push(...dd.txnIsrael);
         if (dd?.txnAbroad) txns.push(...dd.txnAbroad);
+        if (dd?.transactions) txns.push(...dd.transactions);
       }
     }
   } else if (result?.cardTransactionList) {
@@ -355,8 +360,8 @@ async function fetchCompletedTransactions(calToken, cardUniqueId, month, year) {
   return txns;
 }
 function normalizeTransaction(tx, cardUniqueId, isPending, cardLast4 = null) {
-  const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? 0;
-  const date = tx.debCrdDate ?? tx.transDate ?? tx.purchaseDate ?? (/* @__PURE__ */ new Date()).toISOString();
+  const chargedAmount = tx.chargedAmount ?? tx.transactionAmount ?? tx.authAmount ?? tx.activityAmount ?? 0;
+  const date = tx.debCrdDate ?? tx.activityDate ?? tx.transDate ?? tx.purchaseDate ?? (/* @__PURE__ */ new Date()).toISOString();
   const description = tx.merchantName ?? "Unknown";
   const dedupeHash = createHash("sha256").update(`${date.slice(0, 10)}|${chargedAmount}|${description}`).digest("hex");
   return {
