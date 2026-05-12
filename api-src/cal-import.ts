@@ -24,10 +24,10 @@ const TXN_SITE_ID = '09031987-273E-2311-906C-8AF85B17C8D9';
 
 // SSO exchange: POST {otpToken, sessionID} → {result: {calConnectToken}}
 const SSO_FOR_IVR_URL = 'https://api.cal-online.co.il/Authentication/api/SSO/GetSSOForIvr';
-// Metadata init: POST {module:1} → {result: {cards:[{cardUniqueId,last4Digits}],...}}
-const COL_METADATA_URL = 'https://api.cal-online.co.il/CalOnlineMetadata.API/api/Contents/GetCOLMetadata';
+// Account init: POST {tokenGuid:''} → {result: {cards:[{cardUniqueId,last4Digits}],...}}
+// Discovered from Noam5/israel-credit-card-crawlers Python scraper
+const ACCOUNT_INIT_URL = 'https://api.cal-online.co.il/Authentication/api/account/init';
 
-const FRAMES_URL = 'https://api.cal-online.co.il/Frames/api/Frames/GetFrameStatus';
 const PENDING_URL = 'https://api.cal-online.co.il/Transactions/api/approvals/getClearanceRequests';
 const TXN_URL = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
 
@@ -188,78 +188,34 @@ function extractString(obj: Record<string, unknown>, path: string[]): string | n
 /**
  * Step 4: Fetch cards using calConnectToken.
  *
- * GetCOLMetadata {module:1} returns only navigation metadata (no cards).
- * Cards are loaded separately via a dedicated endpoint.
- * Tries multiple known patterns; logs status for all so we can identify
- * the correct one from relay logs.
+ * Primary: POST Authentication/api/account/init {tokenGuid:''} → {result:{cards:[...]}}
+ * Discovered from Noam5/israel-credit-card-crawlers Python scraper.
  */
 async function getCards(calConnectToken: string): Promise<CalCard[]> {
-  // ── Attempt 1: GetCOLMetadata with different module values ─────────────────
-  for (const module of [2, 3, 4, 5]) {
-    try {
-      const res = await fetch(COL_METADATA_URL, {
-        method: 'POST',
-        headers: calApiHeaders(calConnectToken),
-        body: JSON.stringify({ module }),
-      });
-      const body = await res.json().catch(() => null) as Record<string, unknown>;
-      console.log(`[cal-import] GetCOLMetadata module=${module} HTTP ${res.status}`,
-        'result keys:', (body as any)?.result ? Object.keys((body as any).result).join(', ') : null,
-        'snippet:', JSON.stringify(body).slice(0, 300));
-      if (res.ok && body) {
-        const cards = extractCardsFromObject(body);
-        if (cards && cards.length > 0) {
-          console.log(`[cal-import] Cards found via GetCOLMetadata module=${module}:`, cards.length);
-          return cards;
-        }
+  // ── Primary: account/init (confirmed working endpoint from open-source scraper) ─
+  try {
+    const res = await fetch(ACCOUNT_INIT_URL, {
+      method: 'POST',
+      headers: calApiHeaders(calConnectToken),
+      body: JSON.stringify({ tokenGuid: '' }),
+    });
+    const body = await res.json().catch(() => null) as Record<string, unknown>;
+    const sc = (body as any)?.statusCode;
+    console.log('[cal-import] account/init HTTP', res.status, 'sc:', sc,
+      'result keys:', (body as any)?.result ? Object.keys((body as any).result).join(', ') : null,
+      'snippet:', JSON.stringify(body).slice(0, 500));
+    if (res.ok && body) {
+      const cards = extractCardsFromObject(body);
+      if (cards && cards.length > 0) {
+        console.log('[cal-import] Cards found via account/init:', cards.length);
+        return cards;
       }
-    } catch { /* ignore */ }
+    }
+  } catch (e) {
+    console.log('[cal-import] account/init threw:', (e as Error).message);
   }
 
-  // ── Attempt 2: Dedicated cards endpoints (all tried with working token) ─────
-  const cardCandidates: Array<{ url: string; method: string; body?: unknown }> = [
-    // Cards module — various action names
-    { url: 'https://api.cal-online.co.il/Cards/api/Cards/GetCards', method: 'POST', body: {} },
-    { url: 'https://api.cal-online.co.il/Cards/api/Cards/GetCards', method: 'GET' },
-    { url: 'https://api.cal-online.co.il/Cards/api/Cards/GetUserCards', method: 'POST', body: {} },
-    { url: 'https://api.cal-online.co.il/Cards/api/Cards/GetUserCards', method: 'GET' },
-    // UserCards module
-    { url: 'https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards', method: 'GET' },
-    { url: 'https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards', method: 'POST', body: {} },
-    // Dashboard cards
-    { url: 'https://api.cal-online.co.il/Dashboard/api/Dashboard/GetDashboardCards', method: 'GET' },
-    { url: 'https://api.cal-online.co.il/Dashboard/api/Dashboard/GetDashboardCards', method: 'POST', body: {} },
-    // Card lobby (seen in metadata as webCardLobby)
-    { url: 'https://api.cal-online.co.il/CardLobby/api/CardLobby/GetCardLobby', method: 'GET' },
-    { url: 'https://api.cal-online.co.il/CardLobby/api/CardLobby/GetCardLobby', method: 'POST', body: {} },
-    // Init module
-    { url: 'https://api.cal-online.co.il/Init/api/Init/GetInit', method: 'GET' },
-    { url: 'https://api.cal-online.co.il/Init/api/Init/GetInit', method: 'POST', body: {} },
-  ];
-
-  for (const { url, method, body: reqBody } of cardCandidates) {
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: calApiHeaders(calConnectToken),
-        ...(reqBody !== undefined ? { body: JSON.stringify(reqBody) } : {}),
-      });
-      const body = await res.json().catch(() => null) as Record<string, unknown>;
-      const sc = (body as any)?.statusCode;
-      console.log(`[cal-import] ${method} ${url.replace('https://api.cal-online.co.il', '')} HTTP ${res.status} sc=${sc}`,
-        'result keys:', (body as any)?.result ? Object.keys((body as any).result).join(', ') : null,
-        'snippet:', JSON.stringify(body).slice(0, 200));
-      if (res.ok && body) {
-        const cards = extractCardsFromObject(body);
-        if (cards && cards.length > 0) {
-          console.log(`[cal-import] Cards found via ${url}:`, cards.length);
-          return cards;
-        }
-      }
-    } catch { /* ignore */ }
-  }
-
-  throw new Error('Could not discover card IDs. Review relay logs for endpoint statuses and result keys.');
+  throw new Error('Could not discover card IDs. Check relay logs for account/init response.');
 }
 
 /** Search any response object for an array of cards with cardUniqueId (deep, all keys). */
@@ -320,10 +276,20 @@ async function fetchCompletedTransactions(
   const body = await res.json().catch(() => ({})) as Record<string, unknown>;
   const result = (body as any)?.result;
   const txns: CalTransaction[] = [];
-  if (result?.cardTransactionList) {
-    for (const month of result.cardTransactionList) {
-      if (month?.txnIsrael) txns.push(...month.txnIsrael);
-      if (month?.txnAbroad) txns.push(...month.txnAbroad);
+  // Structure from reverse-engineering: result.bankAccounts[].debitDates[].transactions[]
+  // Also try result.cardTransactionList[].txnIsrael/txnAbroad as alternative
+  if (result?.bankAccounts) {
+    for (const acct of result.bankAccounts) {
+      for (const dd of acct?.debitDates ?? []) {
+        if (dd?.transactions) txns.push(...dd.transactions);
+        if (dd?.txnIsrael) txns.push(...dd.txnIsrael);
+        if (dd?.txnAbroad) txns.push(...dd.txnAbroad);
+      }
+    }
+  } else if (result?.cardTransactionList) {
+    for (const item of result.cardTransactionList) {
+      if (item?.txnIsrael) txns.push(...item.txnIsrael);
+      if (item?.txnAbroad) txns.push(...item.txnAbroad);
     }
   }
   return txns;

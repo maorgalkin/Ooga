@@ -176,7 +176,7 @@ var OTP_URL = "https://connect.cal-online.co.il/col-rest/calconnect/authenticati
 var AUTH_SITE_ID = "5B5160DD-F84A-4D72-B67E-65891BA194FF";
 var TXN_SITE_ID = "09031987-273E-2311-906C-8AF85B17C8D9";
 var SSO_FOR_IVR_URL = "https://api.cal-online.co.il/Authentication/api/SSO/GetSSOForIvr";
-var COL_METADATA_URL = "https://api.cal-online.co.il/CalOnlineMetadata.API/api/Contents/GetCOLMetadata";
+var ACCOUNT_INIT_URL = "https://api.cal-online.co.il/Authentication/api/account/init";
 var PENDING_URL = "https://api.cal-online.co.il/Transactions/api/approvals/getClearanceRequests";
 var TXN_URL = "https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails";
 function calApiHeaders(calToken) {
@@ -259,77 +259,35 @@ function extractString(obj, path) {
   return typeof cur === "string" && cur.length > 0 ? cur : null;
 }
 async function getCards(calConnectToken) {
-  for (const module of [2, 3, 4, 5]) {
-    try {
-      const res = await fetch(COL_METADATA_URL, {
-        method: "POST",
-        headers: calApiHeaders(calConnectToken),
-        body: JSON.stringify({ module })
-      });
-      const body = await res.json().catch(() => null);
-      console.log(
-        `[cal-import] GetCOLMetadata module=${module} HTTP ${res.status}`,
-        "result keys:",
-        body?.result ? Object.keys(body.result).join(", ") : null,
-        "snippet:",
-        JSON.stringify(body).slice(0, 300)
-      );
-      if (res.ok && body) {
-        const cards = extractCardsFromObject(body);
-        if (cards && cards.length > 0) {
-          console.log(`[cal-import] Cards found via GetCOLMetadata module=${module}:`, cards.length);
-          return cards;
-        }
+  try {
+    const res = await fetch(ACCOUNT_INIT_URL, {
+      method: "POST",
+      headers: calApiHeaders(calConnectToken),
+      body: JSON.stringify({ tokenGuid: "" })
+    });
+    const body = await res.json().catch(() => null);
+    const sc = body?.statusCode;
+    console.log(
+      "[cal-import] account/init HTTP",
+      res.status,
+      "sc:",
+      sc,
+      "result keys:",
+      body?.result ? Object.keys(body.result).join(", ") : null,
+      "snippet:",
+      JSON.stringify(body).slice(0, 500)
+    );
+    if (res.ok && body) {
+      const cards = extractCardsFromObject(body);
+      if (cards && cards.length > 0) {
+        console.log("[cal-import] Cards found via account/init:", cards.length);
+        return cards;
       }
-    } catch {
     }
+  } catch (e) {
+    console.log("[cal-import] account/init threw:", e.message);
   }
-  const cardCandidates = [
-    // Cards module — various action names
-    { url: "https://api.cal-online.co.il/Cards/api/Cards/GetCards", method: "POST", body: {} },
-    { url: "https://api.cal-online.co.il/Cards/api/Cards/GetCards", method: "GET" },
-    { url: "https://api.cal-online.co.il/Cards/api/Cards/GetUserCards", method: "POST", body: {} },
-    { url: "https://api.cal-online.co.il/Cards/api/Cards/GetUserCards", method: "GET" },
-    // UserCards module
-    { url: "https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards", method: "GET" },
-    { url: "https://api.cal-online.co.il/UserCards/api/UserCards/GetUserCards", method: "POST", body: {} },
-    // Dashboard cards
-    { url: "https://api.cal-online.co.il/Dashboard/api/Dashboard/GetDashboardCards", method: "GET" },
-    { url: "https://api.cal-online.co.il/Dashboard/api/Dashboard/GetDashboardCards", method: "POST", body: {} },
-    // Card lobby (seen in metadata as webCardLobby)
-    { url: "https://api.cal-online.co.il/CardLobby/api/CardLobby/GetCardLobby", method: "GET" },
-    { url: "https://api.cal-online.co.il/CardLobby/api/CardLobby/GetCardLobby", method: "POST", body: {} },
-    // Init module
-    { url: "https://api.cal-online.co.il/Init/api/Init/GetInit", method: "GET" },
-    { url: "https://api.cal-online.co.il/Init/api/Init/GetInit", method: "POST", body: {} }
-  ];
-  for (const { url, method, body: reqBody } of cardCandidates) {
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: calApiHeaders(calConnectToken),
-        ...reqBody !== void 0 ? { body: JSON.stringify(reqBody) } : {}
-      });
-      const body = await res.json().catch(() => null);
-      const sc = body?.statusCode;
-      console.log(
-        `[cal-import] ${method} ${url.replace("https://api.cal-online.co.il", "")} HTTP ${res.status} sc=${sc}`,
-        "result keys:",
-        body?.result ? Object.keys(body.result).join(", ") : null,
-        "snippet:",
-        JSON.stringify(body).slice(0, 200)
-      );
-      if (res.ok && body) {
-        const cards = extractCardsFromObject(body);
-        if (cards && cards.length > 0) {
-          console.log(`[cal-import] Cards found via ${url}:`, cards.length);
-          return cards;
-        }
-      }
-    } catch {
-    }
-  }
-  throw new Error("Could not discover card IDs. Review relay logs for endpoint statuses and result keys.");
+  throw new Error("Could not discover card IDs. Check relay logs for account/init response.");
 }
 function extractCardsFromObject(obj, depth = 0) {
   if (depth > 6 || obj == null || typeof obj !== "object") return null;
@@ -375,10 +333,18 @@ async function fetchCompletedTransactions(calToken, cardUniqueId, month, year) {
   const body = await res.json().catch(() => ({}));
   const result = body?.result;
   const txns = [];
-  if (result?.cardTransactionList) {
-    for (const month2 of result.cardTransactionList) {
-      if (month2?.txnIsrael) txns.push(...month2.txnIsrael);
-      if (month2?.txnAbroad) txns.push(...month2.txnAbroad);
+  if (result?.bankAccounts) {
+    for (const acct of result.bankAccounts) {
+      for (const dd of acct?.debitDates ?? []) {
+        if (dd?.transactions) txns.push(...dd.transactions);
+        if (dd?.txnIsrael) txns.push(...dd.txnIsrael);
+        if (dd?.txnAbroad) txns.push(...dd.txnAbroad);
+      }
+    }
+  } else if (result?.cardTransactionList) {
+    for (const item of result.cardTransactionList) {
+      if (item?.txnIsrael) txns.push(...item.txnIsrael);
+      if (item?.txnAbroad) txns.push(...item.txnAbroad);
     }
   }
   return txns;
