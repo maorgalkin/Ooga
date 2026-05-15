@@ -416,13 +416,19 @@ export async function importCalTransactions(
   if (cards.length === 0) throw new Error('No cards found on account');
   log(`Found ${cards.length} card(s): ${cards.map(c => c.last4Digits).join(', ')}`);
 
-  // Build month list
+  // Build month list and compute the earliest cut-off date for filtering.
+  // Cal's billing API may return transactions from previous months (e.g., late-April
+  // purchases on a May billing cycle). We drop anything before the first day of the
+  // oldest requested month so the user only sees what they asked for.
   const now = new Date();
   const monthYears: { month: number; year: number }[] = [];
   for (let i = 0; i < months; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     monthYears.push({ month: d.getMonth() + 1, year: d.getFullYear() });
   }
+  // Earliest first day: e.g. months=1 → May 1st; months=3 → March 1st
+  const earliest = monthYears[monthYears.length - 1];
+  const cutoffDate = `${earliest.year}-${String(earliest.month).padStart(2, '0')}-01`;
 
   // Fetch transactions
   const allRawTxns: NormalizedTx[] = [];
@@ -442,6 +448,12 @@ export async function importCalTransactions(
   );
   log(`Fetched ${allRawTxns.length} raw transactions`);
 
+  // Filter out transactions before the cutoff (billing cycle bleed-over from prior months)
+  const filtered = allRawTxns.filter(tx => tx.date >= cutoffDate);
+  if (filtered.length < allRawTxns.length) {
+    log(`Filtered ${allRawTxns.length - filtered.length} transactions before ${cutoffDate}`);
+  }
+
   // Create import session — requires INSERT policy (migration 031).
   // Falls back to null (nullable FK) if the insert fails for any reason.
   let dbSessionId: string | null = null;
@@ -453,7 +465,7 @@ export async function importCalTransactions(
   dbSessionId = (sessionRow as { id: string } | null)?.id ?? null;
 
   // Push to Supabase
-  const { imported, skipped } = await pushToSupabase(allRawTxns, user.id, householdId, connectionId, dbSessionId);
+  const { imported, skipped } = await pushToSupabase(filtered, user.id, householdId, connectionId, dbSessionId);
 
   // Update last_sync_at
   await supabase
