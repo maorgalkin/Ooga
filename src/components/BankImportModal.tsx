@@ -4,6 +4,8 @@ import {
   listConnections,
   requestCalOtpForConnection,
   importCalDirect,
+  fetchImportedTransactions,
+  deleteTransactions,
   type BankConnection,
 } from '../services/bankImportService';
 import ImportReviewStep from './ImportReviewStep';
@@ -92,6 +94,17 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   const providerLabel = (p: string) =>
     ({ discount: 'Discount Bank', visaCal: 'Visa Cal', visaCalFast: 'Visa Cal (Fast)', isracard: 'Isracard', max: 'Max', amex: 'Amex' }[p] ?? p);
 
+  // When closing during review, delete all imported transactions first
+  const handleClose = async () => {
+    if (step === 'review' && dbSessionId) {
+      try {
+        const txns = await fetchImportedTransactions(dbSessionId);
+        if (txns.length > 0) await deleteTransactions(txns.map(t => t.id));
+      } catch { /* best-effort */ }
+    }
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100] p-4">
       <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full transition-all ${
@@ -106,7 +119,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
             </h2>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <X className="w-5 h-5" />
