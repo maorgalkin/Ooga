@@ -254,7 +254,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 setResult((r) => r ? { ...r, imported: kept } : r);
                 setStep('complete');
               }}
-              onSkip={() => setStep('complete')}
+              onCancel={onClose}
             />
           )}
           {step === 'complete' && result && (

@@ -13,7 +13,7 @@ interface Props {
   dbSessionId: string;
   result: { imported: number; skipped: number };
   onDone: (kept: number) => void;
-  onSkip: () => void;
+  onCancel: () => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -30,7 +30,7 @@ function formatAmount(tx: ReviewTransaction, currency: string): string {
   return base;
 }
 
-export default function ImportReviewStep({ dbSessionId, result, onDone, onSkip }: Props) {
+export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel }: Props) {
   const [transactions, setTransactions] = useState<ReviewTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -108,6 +108,17 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onSkip }
     }
   }, [transactions, selected, categoryOverrides, onDone]);
 
+  const handleCancel = useCallback(async () => {
+    setSaving(true);
+    try {
+      await deleteTransactions(transactions.map((t) => t.id));
+      onCancel();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to cancel import');
+      setSaving(false);
+    }
+  }, [transactions, onCancel]);
+
   const allChecked = transactions.length > 0 && selected.size === transactions.length;
   const someChecked = selected.size > 0 && selected.size < transactions.length;
 
@@ -126,10 +137,10 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onSkip }
         <AlertCircle className="w-8 h-8 text-red-500" />
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         <button
-          onClick={onSkip}
+          onClick={onCancel}
           className="mt-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
         >
-          Done
+          Close
         </button>
       </div>
     );
@@ -289,11 +300,11 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onSkip }
       {/* Footer actions */}
       <div className="flex gap-2 pt-1">
         <button
-          onClick={onSkip}
+          onClick={handleCancel}
           disabled={saving}
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
+          className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40 transition-colors"
         >
-          Skip Review
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin inline mr-1" />Cancelling…</> : 'Cancel Import'}
         </button>
         <button
           onClick={handleAccept}
