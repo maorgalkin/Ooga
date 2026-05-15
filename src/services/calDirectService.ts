@@ -287,7 +287,7 @@ async function pushToSupabase(
   userId: string,
   householdId: string,
   connectionId: string,
-  dbSessionId: string
+  dbSessionId: string | null
 ): Promise<{ imported: number; skipped: number }> {
   // Dedup within batch
   const seenInBatch = new Set<string>();
@@ -388,13 +388,15 @@ export async function importCalTransactions(
   );
   log(`Fetched ${allRawTxns.length} raw transactions`);
 
-  // Create import session
+  // Create import session — requires INSERT policy (migration 031).
+  // Falls back to null (nullable FK) if the insert fails for any reason.
+  let dbSessionId: string | null = null;
   const { data: sessionRow } = await supabase
     .from('bank_import_sessions')
     .insert({ user_id: user.id, household_id: householdId, status: 'complete', completed_at: new Date().toISOString() })
     .select('id')
     .single();
-  const dbSessionId = (sessionRow as { id: string } | null)?.id ?? crypto.randomUUID();
+  dbSessionId = (sessionRow as { id: string } | null)?.id ?? null;
 
   // Push to Supabase
   const { imported, skipped } = await pushToSupabase(allRawTxns, user.id, householdId, connectionId, dbSessionId);
