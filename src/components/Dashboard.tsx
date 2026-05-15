@@ -18,7 +18,6 @@ import { DashboardTabNavigation } from './dashboard/DashboardTabNavigation';
 import { ExpenseChart } from './dashboard/ExpenseChart';
 import { formatCurrencyFromSettings } from '../utils/formatCurrency';
 import { DummyDataControls } from './dashboard/DummyDataControls';
-import { FamilyMembersCard } from './dashboard/FamilyMembersCard';
 import { CategoryTransactionsModal } from './dashboard/CategoryTransactionsModal';
 import { Transactions } from '../pages/Transactions';
 import { BuildInfo } from './BuildInfo';
@@ -362,12 +361,20 @@ const Dashboard: React.FC = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className={`text-3xl font-bold ${getHeadingColor('purple')} mb-2`}>
-                  Dashboard
+                <h1 className={`text-3xl font-bold ${getHeadingColor('purple')} mb-1`}>
+                  {dashboardMonthDate.toLocaleDateString(getUserLocale(), { month: 'long' })} '{String(dashboardMonthDate.getFullYear()).slice(2)} Dashboard
                 </h1>
-                <p className={getSubheadingColor('purple')}>
-                  Your financial overview at a glance
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className={getSubheadingColor('purple')}>
+                    {household?.name ? `${household.name}'s budget at a glance` : 'Your monthly budget at a glance'}
+                  </p>
+                  <button
+                    onClick={() => setIsHouseholdSettingsModalOpen(true)}
+                    className="text-xs text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 underline transition-colors"
+                  >
+                    {household?.name ? 'Manage household →' : 'Set up household →'}
+                  </button>
+                </div>
               </div>
               
               {/* Dummy Data Controls - Development Only */}
@@ -387,38 +394,6 @@ const Dashboard: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Current Month Header */}
-          <div className="mb-8">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-purple-200 dark:border-purple-700 p-6">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                  {dashboardMonthDate.toLocaleDateString(getUserLocale(), { month: 'long', year: 'numeric' })}
-                </h2>
-                {household?.name && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {household.name}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Family Members - Quick Access */}
-          <div className="mb-8">
-            {/* Mobile Sticky Header */}
-            <div className="md:hidden sticky top-0 z-10 bg-purple-100 dark:bg-purple-950/30 -mx-3 px-3 py-3 mb-4 border-b-2 border-purple-300 dark:border-purple-700">
-              <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">
-                {household?.name || 'Family Members'}
-              </h2>
-            </div>
-            
-            <FamilyMembersCard
-              familyMembersCount={familyMembers.length}
-              onOpenModal={() => setIsHouseholdSettingsModalOpen(true)}
-              householdName={household?.name}
-            />
           </div>
 
           {/* Empty State - Show when no transactions this month */}

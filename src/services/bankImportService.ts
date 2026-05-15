@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { requestCalOtp as _requestCalOtp, verifyCalOtp, importCalTransactions } from './calDirectService';
 
 export type ImportStatus =
   | 'logging_in'
@@ -30,7 +31,12 @@ export interface BankConnection {
   last_sync_at: string | null;
   is_active: boolean;
   created_at: string;
+  metadata?: Record<string, unknown> | null;
 }
+
+// Re-export for use in BankImportModal
+export { requestCalOtp as requestCalOtpDirect, verifyCalOtp } from './calDirectService';
+export type { CalCard } from './calDirectService';
 
 async function authHeaders(): Promise<Record<string, string>> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -82,98 +88,32 @@ export async function deleteConnection(connectionId: string): Promise<void> {
 // ─── Cal import flow ──────────────────────────────────────────────────────────
 
 /**
- * Whether the local relay (localhost:9191) should be used.
- * Set to true after a successful relay-based OTP request, so the subsequent
- * cal-import call also routes through the relay.
+ * Request OTP for a Cal connection.
+ * Reads nationalId and last4Digits from the connection's metadata.
+ * Returns calSessionToken to pass to importCalDirect().
  */
-let _useRelay = false;
-
-/** Returns 'http://localhost:9191' if relay is active, else '' (relative = Vercel). */
-function baseUrl() { return _useRelay ? 'http://localhost:9191' : ''; }
-
-/** Check if a Cal API response body is a WAF-blocked HTML page. */
-function isWafBlock(body: { rawPreview?: string; calStatus?: number }): boolean {
-  return body.calStatus === 400 && typeof body.rawPreview === 'string' &&
-    (body.rawPreview.includes('Request Rejected') || body.rawPreview.includes('BIG-IP'));
+export async function requestCalOtpForConnection(connection: BankConnection): Promise<string> {
+  const nationalId = (connection.metadata?.id as string | undefined) ?? '';
+  const last4Digits = (connection.metadata?.last4Digits as string | undefined) ?? '';
+  if (!nationalId) throw new Error('Connection is missing national ID in metadata. Please reconnect your account.');
+  return _requestCalOtp(nationalId, last4Digits);
 }
 
 /**
- * Step 1: Trigger SMS OTP for the given connection.
- * Returns calSessionToken — a UUID to send back with the OTP code.
- *
- * Automatically retries via local relay (localhost:9191) if Vercel's IP
- * is WAF-blocked by Cal's F5 BIG-IP.
+ * Full import: verify OTP + fetch transactions + push to Supabase.
  */
-export async function requestCalOtp(connectionId: string): Promise<string> {
-  const headers = await authHeaders();
-  const body = JSON.stringify({ connectionId });
-
-  async function attempt(base: string): Promise<Response> {
-    return fetch(`${base}/api/cal-otp-request`, { method: 'POST', headers, body });
-  }
-
-  let res = await attempt(baseUrl());
-
-  // Auto-retry via relay if Vercel is WAF-blocked
-  if (!res.ok && !_useRelay) {
-    const errBody = await res.json().catch(() => ({})) as { rawPreview?: string; calStatus?: number };
-    if (isWafBlock(errBody)) {
-      console.info('[bankImport] Vercel IP blocked by Cal WAF — retrying via local relay');
-      try {
-        const relayRes = await attempt('http://localhost:9191');
-        if (relayRes.ok) {
-          _useRelay = true;
-          res = relayRes;
-        } else {
-          const relayErr = await relayRes.json().catch(() => ({})) as { error?: string };
-          throw new Error(
-            `Cal API blocked on Vercel (IP blocked). Local relay also failed: ${relayErr.error ?? relayRes.status}.\n` +
-            `Start the relay: node --env-file=.env.relay relay.js`
-          );
-        }
-      } catch (e) {
-        if (e instanceof Error && e.message.includes('relay also failed')) throw e;
-        // Connection refused = relay not running
-        throw new Error(
-          'Cal API blocked on Vercel (WAF/IP block).\n' +
-          'Start the local relay on your Mac:\n  node --env-file=.env.relay relay.js\nThen try again.'
-        );
-      }
-    }
-  }
-
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({})) as { error?: string; detail?: unknown; calStatus?: number; rawPreview?: string };
-    const extra = [
-      errBody.calStatus ? `HTTP ${errBody.calStatus}` : null,
-      errBody.rawPreview ? errBody.rawPreview.slice(0, 150) : (errBody.detail ? JSON.stringify(errBody.detail) : null),
-    ].filter(Boolean).join(' | ');
-    throw new Error((errBody.error ?? 'Failed to request OTP') + (extra ? ` — ${extra}` : ''));
-  }
-  const data = await res.json() as { calSessionToken: string };
-  return data.calSessionToken;
-}
-
-/**
- * Step 2: Verify OTP, fetch all transactions, push to Supabase.
- * Routes through the local relay if OTP was relay-assisted (_useRelay flag).
- */
-export async function importCalTransactions(
-  connectionId: string,
+export async function importCalDirect(
+  connection: BankConnection,
   calSessionToken: string,
   otpCode: string,
-  months: number
+  months: number,
+  onProgress?: (msg: string) => void
 ): Promise<{ dbSessionId: string; imported: number; skipped: number }> {
-  const res = await fetch(`${baseUrl()}/api/cal-import`, {
-    method: 'POST',
-    headers: await authHeaders(),
-    body: JSON.stringify({ connectionId, calSessionToken, otpCode, months }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error ?? 'Import failed');
-  }
-  return res.json() as Promise<{ dbSessionId: string; imported: number; skipped: number }>;
+  const nationalId = (connection.metadata?.id as string | undefined) ?? '';
+  if (!nationalId) throw new Error('Connection is missing national ID in metadata. Please reconnect your account.');
+
+  const otpToken = await verifyCalOtp(nationalId, calSessionToken, otpCode);
+  return importCalTransactions(connection.id, otpToken, months, onProgress);
 }
 
 // ─── Import review (direct Supabase queries) ──────────────────────────────────

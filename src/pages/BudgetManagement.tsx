@@ -48,12 +48,14 @@ export const BudgetManagement: React.FC = () => {
     setEditCategoryName(null);
   }, []);
 
-  // Check for 'create' parameter on mount
+  // Check for 'create' or 'subtab' parameter on mount
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
       setActiveTab('overview');
       setAutoCreate(true);
-      // Clean up URL
+      setSearchParams({});
+    } else if (searchParams.get('subtab') === 'settings') {
+      setActiveTab('settings');
       setSearchParams({});
     }
   }, []);

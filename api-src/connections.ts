@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'GET') {
       const { data, error } = await supabase
         .from('bank_connections')
-        .select('id, provider, display_name, last_sync_at, is_active, created_at')
+        .select('id, provider, display_name, last_sync_at, is_active, created_at, metadata')
         .eq('user_id', userId)
         .eq('is_active', true)
         .order('created_at', { ascending: true });
@@ -44,6 +44,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const credentials_encrypted = encrypt(JSON.stringify(credentials));
+      // Store non-sensitive identifier metadata so the browser can read it without decryption
+      const metadata = {
+        id: credentials.id ?? null,
+        last4Digits: credentials.last4Digits ?? null,
+      };
 
       const { data: conn, error: insErr } = await supabase
         .from('bank_connections')
@@ -52,9 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           provider,
           display_name: displayName ?? provider,
           credentials_encrypted,
+          metadata,
           is_active: true,
         })
-        .select('id, provider, display_name, last_sync_at, is_active, created_at')
+        .select('id, provider, display_name, last_sync_at, is_active, created_at, metadata')
         .single();
 
       if (insErr) throw new Error(insErr.message);

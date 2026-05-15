@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget } from '../hooks/useBudgets';
-import { X, HelpCircle, Calendar } from 'lucide-react';
+import { X, HelpCircle, Calendar, Download, Plus } from 'lucide-react';
 import CategorySelector from './CategorySelector';
 import * as SupabaseService from '../services/supabaseDataService';
 import { getUserLocale } from '../utils/locale';
+import { listConnections, type BankConnection } from '../services/bankImportService';
+import BankImportModal from './BankImportModal';
 
 interface AddTransactionProps {
   isOpen: boolean;
@@ -13,12 +16,16 @@ interface AddTransactionProps {
 }
 
 const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
   const { addTransaction, familyMembers, setTransactions } = useFinance();
   const { data: personalBudget } = useActiveBudget();
   const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInstallment, setIsInstallment] = useState(false);
   const [numberOfInstallments, setNumberOfInstallments] = useState('');
+  const [connections, setConnections] = useState<BankConnection[]>([]);
+  const [importConnectionId, setImportConnectionId] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -200,6 +207,13 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
+  // Load bank connections when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      listConnections().then(setConnections).catch(() => {});
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const currentCategories = formData.type === 'income' ? incomeCategories : expenseCategories;
@@ -222,6 +236,38 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
             </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 overflow-x-hidden">
+          {/* Import Transactions section */}
+          <div className="pb-1">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+              <Download className="w-3.5 h-3.5" />
+              Import Transactions
+            </p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {connections.map(conn => (
+                <button
+                  key={conn.id}
+                  type="button"
+                  onClick={() => { setImportConnectionId(conn.id); setShowImportModal(true); }}
+                  className="flex-shrink-0 w-24 h-16 flex flex-col items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer gap-1"
+                >
+                  <span className="text-lg">🏦</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 text-center leading-tight px-1 truncate w-full text-center">
+                    {conn.display_name}
+                  </span>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => { onClose(); navigate('/?tab=budget&subtab=settings'); }}
+                title="Add a bank account in Settings"
+                className="flex-shrink-0 w-24 h-16 flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer gap-1"
+              >
+                <Plus className="w-4 h-4 text-gray-400" />
+                <span className="text-xs text-gray-400">Add account</span>
+              </button>
+            </div>
+          </div>
+
           <div>
             <div className="flex rounded-lg border border-gray-300 overflow-hidden">
               {/* Expense Option */}
@@ -437,6 +483,12 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
     <>
       {transactionModal}
       {categorySelector}
+      {showImportModal && (
+        <BankImportModal
+          onClose={() => setShowImportModal(false)}
+          selectedConnectionId={importConnectionId ?? undefined}
+        />
+      )}
     </>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Edit2, Trash2, CheckSquare } from 'lucide-react';
 import { getCategoryColor } from '../../utils/categoryColors';
 import type { Transaction, FamilyMember } from '../../types';
@@ -31,6 +31,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const exitSelectionMode = useCallback(() => {
     setSelectionMode(false);
@@ -69,7 +70,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
     <>
       {/* List header row */}
       {onDeleteTransactions && (
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-between items-center mb-2">
           {selectionMode ? (
             <div className="flex items-center gap-3">
               <button
@@ -88,9 +89,9 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           ) : (
             <button
               onClick={() => setSelectionMode(true)}
-              className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              <CheckSquare className="w-4 h-4" />
+              <CheckSquare className="w-5 h-5" />
               Select
             </button>
           )}
@@ -106,6 +107,21 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             <div
               key={t.id}
               onClick={selectionMode ? () => toggleSelect(t.id) : undefined}
+              onPointerDown={e => {
+                if (!selectionMode) {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  pressTimerRef.current = setTimeout(() => {
+                    setSelectionMode(true);
+                    setSelectedIds(new Set([t.id]));
+                  }, 500);
+                }
+              }}
+              onPointerUp={() => {
+                if (pressTimerRef.current) { clearTimeout(pressTimerRef.current); pressTimerRef.current = null; }
+              }}
+              onPointerLeave={() => {
+                if (pressTimerRef.current) { clearTimeout(pressTimerRef.current); pressTimerRef.current = null; }
+              }}
               className={`bg-white dark:bg-gray-800 rounded-lg shadow border transition-shadow ${
                 selectionMode ? 'cursor-pointer select-none' : ''
               } ${
@@ -117,7 +133,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
               <div className="flex justify-between items-start gap-3">
                 {/* Checkbox (selection mode only) */}
                 {selectionMode && (
-                  <div className="flex-shrink-0 pt-0.5">
+                  <div className="flex-shrink-0 flex items-center">
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -207,7 +223,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                   onClick={exitSelectionMode}
                   className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Done
+                  Cancel
                 </button>
                 <button
                   onClick={() => setConfirmDelete(true)}
