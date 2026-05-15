@@ -193,7 +193,10 @@ async function getCards(otpToken: string): Promise<CalCard[]> {
   const result = body.result as Record<string, unknown> | undefined;
 
   const cards = (result?.cards as CalCard[] | undefined) ?? [];
-  console.log(`[cal-direct] account/init → ${cards.length} cards`);
+  console.log(`[cal-direct] account/init → ${cards.length} cards, resultKeys=${Object.keys(result ?? {}).join(',')}`);
+  if (cards.length > 0) {
+    console.log(`[cal-direct] first card keys: ${Object.keys(cards[0]).join(',')}`);
+  }
   return cards;
 }
 
@@ -224,38 +227,51 @@ async function fetchCompletedTransactions(
   month: number,
   year: number
 ): Promise<CalTransaction[]> {
-  const res = await fetch(TXN_URL, {
-    method: 'POST',
-    headers: calApiHeaders(otpToken),
-    // month and year MUST be strings — numbers cause HTTP 400
-    body: JSON.stringify({ cardUniqueId, month: String(month), year: String(year) }),
-  });
+  // Try both padded and unpadded month — some Cal endpoint versions require zero-padding
+  const monthStr = String(month).padStart(2, '0');
+  const monthStrAlt = String(month);
 
-  if (!res.ok) {
-    console.warn(`[cal-direct] fetchCompleted HTTP ${res.status} for card=${cardUniqueId.slice(-4)} ${month}/${year}`);
-    return [];
-  }
+  for (const mStr of [monthStr, monthStrAlt]) {
+    const body_req = JSON.stringify({ cardUniqueId, month: mStr, year: String(year) });
+    const res = await fetch(TXN_URL, {
+      method: 'POST',
+      headers: calApiHeaders(otpToken),
+      body: body_req,
+    });
 
-  const body = await res.json().catch(() => ({})) as Record<string, unknown>;
-  const result = body.result as Record<string, unknown> | undefined;
-
-  const txns: CalTransaction[] = [];
-  const bankAccounts = (result?.bankAccounts as Array<Record<string, unknown>>) ?? [];
-  for (const acct of bankAccounts) {
-    for (const dd of (acct.debitDates as Array<Record<string, unknown>>) ?? []) {
-      if (dd.txnIsrael) txns.push(...(dd.txnIsrael as CalTransaction[]));
-      if (dd.txnAbroad) txns.push(...(dd.txnAbroad as CalTransaction[]));
-      if (dd.transactions) txns.push(...(dd.transactions as CalTransaction[]));
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.warn(
+        `[cal-direct] fetchCompleted HTTP ${res.status} card=${cardUniqueId.slice(-4)} ${mStr}/${year}` +
+        ` body=${errText.slice(0, 300)}`
+      );
+      if (mStr === monthStr && monthStr !== monthStrAlt) continue; // retry with unpadded
+      return [];
     }
-  }
-  if (result?.cardTransactionList) {
-    for (const item of (result.cardTransactionList as Array<Record<string, unknown>>)) {
-      if (item.txnIsrael) txns.push(...(item.txnIsrael as CalTransaction[]));
-      if (item.txnAbroad) txns.push(...(item.txnAbroad as CalTransaction[]));
+
+    const body = await res.json().catch(() => ({})) as Record<string, unknown>;
+    const result = body.result as Record<string, unknown> | undefined;
+
+    const txns: CalTransaction[] = [];
+    const bankAccounts = (result?.bankAccounts as Array<Record<string, unknown>>) ?? [];
+    for (const acct of bankAccounts) {
+      for (const dd of (acct.debitDates as Array<Record<string, unknown>>) ?? []) {
+        if (dd.txnIsrael) txns.push(...(dd.txnIsrael as CalTransaction[]));
+        if (dd.txnAbroad) txns.push(...(dd.txnAbroad as CalTransaction[]));
+        if (dd.transactions) txns.push(...(dd.transactions as CalTransaction[]));
+      }
     }
+    if (result?.cardTransactionList) {
+      for (const item of (result.cardTransactionList as Array<Record<string, unknown>>)) {
+        if (item.txnIsrael) txns.push(...(item.txnIsrael as CalTransaction[]));
+        if (item.txnAbroad) txns.push(...(item.txnAbroad as CalTransaction[]));
+      }
+    }
+    console.log(`[cal-direct] fetchCompleted ${mStr}/${year} card=${cardUniqueId.slice(-4)} → ${txns.length} txns` +
+      ` resultKeys=${Object.keys(result ?? {}).join(',')}`);
+    return txns;
   }
-  console.log(`[cal-direct] fetchCompleted ${month}/${year} card=${cardUniqueId.slice(-4)} → ${txns.length} txns`);
-  return txns;
+  return [];
 }
 
 // ─── Normalization ────────────────────────────────────────────────────────────
