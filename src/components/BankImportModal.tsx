@@ -93,7 +93,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
     ({ discount: 'Discount Bank', visaCal: 'Visa Cal', visaCalFast: 'Visa Cal (Fast)', isracard: 'Isracard', max: 'Max', amex: 'Amex' }[p] ?? p);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100] p-4">
       <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full transition-all ${
         step === 'review' ? 'max-w-2xl' : 'max-w-md'
       }`}>

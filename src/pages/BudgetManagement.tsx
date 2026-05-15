@@ -53,10 +53,14 @@ export const BudgetManagement: React.FC = () => {
     if (searchParams.get('create') === 'true') {
       setActiveTab('overview');
       setAutoCreate(true);
-      setSearchParams({});
+      const p = new URLSearchParams(searchParams);
+      p.delete('create');
+      setSearchParams(p, { replace: true });
     } else if (searchParams.get('subtab') === 'settings') {
       setActiveTab('settings');
-      setSearchParams({});
+      const p = new URLSearchParams(searchParams);
+      p.delete('subtab');
+      setSearchParams(p, { replace: true });
     }
   }, []);
 
