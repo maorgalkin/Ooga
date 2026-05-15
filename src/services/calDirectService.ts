@@ -49,6 +49,8 @@ interface CalTransaction {
   trnCurrencySymbol?: string;
   debCrdCurrencySymbol?: string;
   currencyCode?: string;
+  trnType?: string;
+  trnTypeCode?: string | number;
   transTypeCommentDetails?: unknown;
   installmentsNumber?: number;
   numberOfPayments?: number;
@@ -56,6 +58,19 @@ interface CalTransaction {
   firstPaymentAmount?: number;
   cardUniqueId?: string;
   [key: string]: unknown;
+}
+
+// Hebrew/English refund indicators used by Cal
+const REFUND_PATTERNS = ['זיכוי', 'זיכוי חו"ל', 'החזר', 'credit', 'refund', 'CREDIT', 'REFUND'];
+function isRefund(tx: CalTransaction): boolean {
+  const type = String(tx.trnType ?? tx.transTypeCommentDetails ?? '').toLowerCase();
+  return REFUND_PATTERNS.some(p => String(tx.trnType ?? '').includes(p) || type.includes(p.toLowerCase()));
+}
+
+// ILS currency symbols / codes that mean the amount is already in shekels
+const ILS_SYMBOLS = new Set(['ils', '₪', 'nis', '376']);
+function isIlsCurrency(symbol?: string): boolean {
+  return !symbol || ILS_SYMBOLS.has(symbol.toLowerCase());
 }
 
 interface NormalizedTx {
@@ -251,28 +266,67 @@ async function normalizeTransaction(
   isPending: boolean,
   cardLast4: string | null
 ): Promise<NormalizedTx> {
-  const chargedAmount =
-    tx.chargedAmount ?? tx.transactionAmount ?? tx.trnAmt ?? tx.authAmount ?? tx.activityAmount ?? 0;
-  const date =
-    tx.debCrdDate ?? tx.trnPurchaseDate ?? tx.activityDate ?? tx.transDate ?? tx.purchaseDate ?? new Date().toISOString();
+  // Purchase date (actual transaction date) takes priority over billing/debit date
+  const purchaseDate =
+    tx.trnPurchaseDate ?? tx.purchaseDate ?? tx.activityDate ?? tx.transDate;
+  const billingDate = tx.debCrdDate;
+  const date = purchaseDate ?? billingDate ?? new Date().toISOString();
+
   const description = tx.merchantName ?? 'Unknown';
   const installments = tx.installmentsNumber ?? tx.numberOfPayments ?? null;
 
-  const dedupe_hash = await sha256Hex(`${date.slice(0, 10)}|${chargedAmount}|${description}`);
+  // Currency resolution:
+  // chargedAmount is in ILS (what's billed to the card).
+  // transactionAmount / trnAmt may be in a foreign currency.
+  const txCurrency = tx.trnCurrencySymbol ?? tx.currencyCode;
+  const chargedInIls = tx.chargedAmount ?? tx.activityAmount ?? tx.authAmount;
+  const foreignAmount = tx.transactionAmount ?? tx.trnAmt;
+
+  let amount: number;
+  let originalAmount: number | null = null;
+  let originalCurrency: string | null = null;
+  let fxMemo: string | null = null;
+
+  if (chargedInIls != null) {
+    // Settled: chargedAmount is always in ILS for Israeli cards
+    amount = Math.abs(chargedInIls);
+    if (foreignAmount != null && !isIlsCurrency(txCurrency) && foreignAmount !== chargedInIls) {
+      originalAmount = Math.abs(foreignAmount);
+      originalCurrency = txCurrency ?? null;
+    }
+  } else if (foreignAmount != null && !isIlsCurrency(txCurrency)) {
+    // Pending foreign transaction: only foreign amount available, no ILS rate yet
+    amount = Math.abs(foreignAmount);
+    originalAmount = Math.abs(foreignAmount);
+    originalCurrency = txCurrency ?? null;
+    fxMemo = `Foreign currency (${txCurrency ?? 'unknown'}) — ILS amount not yet settled`;
+  } else {
+    amount = Math.abs(foreignAmount ?? 0);
+  }
+
+  // Refund / credit detection: check trnType for Hebrew/English credit indicators,
+  // then fall back to sign of the raw charged amount
+  const rawSign = chargedInIls ?? foreignAmount ?? 0;
+  const refund = isRefund(tx) || rawSign < 0;
+  const type: 'income' | 'expense' = refund ? 'income' : 'expense';
+
+  const memoFromTx = tx.transTypeCommentDetails ? String(tx.transTypeCommentDetails) : null;
+  const memo = [fxMemo, memoFromTx].filter(Boolean).join(' | ') || null;
+
+  const dedupe_hash = await sha256Hex(`${date.slice(0, 10)}|${amount}|${description}`);
 
   return {
     date: date.slice(0, 10),
     description,
-    amount: Math.abs(chargedAmount),
-    type: chargedAmount < 0 ? 'income' : 'expense',
+    amount,
+    type,
     category: 'Uncategorized',
-    original_amount:
-      tx.transactionAmount != null && tx.transactionAmount !== chargedAmount ? tx.transactionAmount : null,
-    original_currency: tx.trnCurrencySymbol ?? null,
-    processed_date: isPending ? null : (tx.debCrdDate?.slice(0, 10) ?? null),
+    original_amount: originalAmount,
+    original_currency: originalCurrency,
+    processed_date: isPending ? null : (billingDate?.slice(0, 10) ?? null),
     installment_number: tx.currentPaymentNum ?? null,
     installment_total: installments,
-    memo: tx.transTypeCommentDetails ? String(tx.transTypeCommentDetails) : null,
+    memo,
     bank_card_last4: cardLast4,
     dedupe_hash,
     status: isPending ? 'pending' : 'completed',

@@ -186,10 +186,10 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
             </button>
           </div>
 
-          {/* Transaction table */}
+          {/* Transaction list */}
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-            {/* Table header */}
-            <div className="grid grid-cols-[32px_70px_1fr_110px_150px] items-center gap-1 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
+            {/* Desktop table header */}
+            <div className="hidden sm:grid sm:grid-cols-[32px_70px_1fr_110px_150px] items-center gap-1 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
               <input
                 type="checkbox"
                 checked={allChecked}
@@ -203,67 +203,134 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
               <span>Category</span>
             </div>
 
+            {/* Mobile select-all row */}
+            <div className="sm:hidden flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+              <input
+                type="checkbox"
+                checked={allChecked}
+                ref={(el) => { if (el) el.indeterminate = someChecked; }}
+                onChange={(e) => toggleAll(e.target.checked)}
+                className="w-4 h-4 cursor-pointer"
+              />
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Select all</span>
+            </div>
+
             {/* Scrollable rows */}
             <div className="max-h-72 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700/50">
               {transactions.map((tx) => {
                 const override = categoryOverrides.get(tx.id);
-                const displayCategory = override?.name ?? tx.category;
                 const displayCategoryId = override?.id ?? tx.category_id ?? '';
                 const isChecked = selected.has(tx.id);
 
                 return (
                   <div
                     key={tx.id}
-                    className={`grid grid-cols-[32px_70px_1fr_110px_150px] items-center gap-1 px-3 py-2 text-sm transition-colors ${
+                    onClick={() => toggleOne(tx.id)}
+                    className={`px-3 py-2 transition-colors cursor-pointer ${
                       isChecked
                         ? 'bg-white dark:bg-gray-800'
-                        : 'bg-gray-50 dark:bg-gray-800/40 opacity-50'
+                        : 'bg-gray-50 dark:bg-gray-800/40 opacity-60'
                     }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleOne(tx.id)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <span className="text-gray-500 dark:text-gray-400 text-xs tabular-nums">
-                      {formatDate(tx.date)}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-gray-900 dark:text-gray-100 text-xs font-medium">
-                        {tx.description}
-                      </p>
-                      {tx.installment_number && tx.installment_total && (
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                          installment {tx.installment_number}/{tx.installment_total}
-                        </span>
-                      )}
-                      {tx.memo && (
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
-                      )}
+                    {/* Desktop row */}
+                    <div className="hidden sm:grid sm:grid-cols-[32px_70px_1fr_110px_150px] items-center gap-1 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleOne(tx.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-gray-500 dark:text-gray-400 text-xs tabular-nums">
+                        {formatDate(tx.date)}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-gray-900 dark:text-gray-100 text-xs font-medium">
+                          {tx.description}
+                        </p>
+                        {tx.installment_number && tx.installment_total && (
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                            installment {tx.installment_number}/{tx.installment_total}
+                          </span>
+                        )}
+                        {tx.memo && (
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
+                        )}
+                      </div>
+                      <span className={`text-right text-xs tabular-nums font-medium ${
+                        tx.type === 'expense' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                      }`}>
+                        {formatAmount(tx, '₪')}
+                      </span>
+                      <select
+                        value={displayCategoryId}
+                        onChange={(e) => {
+                          const cat = expenseCategories.find((c: Category) => c.id === e.target.value);
+                          if (cat) setCategoryForTx(tx.id, cat.id, cat.name);
+                          else setCategoryForTx(tx.id, '', 'Uncategorized');
+                        }}
+                        disabled={!isChecked}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-1 py-1 disabled:opacity-40"
+                      >
+                        <option value="">Uncategorized</option>
+                        {expenseCategories.map((c: Category) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
                     </div>
-                    <span className={`text-right text-xs tabular-nums font-medium ${
-                      tx.type === 'expense'
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-green-600 dark:text-green-400'
-                    }`}>
-                      {formatAmount(tx, '₪')}
-                    </span>
-                    <select
-                      value={displayCategoryId}
-                      onChange={(e) => {
-                        const cat = expenseCategories.find((c: Category) => c.id === e.target.value);
-                        if (cat) setCategoryForTx(tx.id, cat.id, cat.name);
-                        else setCategoryForTx(tx.id, '', 'Uncategorized');
-                      }}
-                      disabled={!isChecked}
-                      className="w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-1 py-1 disabled:opacity-40"
-                    >
-                      <option value="">Uncategorized</option>
-                      {expenseCategories.map((c: Category) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+
+                    {/* Mobile row — two-line card */}
+                    <div className="sm:hidden flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleOne(tx.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 mt-0.5 cursor-pointer flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="truncate text-gray-900 dark:text-gray-100 text-xs font-medium">
+                            {tx.description}
+                          </p>
+                          <span className={`flex-shrink-0 text-xs tabular-nums font-semibold ${
+                            tx.type === 'expense' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                          }`}>
+                            {formatAmount(tx, '₪')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums flex-shrink-0">
+                            {formatDate(tx.date)}
+                          </span>
+                          {tx.installment_number && tx.installment_total && (
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                              {tx.installment_number}/{tx.installment_total}
+                            </span>
+                          )}
+                          {tx.memo && (
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
+                          )}
+                        </div>
+                        <select
+                          value={displayCategoryId}
+                          onChange={(e) => {
+                            const cat = expenseCategories.find((c: Category) => c.id === e.target.value);
+                            if (cat) setCategoryForTx(tx.id, cat.id, cat.name);
+                            else setCategoryForTx(tx.id, '', 'Uncategorized');
+                          }}
+                          disabled={!isChecked}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1 w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-1 py-0.5 disabled:opacity-40"
+                        >
+                          <option value="">Uncategorized</option>
+                          {expenseCategories.map((c: Category) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
