@@ -107,13 +107,13 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
   const [step, setStep] = useState<Step>('select');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [displayName, setDisplayName] = useState('');
-  const [creds, setCreds] = useState<Record<string, string>>({});
+  const [metadata, setMetadata] = useState<Record<string, string>>({});
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleSelectProvider = (p: Provider) => {
     setSelectedProvider(p);
     setDisplayName(p.label);
-    setCreds({});
+    setMetadata({});
     setStep('credentials');
   };
 
@@ -121,7 +121,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
     if (!selectedProvider) return;
     setStep('testing');
     try {
-      await addConnection(selectedProvider.id, creds, displayName);
+      await addConnection(selectedProvider.id, metadata, displayName);
       setStep('success');
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to save connection');
@@ -129,7 +129,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
     }
   };
 
-  const allFieldsFilled = selectedProvider?.fields.every((f) => creds[f.key]?.trim());
+  const allFieldsFilled = selectedProvider?.fields.every((f) => metadata[f.key]?.trim());
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -194,8 +194,8 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                     type={field.type}
                     inputMode={field.inputMode}
                     placeholder={field.placeholder}
-                    value={creds[field.key] ?? ''}
-                    onChange={(e) => setCreds((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                    value={metadata[field.key] ?? ''}
+                    onChange={(e) => setMetadata((prev) => ({ ...prev, [field.key]: e.target.value }))}
                     autoComplete="off"
                     className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
                   />

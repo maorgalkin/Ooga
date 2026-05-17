@@ -40,51 +40,50 @@ export interface BankConnection {
 export { requestCalOtp as requestCalOtpDirect, verifyCalOtp } from './calDirectService';
 export type { CalCard } from './calDirectService';
 
-async function authHeaders(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
-}
-
-// ─── Connection management ────────────────────────────────────────────────────
+// ─── Connection management (direct Supabase — no server needed) ───────────────
 
 export async function listConnections(): Promise<BankConnection[]> {
-  const res = await fetch('/api/connections', { headers: await authHeaders() });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error ?? 'Failed to list connections');
-  }
-  const data = await res.json() as { connections: BankConnection[] };
-  return data.connections;
+  const { data, error } = await supabase
+    .from('bank_connections')
+    .select('id, provider, display_name, last_sync_at, is_active, created_at, metadata')
+    .eq('is_active', true)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as BankConnection[];
 }
 
 export async function addConnection(
   provider: string,
-  credentials: Record<string, string>,
+  metadata: Record<string, unknown>,
   displayName: string
 ): Promise<BankConnection> {
-  const res = await fetch('/api/connections', {
-    method: 'POST',
-    headers: await authHeaders(),
-    body: JSON.stringify({ provider, credentials, displayName }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error ?? 'Failed to add connection');
-  }
-  const data = await res.json() as { connection: BankConnection };
-  return data.connection;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('bank_connections')
+    .insert({
+      user_id: user.id,
+      provider,
+      display_name: displayName,
+      metadata,
+      is_active: true,
+    })
+    .select('id, provider, display_name, last_sync_at, is_active, created_at, metadata')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as BankConnection;
 }
 
 export async function deleteConnection(connectionId: string): Promise<void> {
-  const res = await fetch(`/api/connections?id=${connectionId}`, {
-    method: 'DELETE',
-    headers: await authHeaders(),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { error?: string }).error ?? 'Failed to delete connection');
-  }
+  const { error } = await supabase
+    .from('bank_connections')
+    .delete()
+    .eq('id', connectionId);
+
+  if (error) throw new Error(error.message);
 }
 
 // ─── Cal import flow ──────────────────────────────────────────────────────────

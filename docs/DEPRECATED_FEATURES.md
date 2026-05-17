@@ -225,3 +225,67 @@ const allMonths = Array.from({ length: 24 }, (_, index) => {
 
 _Document additional deprecated features here as they are retired._
 
+---
+
+## Vercel Serverless API + Server-Side Bank Credential Storage (Deprecated: May 2026)
+
+### Summary
+The app previously used a Vercel serverless function (`/api/connections`) to manage bank connection credentials. This function encrypted credentials server-side using AES-256-GCM before writing them to Supabase, requiring both an `ENCRYPTION_KEY` and `SUPABASE_SERVICE_ROLE_KEY` on the server. As part of the migration to Cloudflare Pages hosting and client-side Cal import, this server layer was eliminated entirely.
+
+### Core Functionality That Was Retired
+
+**`/api/connections` (Vercel serverless function):**
+- `GET /api/connections` — list active connections for the authenticated user (using service role)
+- `POST /api/connections` — encrypt credentials with AES-256-GCM and store in `credentials_encrypted`
+- `DELETE /api/connections?id=X` — delete a connection row
+- JWT authentication via Supabase `auth.uid()` verified server-side
+
+**`api-src/connections.ts`** — TypeScript source for the above handler
+
+**`api-src/health.ts`** + `/api/health` — simple health-check endpoint returning Node version
+
+**`build-api.mjs`** — esbuild bundler that compiled `api-src/*.ts` → `api/*.js` for Vercel
+
+**`vercel.json`** — SPA rewrite rules + build config for Vercel deployment
+
+### Why It Was Removed
+
+1. **Server eliminated**: With client-side Cal import (`calDirectService.ts`), the app never needs server-side code to import transactions. No server → no API route needed.
+2. **Encryption was vestigial**: The `credentials_encrypted` field was only useful when the server needed to re-authenticate to the bank on behalf of the user (old relay model). The new client-side flow uses OTP → browser holds the session token temporarily; nothing sensitive is stored.
+3. **metadata replaces credentials**: Bank connection metadata (`national ID`, `last4Digits`) is stored in `bank_connections.metadata` (jsonb), protected by Supabase RLS. Only the owning user can read it via their JWT; only the project admin can access it via the Supabase dashboard.
+4. **Cost**: Cloudflare Pages is free. Vercel free tier had limitations; this simplifies the deployment stack.
+
+### Migration Path
+- **`/api/connections` fetch calls** → direct `supabase.from('bank_connections')` queries in `bankImportService.ts`
+- **`credentials` parameter** in `addConnection()` → `metadata` parameter (the same key-value data, just stored differently)
+- **RLS policies** added via migration 032 to allow client INSERT/UPDATE on `bank_connections`
+- **`credentials_encrypted`** column made nullable (migration 032); existing rows retain their values but new rows set it to null
+- **`ENCRYPTION_KEY`** env var removed — no longer needed
+- **`SUPABASE_SERVICE_ROLE_KEY`** env var removed from server — still usable by developer via Supabase dashboard but not deployed anywhere
+- **SPA routing** (`vercel.json` rewrites) → `public/_redirects` (`/* /index.html 200`) for Cloudflare Pages
+
+### Security Trade-offs Documented
+- **Old**: national ID AES-256-GCM encrypted in DB; decryption key on Vercel (accessible to Vercel + developer)
+- **New**: national ID plaintext in Supabase `metadata` jsonb; protected by RLS (accessible to user + developer via Supabase dashboard); disk encrypted by Supabase infrastructure (AES-256)
+- Net difference is minimal for a personal/family app where the developer is the sole DB admin
+
+### Files Removed
+- `api/` (compiled Vercel handlers)
+- `api-src/` (TypeScript sources)
+- `build-api.mjs`
+- `vercel.json`
+
+### Environment Variables Removed
+- `SUPABASE_SERVICE_ROLE_KEY` (server-side)
+- `ENCRYPTION_KEY` (AES key for credential encryption)
+- `VITE_SCRAPER_SERVICE_URL` (relay URL — relay removed in an earlier deprecation)
+- `VITE_SCRAPER_API_KEY` (relay API key)
+
+### Related Active Code
+- `src/services/bankImportService.ts` — now uses `supabase.from('bank_connections')` directly
+- `src/services/calDirectService.ts` — client-side Cal import (no server needed)
+- `src/components/AddBankAccountModal.tsx` — stores collected fields as `metadata`
+- `supabase/migrations/032_bank_connections_client_rls.sql` — INSERT/UPDATE RLS policies
+
+---
+
