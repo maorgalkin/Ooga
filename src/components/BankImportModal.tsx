@@ -75,8 +75,9 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   };
 
   const handleStart = async () => {
-    const conn = activeConnection ?? connections.find((c) => c.provider === 'visaCalFast') ?? connections[0];
+    const conn = activeConnection ?? connections.find((c) => isCalProvider(c.provider)) ?? connections[0];
     if (!conn) { setStep('no_accounts'); return; }
+    if (!isCalProvider(conn.provider)) return; // should never reach OTP for unsupported providers
     await startOtpRequest(conn);
   };
 
@@ -107,6 +108,8 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
 
   const providerLabel = (p: string) =>
     ({ discount: 'Discount Bank', visaCal: 'Visa Cal', visaCalFast: 'Visa Cal (Fast)', isracard: 'Isracard', max: 'Max', amex: 'Amex' }[p] ?? p);
+
+  const isCalProvider = (p: string) => p === 'visaCal' || p === 'visaCalFast';
 
   // When closing during review, delete all imported transactions first
   const handleClose = async () => {
@@ -255,8 +258,12 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
               </div>
 
               <p className="text-xs text-gray-500 dark:text-gray-500">
-                Tapping <strong>Send OTP</strong> will text a verification code to your registered phone number.
-                Imported transactions start as <strong>Uncategorized</strong>. Duplicates are skipped.
+                {activeConnection && !isCalProvider(activeConnection.provider) ? (
+                  <>Direct import for <strong>{providerLabel(activeConnection.provider)}</strong> is not yet supported. Stay tuned!</>
+                ) : (
+                  <>Tapping <strong>Send OTP</strong> will text a verification code to your registered phone number.
+                  Imported transactions start as <strong>Uncategorized</strong>. Duplicates are skipped.</>
+                )}
               </p>
 
               <div className="flex gap-3 pt-1">
@@ -266,12 +273,14 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={handleStart}
-                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
-                >
-                  Send OTP →
-                </button>
+                {(!activeConnection || isCalProvider(activeConnection.provider)) && (
+                  <button
+                    onClick={handleStart}
+                    className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+                  >
+                    Send OTP →
+                  </button>
+                )}
               </div>
             </div>
           )}
