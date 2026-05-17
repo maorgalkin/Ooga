@@ -39,9 +39,11 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
         if (conns.length === 0) {
           setStep('no_accounts');
         } else if (selectedConnectionId) {
+          // Pre-select the account but always land on confirm so the user
+          // can review the period and explicitly consent before the OTP SMS is sent.
           const preSelected = conns.find(c => c.id === selectedConnectionId) ?? conns[0];
           setActiveConnection(preSelected);
-          startOtpRequest(preSelected);
+          setStep('confirm');
         } else {
           setStep('confirm');
         }
@@ -63,7 +65,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   };
 
   const handleStart = async () => {
-    const conn = connections.find((c) => c.provider === 'visaCalFast') ?? connections[0];
+    const conn = activeConnection ?? connections.find((c) => c.provider === 'visaCalFast') ?? connections[0];
     if (!conn) { setStep('no_accounts'); return; }
     await startOtpRequest(conn);
   };
@@ -164,7 +166,16 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
 
           {step === 'confirm' && (
             <div className="space-y-4">
-              {connections.length > 0 && (
+              {/* Show the target account — highlighted if pre-selected from a tile, list otherwise */}
+              {activeConnection ? (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{activeConnection.display_name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{providerLabel(activeConnection.provider)}</p>
+                  </div>
+                </div>
+              ) : connections.length > 0 ? (
                 <div>
                   <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                     Connected accounts ({connections.length})
@@ -179,7 +190,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                     ))}
                   </ul>
                 </div>
-              )}
+              ) : null}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -191,12 +202,13 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
                 >
                   {[1, 2, 3, 6, 12].map((m) => (
-                    <option key={m} value={m}>Last {m} month{m > 1 ? 's' : ''}</option>
+                    <option key={m} value={m}>{m === 1 ? 'Current billing cycle' : `Last ${m} billing cycles`}</option>
                   ))}
                 </select>
               </div>
 
               <p className="text-xs text-gray-500 dark:text-gray-500">
+                Tapping <strong>Send OTP</strong> will text a verification code to your registered phone number.
                 Imported transactions start as <strong>Uncategorized</strong>. Duplicates are skipped.
               </p>
 
@@ -211,7 +223,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                   onClick={handleStart}
                   className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
                 >
-                  Start Import
+                  Send OTP →
                 </button>
               </div>
             </div>
@@ -244,20 +256,6 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm text-center tracking-widest"
                 autoFocus
               />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Import period
-                </label>
-                <select
-                  value={months}
-                  onChange={(e) => setMonths(Number(e.target.value))}
-                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
-                >
-                  {[1, 2, 3, 6, 12].map((m) => (
-                    <option key={m} value={m}>{m === 1 ? 'This month only' : `Last ${m} months`}</option>
-                  ))}
-                </select>
-              </div>
               <button
                 onClick={handleOtpSubmit}
                 disabled={!otpCode.trim() || otpSubmitting}
