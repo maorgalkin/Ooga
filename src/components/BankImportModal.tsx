@@ -7,6 +7,7 @@ import {
   fetchImportedTransactions,
   deleteTransactions,
   type BankConnection,
+  type ImportPeriod,
 } from '../services/bankImportService';
 import ImportReviewStep from './ImportReviewStep';
 
@@ -20,9 +21,18 @@ interface Props {
 
 type Step = 'loading' | 'confirm' | 'no_accounts' | 'requesting_otp' | 'awaiting_otp' | 'importing' | 'review' | 'complete' | 'error';
 
+const SIX_MONTHS_AGO = (() => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 6);
+  return d.toISOString().slice(0, 10);
+})();
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
 export default function BankImportModal({ onClose, onImportComplete, onAddAccount, selectedConnectionId }: Props) {
   const [step, setStep] = useState<Step>('loading');
-  const [months, setMonths] = useState(1);
+  const [period, setPeriod] = useState<ImportPeriod>({ type: 'current_month' });
+  const [customStart, setCustomStart] = useState(SIX_MONTHS_AGO);
   const [connections, setConnections] = useState<BankConnection[]>([]);
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
   const [dbSessionId, setDbSessionId] = useState<string | null>(null);
@@ -74,12 +84,14 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
     if (!activeConnection || !calSessionToken || !otpCode.trim()) return;
     setOtpSubmitting(true);
     setStep('importing');
+    const activePeriod: ImportPeriod =
+      period.type === 'custom' ? { type: 'custom', startDate: customStart } : period;
     try {
       const { dbSessionId: sid, imported, skipped } = await importCalDirect(
         activeConnection,
         calSessionToken,
         otpCode.trim(),
-        months
+        activePeriod
       );
       setResult({ imported, skipped });
       setDbSessionId(sid ?? null);
@@ -192,19 +204,54 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 </div>
               ) : null}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Import period
                 </label>
-                <select
-                  value={months}
-                  onChange={(e) => setMonths(Number(e.target.value))}
-                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
-                >
-                  {[1, 2, 3, 6, 12].map((m) => (
-                    <option key={m} value={m}>{m === 1 ? 'Current billing cycle' : `Last ${m} billing cycles`}</option>
+                <div className="flex flex-col gap-2">
+                  {([ 
+                    { value: 'current_month', label: 'Current month', desc: `${new Date().toLocaleString('default', { month: 'long' })} 1st – today` },
+                    { value: 'last_month',    label: 'Last month',    desc: (() => { const d = new Date(); d.setMonth(d.getMonth()-1); return d.toLocaleString('default', { month: 'long', year: 'numeric' }); })() },
+                    { value: 'custom',        label: 'Custom',        desc: 'Pick a start date (up to 6 months back)' },
+                  ] as const).map(({ value, label, desc }) => (
+                    <label key={value} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      period.type === value
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="period"
+                        value={value}
+                        checked={period.type === value}
+                        onChange={() => setPeriod({ type: value } as ImportPeriod)}
+                        className="mt-0.5 flex-shrink-0"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{label}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{desc}</p>
+                      </div>
+                    </label>
                   ))}
-                </select>
+                </div>
+                {period.type === 'custom' && (
+                  <div className="pt-1">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                      Start date
+                    </label>
+                    <input
+                      type="date"
+                      value={customStart}
+                      min={SIX_MONTHS_AGO}
+                      max={TODAY}
+                      onChange={(e) => setCustomStart(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
+                    />
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Transactions from this date through today will be imported.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <p className="text-xs text-gray-500 dark:text-gray-500">

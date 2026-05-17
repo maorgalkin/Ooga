@@ -233,7 +233,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                     }`}
                   >
                     {/* Desktop row */}
-                    <div className="hidden sm:grid sm:grid-cols-[32px_70px_1fr_110px_150px] items-center gap-1 text-sm">
+                    <div className="hidden sm:grid sm:grid-cols-[32px_70px_1fr_60px_110px_150px] items-center gap-1 text-sm">
                       <input
                         type="checkbox"
                         checked={isChecked}
@@ -257,6 +257,12 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                           <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
                         )}
                       </div>
+                      {/* Card badge */}
+                      {tx.bank_card_last4 ? (
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums text-center self-center">
+                          ···· {tx.bank_card_last4}
+                        </span>
+                      ) : <span />}
                       <span className={`text-right text-xs tabular-nums font-medium ${
                         tx.type === 'expense' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
                       }`}>
@@ -304,6 +310,11 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                           <span className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums flex-shrink-0">
                             {formatDate(tx.date)}
                           </span>
+                          {tx.bank_card_last4 && (
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums flex-shrink-0">
+                              ···· {tx.bank_card_last4}
+                            </span>
+                          )}
                           {tx.installment_number && tx.installment_total && (
                             <span className="text-[10px] text-gray-400 dark:text-gray-500">
                               {tx.installment_number}/{tx.installment_total}

@@ -73,6 +73,61 @@ function isIlsCurrency(symbol?: string): boolean {
   return !symbol || ILS_SYMBOLS.has(symbol.toLowerCase());
 }
 
+// ─── Period types ─────────────────────────────────────────────────────────────
+
+export type ImportPeriod =
+  | { type: 'current_month' }
+  | { type: 'last_month' }
+  | { type: 'custom'; startDate: string }; // YYYY-MM-DD, max 6 months back
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * For a given period, compute:
+ *  - monthYears: which Cal billing-cycle months to request (always includes
+ *    one month before and after the calendar range to handle cycle offsets)
+ *  - startDate / endDate: ISO date strings to post-filter the results
+ */
+function computeFetchPlan(
+  period: ImportPeriod,
+  now: Date
+): { monthYears: { month: number; year: number }[]; startDate: string; endDate: string } {
+  const today = now.toISOString().slice(0, 10);
+
+  const addMonths = (base: Date, delta: number) =>
+    new Date(base.getFullYear(), base.getMonth() + delta, 1);
+
+  const toYM = (d: Date) => ({ month: d.getMonth() + 1, year: d.getFullYear() });
+
+  const monthsInRange = (from: Date, to: Date) => {
+    const result: { month: number; year: number }[] = [];
+    let d = new Date(from.getFullYear(), from.getMonth(), 1);
+    while (d <= to) { result.push(toYM(d)); d = addMonths(d, 1); }
+    return result;
+  };
+
+  if (period.type === 'current_month') {
+    const start = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-01`;
+    // Fetch one month before, current month, and next month to cover billing-cycle offsets
+    const months = monthsInRange(addMonths(now, -1), addMonths(now, 1));
+    return { monthYears: months, startDate: start, endDate: today };
+  }
+
+  if (period.type === 'last_month') {
+    const lastMonth = addMonths(now, -1);
+    const start = `${lastMonth.getFullYear()}-${pad2(lastMonth.getMonth() + 1)}-01`;
+    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0); // last day of prev month
+    const end = lastDay.toISOString().slice(0, 10);
+    const months = monthsInRange(addMonths(lastMonth, -1), addMonths(lastMonth, 1));
+    return { monthYears: months, startDate: start, endDate: end };
+  }
+
+  // custom
+  const start = new Date(period.startDate);
+  const months = monthsInRange(addMonths(start, -1), addMonths(now, 1));
+  return { monthYears: months, startDate: period.startDate, endDate: today };
+}
+
 interface NormalizedTx {
   date: string;
   description: string;
@@ -405,7 +460,7 @@ async function pushToSupabase(
 export async function importCalTransactions(
   connectionId: string,
   otpToken: string,
-  months: number,
+  period: ImportPeriod,
   onProgress?: (msg: string) => void
 ): Promise<{ dbSessionId: string; imported: number; skipped: number }> {
   const log = (msg: string) => {
@@ -432,17 +487,10 @@ export async function importCalTransactions(
   if (cards.length === 0) throw new Error('No cards found on account');
   log(`Found ${cards.length} card(s): ${cards.map(c => c.last4Digits).join(', ')}`);
 
-  // Build month list: months=1 fetches the current billing cycle,
-  // months=3 fetches the last 3 billing cycles, etc.
-  // Cal's API already returns only the requested billing cycle — no need to
-  // post-filter by calendar date, since a billing cycle (e.g. Apr 2 → May 2)
-  // naturally contains purchases from the previous calendar month.
+  // Compute which billing-cycle months to request and the date range to keep
   const now = new Date();
-  const monthYears: { month: number; year: number }[] = [];
-  for (let i = 0; i < months; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    monthYears.push({ month: d.getMonth() + 1, year: d.getFullYear() });
-  }
+  const { monthYears, startDate, endDate } = computeFetchPlan(period, now);
+  log(`Fetching billing cycles: ${monthYears.map(m => `${m.month}/${m.year}`).join(', ')} | filter: ${startDate} → ${endDate}`);
 
   // Fetch transactions
   const allRawTxns: NormalizedTx[] = [];
@@ -462,6 +510,12 @@ export async function importCalTransactions(
   );
   log(`Fetched ${allRawTxns.length} raw transactions`);
 
+  // Post-filter to the requested calendar date range
+  const filtered = allRawTxns.filter(tx => tx.date >= startDate && tx.date <= endDate);
+  if (filtered.length < allRawTxns.length) {
+    log(`Kept ${filtered.length} transactions in range (dropped ${allRawTxns.length - filtered.length} outside ${startDate}–${endDate})`);
+  }
+
   // Create import session — requires INSERT policy (migration 031).
   // Falls back to null (nullable FK) if the insert fails for any reason.
   let dbSessionId: string | null = null;
@@ -473,7 +527,7 @@ export async function importCalTransactions(
   dbSessionId = (sessionRow as { id: string } | null)?.id ?? null;
 
   // Push to Supabase
-  const { imported, skipped } = await pushToSupabase(allRawTxns, user.id, householdId, connectionId, dbSessionId);
+  const { imported, skipped } = await pushToSupabase(filtered, user.id, householdId, connectionId, dbSessionId);
 
   // Update last_sync_at
   await supabase

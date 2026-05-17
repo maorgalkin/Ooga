@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { requestCalOtp as _requestCalOtp, verifyCalOtp, importCalTransactions } from './calDirectService';
+export type { ImportPeriod } from './calDirectService';
 
 export type ImportStatus =
   | 'logging_in'
@@ -22,6 +23,7 @@ export interface ReviewTransaction {
   installment_total: number | null;
   memo: string | null;
   bank_connection_id: string | null;
+  bank_card_last4: string | null;
 }
 
 export interface BankConnection {
@@ -106,14 +108,14 @@ export async function importCalDirect(
   connection: BankConnection,
   calSessionToken: string,
   otpCode: string,
-  months: number,
+  period: import('./calDirectService').ImportPeriod,
   onProgress?: (msg: string) => void
 ): Promise<{ dbSessionId: string; imported: number; skipped: number }> {
   const nationalId = (connection.metadata?.id as string | undefined) ?? '';
   if (!nationalId) throw new Error('Connection is missing national ID in metadata. Please reconnect your account.');
 
   const otpToken = await verifyCalOtp(nationalId, calSessionToken, otpCode);
-  return importCalTransactions(connection.id, otpToken, months, onProgress);
+  return importCalTransactions(connection.id, otpToken, period, onProgress);
 }
 
 // ─── Import review (direct Supabase queries) ──────────────────────────────────
@@ -121,7 +123,7 @@ export async function importCalDirect(
 export async function fetchImportedTransactions(dbSessionId: string): Promise<ReviewTransaction[]> {
   const { data, error } = await supabase
     .from('transactions')
-    .select('id, date, description, amount, type, category, category_id, original_amount, original_currency, installment_number, installment_total, memo, bank_connection_id')
+    .select('id, date, description, amount, type, category, category_id, original_amount, original_currency, installment_number, installment_total, memo, bank_connection_id, bank_card_last4')
     .eq('import_session_id', dbSessionId)
     .order('date', { ascending: false });
 
