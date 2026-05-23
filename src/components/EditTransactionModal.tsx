@@ -155,7 +155,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto overscroll-contain touch-pan-y">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900">Edit Transaction</h2>
           <button
@@ -179,7 +179,8 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
               value={formData.date}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+              style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
             />
           </div>
 
