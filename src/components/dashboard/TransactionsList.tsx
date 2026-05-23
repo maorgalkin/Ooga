@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Edit2, Trash2, CheckSquare } from 'lucide-react';
 import { getCategoryColor } from '../../utils/categoryColors';
 import type { Transaction, FamilyMember } from '../../types';
@@ -32,6 +32,19 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressStartedRef = useRef(false);
+  const pointerMoveThreshold = useRef(false);
+
+  // Prevent context menu on long-press (mobile)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if (pressTimerRef.current || pressStartedRef.current) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('contextmenu', handler, { passive: false });
+    return () => document.removeEventListener('contextmenu', handler);
+  }, []);
 
   const exitSelectionMode = useCallback(() => {
     setSelectionMode(false);
@@ -108,22 +121,35 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
               key={t.id}
               onClick={selectionMode ? () => toggleSelect(t.id) : undefined}
               onPointerDown={e => {
-                if (!selectionMode) {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                  pressTimerRef.current = setTimeout(() => {
-                    setSelectionMode(true);
-                    setSelectedIds(new Set([t.id]));
-                  }, 500);
+                if (selectionMode) return;
+                // Don't trigger long-press from the edit button
+                if ((e.target as HTMLElement).closest('button[data-edit-btn]')) return;
+                pressStartedRef.current = true;
+                pointerMoveThreshold.current = false;
+                pressTimerRef.current = setTimeout(() => {
+                  pressTimerRef.current = null;
+                  setSelectionMode(true);
+                  setSelectedIds(new Set([t.id]));
+                }, 500);
+              }}
+              onPointerMove={() => {
+                // Cancel long-press if pointer moves (prevents accidental triggers during scroll)
+                if (!pointerMoveThreshold.current && pressTimerRef.current) {
+                  pointerMoveThreshold.current = true;
+                  clearTimeout(pressTimerRef.current);
+                  pressTimerRef.current = null;
                 }
               }}
               onPointerUp={() => {
+                pressStartedRef.current = false;
                 if (pressTimerRef.current) { clearTimeout(pressTimerRef.current); pressTimerRef.current = null; }
               }}
-              onPointerLeave={() => {
+              onPointerCancel={() => {
+                pressStartedRef.current = false;
                 if (pressTimerRef.current) { clearTimeout(pressTimerRef.current); pressTimerRef.current = null; }
               }}
-              className={`bg-white dark:bg-gray-800 rounded-lg shadow border transition-shadow ${
-                selectionMode ? 'cursor-pointer select-none' : ''
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow border transition-shadow touch-manipulation select-none ${
+                selectionMode ? 'cursor-pointer' : ''
               } ${
                 isSelected
                   ? 'border-blue-500 dark:border-blue-400 ring-1 ring-blue-300 dark:ring-blue-700'
@@ -172,7 +198,11 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                   </div>
                   {!selectionMode && (
                     <button
-                      onClick={() => onEditTransaction(t)}
+                      data-edit-btn
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditTransaction(t);
+                      }}
                       className="text-gray-400 hover:text-blue-600 transition-colors p-1"
                       title="Edit transaction"
                     >
