@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useActiveBudget } from '../hooks/useBudgets';
 import { useCategories } from '../hooks/useCategories';
 import { PersonalBudgetEditor } from '../components/PersonalBudgetEditor';
-import { PersonalBudgetDisplay } from '../components/PersonalBudgetDisplay';
+import { BudgetOverviewTab } from '../components/budget/BudgetOverviewTab';
 import { CategoryList } from '../components/categories';
 import { BudgetSettings } from '../components/settings';
 import { Wallet, Tag, Sliders } from 'lucide-react';
@@ -36,12 +36,6 @@ export const BudgetManagement: React.FC = () => {
     if (!editCategoryName || !categories) return null;
     return categories.find(c => c.name === editCategoryName) || null;
   }, [editCategoryName, categories]);
-
-  // Handle category click from Overview - navigate to Categories tab
-  const handleCategoryClick = useCallback((categoryName: string) => {
-    setEditCategoryName(categoryName);
-    setActiveTab('categories');
-  }, []);
 
   // Clear edit category when handled
   const handleInitialEditHandled = useCallback(() => {
@@ -134,22 +128,8 @@ export const BudgetManagement: React.FC = () => {
                 <PersonalBudgetEditor autoCreate={autoCreate} />
               </div>
             ) : (
-              // Display mode - show configured budget
-              <div>
-                {/* Tips Block - at the top */}
-                <div className={`text-sm text-gray-500 dark:text-gray-400 mb-6 p-4 ${getInactiveBg(themeColor)} rounded-lg`}>
-                  <p className="font-medium mb-2">💡 Your Budget:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>This is your configured budget used for all monthly budgets</li>
-                    <li>Click any category to edit its details, limits, or manage it</li>
-                    <li>Use the Categories tab for full category management</li>
-                  </ul>
-                </div>
-                
-                <PersonalBudgetDisplay 
-                  onCategoryClick={handleCategoryClick}
-                />
-              </div>
+              // Display mode - rich overview
+              <BudgetOverviewTab />
             )
           )}
 
