@@ -520,6 +520,12 @@ const Dashboard: React.FC = () => {
                     personalBudget={personalBudget}
                     formatCurrency={formatCurrency}
                     onCategoryClick={handleCategoryClick}
+                    onEditTransaction={setViewingTransactionDetails}
+                    onViewAllTransactions={(category) => {
+                      setSelectedDesktopCategory(category);
+                      setIsCategoryModalOpen(true);
+                    }}
+                    selectedCategory={selectedDesktopCategory}
                   />
                 </div>
               )}

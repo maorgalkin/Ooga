@@ -66,6 +66,11 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   onViewAllTransactions,
 }) => {
   const [selectedDesktopCategory, setSelectedDesktopCategory] = useState<string | null>(selectedCategory || null);
+
+  // Sync external selectedCategory prop (e.g. driven by tile click in DashboardTileLayout)
+  useEffect(() => {
+    setSelectedDesktopCategory(selectedCategory ?? null);
+  }, [selectedCategory]);
   const [focusedCategory, setFocusedCategory] = useState<{
     category: string;
     amount: number;
@@ -773,15 +778,13 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 {(() => {
                   const categoryTransactions = transactions
                     .filter(t => t.type === 'expense' && t.category === selectedDesktopCategory)
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .slice(0, 5);
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-                  const totalTransactions = transactions
-                    .filter(t => t.type === 'expense' && t.category === selectedDesktopCategory).length;
+                  const totalTransactions = categoryTransactions.length;
 
                   return (
                     <>
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                         {categoryTransactions.map((transaction) => (
                           <div
                             key={transaction.id}
