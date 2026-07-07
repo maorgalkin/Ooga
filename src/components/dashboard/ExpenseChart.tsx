@@ -776,15 +776,17 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 </div>
 
                 {(() => {
-                  const categoryTransactions = transactions
+                  const VISIBLE_COUNT = 8;
+                  const allCategoryTransactions = transactions
                     .filter(t => t.type === 'expense' && t.category === selectedDesktopCategory)
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-                  const totalTransactions = categoryTransactions.length;
+                  const totalTransactions = allCategoryTransactions.length;
+                  const categoryTransactions = allCategoryTransactions.slice(0, VISIBLE_COUNT);
 
                   return (
                     <>
-                      <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                      <div className="space-y-1.5">
                         {categoryTransactions.map((transaction) => (
                           <div
                             key={transaction.id}
@@ -801,15 +803,17 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                         ))}
                       </div>
 
-                      {/* Button container - always show See All button */}
-                      <div className="mt-4">
-                        <button
-                          onClick={() => onViewAllTransactions(selectedDesktopCategory)}
-                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                        >
-                          See All {selectedDesktopCategory} Expenses ({totalTransactions})
-                        </button>
-                      </div>
+                      {/* Show "See All" only when more transactions exist than are visible */}
+                      {totalTransactions > VISIBLE_COUNT && (
+                        <div className="mt-4">
+                          <button
+                            onClick={() => onViewAllTransactions(selectedDesktopCategory)}
+                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            See All {selectedDesktopCategory} Expenses ({totalTransactions})
+                          </button>
+                        </div>
+                      )}
                     </>
                   );
                 })()}
