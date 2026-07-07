@@ -15,6 +15,8 @@ import { generateDummyTransactions, countDummyTransactions, isDummyTransaction }
 import { useDashboardData } from '../hooks/useDashboardData';
 import { getUserLocale } from '../utils/locale';
 import { DashboardTabNavigation } from './dashboard/DashboardTabNavigation';
+import { DashboardEmptyState } from './dashboard/DashboardEmptyState';
+import { DashboardTileLayout } from './dashboard/DashboardTileLayout';
 import { ExpenseChart } from './dashboard/ExpenseChart';
 import { formatCurrencyFromSettings } from '../utils/formatCurrency';
 import { DummyDataControls } from './dashboard/DummyDataControls';
@@ -24,8 +26,11 @@ import { BuildInfo } from './BuildInfo';
 import CustomDateRangeModal from './CustomDateRangeModal';
 import * as HouseholdService from '../services/householdService';
 import type { Transaction, BudgetConfiguration } from '../types';
-import type { Household, HouseholdMember } from '../services/householdService';
+import type { Household } from '../services/householdService';
 import { getHeadingColor, getSubheadingColor } from '../utils/themeColors';
+import { AlignJustify, LayoutGrid } from 'lucide-react';
+
+type LayoutMode = 'wide' | 'tiled' | 'both';
 
 const Dashboard: React.FC = () => {
   const { transactions, familyMembers, addTransaction, deleteTransaction } = useFinance();
@@ -60,6 +65,9 @@ const Dashboard: React.FC = () => {
   const [showBreakdownInHeader, setShowBreakdownInHeader] = useState(false);
   const [viewedAlertIds, setViewedAlertIds] = useState<Set<string>>(new Set());
   const [viewingTransactionDetails, setViewingTransactionDetails] = useState<Transaction | null>(null);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
+    return (localStorage.getItem('dashboard-layout') as LayoutMode) || 'both';
+  });
   const expenseChartRef = React.useRef<HTMLDivElement>(null);
 
   // Household data
@@ -398,82 +406,123 @@ const Dashboard: React.FC = () => {
 
           {/* Empty State - Show when no transactions this month */}
           {dashboardMonthTransactions.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 border-dashed border-purple-300 dark:border-purple-600 p-12 text-center">
-              <div className="max-w-md mx-auto">
-                <div className="w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-                  Welcome to {dashboardMonthDate.toLocaleDateString(getUserLocale(), { month: 'long', year: 'numeric' })}!
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
-                  Start tracking your finances by adding your first transaction.
-                </p>
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
-                    <span>💡</span>
-                    <span>Tip: Start by recording your salary or main income for the month</span>
-                  </p>
-                </div>
-              </div>
-            </div>
+            <DashboardEmptyState
+              monthDate={dashboardMonthDate}
+              allTransactions={transactions}
+              personalBudget={personalBudget}
+              formatCurrency={formatCurrency}
+              householdName={household?.name}
+            />
           ) : (
             <>
-              {/* BUDGET PERFORMANCE - Unified Widget */}
-              <div className="mb-8">
-                {/* Mobile Sticky Header */}
-                <div className="md:hidden sticky top-0 z-10 bg-purple-100 dark:bg-purple-950/30 -mx-3 px-3 py-3 mb-4 border-b-2 border-purple-300 dark:border-purple-700">
-                  <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">
-                    Budget Performance{showBreakdownInHeader && ' | Breakdown'}
-                  </h2>
-                </div>
-                
-                {/* Desktop version - compact grid layout */}
-                <div className="max-md:hidden">
-                  <BudgetPerformanceCard 
-                    selectedMonth={dashboardMonthDate} 
-                    isCompact={true} 
-                    themeColor="purple"
-                    onAlertsViewed={handleAlertsViewed}
-                    onCategoryClick={handleCategoryClick}
-                  />
-                </div>
-                
-                {/* Mobile/Tablet version - full layout with breakdown observer */}
-                <div className="md:hidden">
-                  <BudgetPerformanceCard 
-                    selectedMonth={dashboardMonthDate} 
-                    isCompact={false} 
-                    themeColor="purple"
-                    onBreakdownVisible={handleBreakdownVisible}
-                    onAlertsViewed={handleAlertsViewed}
-                    onCategoryClick={handleCategoryClick}
-                  />
-                </div>
+              {/* Layout toggle — top right of content */}
+              <div className="flex items-center justify-end mb-4 gap-1">
+                <span className="text-xs text-gray-400 mr-2">Layout:</span>
+                {(
+                  [
+                    { id: 'wide', label: 'Wide', Icon: AlignJustify },
+                    { id: 'both', label: 'Both', Icon: LayoutGrid },
+                    { id: 'tiled', label: 'Tiled', Icon: LayoutGrid },
+                  ] as const
+                ).map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setLayoutMode(id);
+                      localStorage.setItem('dashboard-layout', id);
+                    }}
+                    className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                      layoutMode === id
+                        ? 'bg-purple-100 dark:bg-purple-900/40 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 font-medium'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
 
-              {/* 2. BUDGET CATEGORY BREAKDOWN - Second Priority */}
-              <div ref={expenseChartRef} className="mb-8">
-                {/* Mobile Sticky Header */}
-                <div className="md:hidden sticky top-0 z-10 bg-purple-100 dark:bg-purple-950/30 -mx-3 px-3 py-3 mb-4 border-b-2 border-purple-300 dark:border-purple-700">
-                  <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Expenses by Category</h2>
+              {/* WIDE layout */}
+              {(layoutMode === 'wide' || layoutMode === 'both') && (
+                <div>
+                  {layoutMode === 'both' && (
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                      Layout A — Wide
+                    </p>
+                  )}
+
+                  {/* Mobile Sticky Header */}
+                  <div className="md:hidden sticky top-0 z-10 bg-purple-100 dark:bg-purple-950/30 -mx-3 px-3 py-3 mb-4 border-b-2 border-purple-300 dark:border-purple-700">
+                    <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">
+                      Budget Performance{showBreakdownInHeader && ' | Breakdown'}
+                    </h2>
+                  </div>
+
+                  {/* Single BudgetPerformanceCard — always expanded (isCompact=false) */}
+                  <div className="mb-8">
+                    <BudgetPerformanceCard
+                      selectedMonth={dashboardMonthDate}
+                      isCompact={false}
+                      themeColor="purple"
+                      onBreakdownVisible={handleBreakdownVisible}
+                      onAlertsViewed={handleAlertsViewed}
+                      onCategoryClick={handleCategoryClick}
+                    />
+                  </div>
+
+                  {/* Budget Category Breakdown */}
+                  <div ref={expenseChartRef} className="mb-8">
+                    <div className="md:hidden sticky top-0 z-10 bg-purple-100 dark:bg-purple-950/30 -mx-3 px-3 py-3 mb-4 border-b-2 border-purple-300 dark:border-purple-700">
+                      <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Expenses by Category</h2>
+                    </div>
+                    <ExpenseChart
+                      categoryData={dashboardCategoryData}
+                      transactions={dashboardMonthTransactions}
+                      personalBudget={personalBudget}
+                      formatCurrency={formatCurrency}
+                      selectedCategory={selectedDesktopCategory}
+                      onEditTransaction={setViewingTransactionDetails}
+                      onViewAllTransactions={(category) => {
+                        setSelectedDesktopCategory(category);
+                        setIsCategoryModalOpen(true);
+                      }}
+                    />
+                  </div>
                 </div>
-                
-                <ExpenseChart
-                  categoryData={dashboardCategoryData}
-                  transactions={dashboardMonthTransactions}
-                  personalBudget={personalBudget}
-                  formatCurrency={formatCurrency}
-                  selectedCategory={selectedDesktopCategory}
-                  onEditTransaction={setViewingTransactionDetails}
-                  onViewAllTransactions={(category) => {
-                    setSelectedDesktopCategory(category);
-                    setIsCategoryModalOpen(true);
-                  }}
-                />
-              </div>
+              )}
+
+              {/* Divider between layouts in "both" mode */}
+              {layoutMode === 'both' && (
+                <div className="relative my-8">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t-2 border-dashed border-gray-300 dark:border-gray-600" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-purple-50 dark:bg-purple-950/30 px-4 py-1 text-xs font-semibold text-gray-400 uppercase tracking-widest rounded-full border border-gray-300 dark:border-gray-600">
+                      vs
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* TILED layout */}
+              {(layoutMode === 'tiled' || layoutMode === 'both') && (
+                <div>
+                  {layoutMode === 'both' && (
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                      Layout B — Tiled
+                    </p>
+                  )}
+                  <DashboardTileLayout
+                    monthDate={dashboardMonthDate}
+                    transactions={dashboardMonthTransactions}
+                    categoryData={dashboardCategoryData}
+                    personalBudget={personalBudget}
+                    formatCurrency={formatCurrency}
+                    onCategoryClick={handleCategoryClick}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

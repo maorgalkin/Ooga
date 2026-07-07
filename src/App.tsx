@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FinanceProvider } from './context/FinanceContext';
@@ -49,6 +49,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const { signOut, user } = useAuth();
+
+  // Allow any child component (e.g. DashboardEmptyState) to open the modal
+  useEffect(() => {
+    const handler = () => setIsAddTransactionOpen(true);
+    window.addEventListener('open-add-transaction', handler);
+    return () => window.removeEventListener('open-add-transaction', handler);
+  }, []);
 
   return (
     <div className="min-h-screen dark:bg-gray-900 transition-colors duration-500">
