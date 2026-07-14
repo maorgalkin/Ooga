@@ -1,7 +1,12 @@
-// DashboardTileLayout — single-column tiled layout:
-// 1. Stat chips (6+, responsive row)
-// 2. Category tiles (2-per-row grid, fixed-height scroll)
-// 3. ExpenseChart (pie centred; slides left + transaction list on category click)
+// DashboardTileLayout
+//
+// sm/md  → stacked: chips · categories · pie
+// lg+    → 2-column: [chips + pie] left | [categories] right
+//
+// Desktop click behaviour:
+//   • If category has transactions → categories panel fuses out (width→0),
+//     pie expands to fill. X closes the transaction list and detaches categories back.
+//   • If category has 0 transactions → nothing happens.
 
 import React, { useMemo, useState } from 'react';
 import {
@@ -14,6 +19,8 @@ import {
   ArrowDownUp,
   Gauge,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useMonthlyBudget } from '../../hooks/useBudgets';
 import { budgetService } from '../../services/budgetService';
 import { ExpenseChart } from './ExpenseChart';
@@ -37,6 +44,8 @@ interface DashboardTileLayoutProps {
   selectedCategory?: string | null;
 }
 
+const CATEGORY_PANEL_WIDTH = 300;
+
 const progressColor = (pct: number) =>
   pct >= 100 ? 'bg-red-500' : pct >= 75 ? 'bg-yellow-500' : 'bg-green-500';
 
@@ -51,6 +60,8 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
   onViewAllTransactions,
   selectedCategory,
 }) => {
+  const navigate = useNavigate();
+
   const selectedYear = monthDate.getFullYear();
   const selectedMonthNum = monthDate.getMonth() + 1;
   const { data: monthlyBudget } = useMonthlyBudget(selectedYear, selectedMonthNum);
@@ -60,13 +71,10 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
 
   const [inspectedCategories, setInspectedCategories] = useState<Set<string>>(new Set());
   const [localSelected, setLocalSelected] = useState<string | null>(selectedCategory ?? null);
+  // true = categories panel has been fused away (desktop only)
+  const [isFused, setIsFused] = useState(false);
 
-  const handleTileClick = (categoryName: string) => {
-    setInspectedCategories((prev) => new Set([...prev, categoryName]));
-    setLocalSelected((prev) => (prev === categoryName ? null : categoryName));
-    onCategoryClick(categoryName);
-  };
-
+  // ── Budget analysis ────────────────────────────────────────────────────────
   const budgetConfig = useMemo((): BudgetConfiguration => {
     if (personalBudget) {
       const categories = monthlyBudget?.categories
@@ -118,8 +126,41 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
     analysis.totalBudgeted > 0
       ? Math.min(100, (analysis.totalSpent / analysis.totalBudgeted) * 100)
       : 0;
-  const variance = analysis.totalBudgeted - analysis.totalSpent; // positive = under budget
+  const variance = analysis.totalBudgeted - analysis.totalSpent;
   const overBudgetCount = analysis.categoryComparisons.filter((c) => c.status === 'over').length;
+
+  // ── Category helper ────────────────────────────────────────────────────────
+  const hasCategoryTransactions = (categoryName: string): boolean =>
+    transactions.some(
+      (t) =>
+        t.type === 'expense' &&
+        t.category === categoryName &&
+        new Date(t.date).getMonth() === monthDate.getMonth() &&
+        new Date(t.date).getFullYear() === year
+    );
+
+  // Desktop: fuse on click (only if transactions exist)
+  const handleDesktopTileClick = (name: string) => {
+    if (!hasCategoryTransactions(name)) return;
+    setInspectedCategories((prev) => new Set([...prev, name]));
+    const next = localSelected === name ? null : name;
+    setLocalSelected(next);
+    setIsFused(next !== null);
+    onCategoryClick(name);
+  };
+
+  // Mobile: just select (no fuse)
+  const handleSmallTileClick = (name: string) => {
+    setInspectedCategories((prev) => new Set([...prev, name]));
+    setLocalSelected((prev) => (prev === name ? null : name));
+    onCategoryClick(name);
+  };
+
+  // Called when user clicks X in the transaction list panel
+  const handleDeselect = () => {
+    setLocalSelected(null);
+    setIsFused(false);
+  };
 
   // ── Stat chips ─────────────────────────────────────────────────────────────
   type Chip = {
@@ -202,7 +243,6 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
     },
   ];
 
-  // Optional 7th chip: over-budget categories
   if (overBudgetCount > 0) {
     chips.push({
       label: 'Over budget',
@@ -214,15 +254,10 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
     });
   }
 
-  // Optional 8th chip: budget adjustments pending next month
-  const adjustmentsTotal =
-    monthlyBudget?.adjustment_count && monthlyBudget.adjustment_count > 0
-      ? monthlyBudget.adjustment_count
-      : null;
-  if (adjustmentsTotal) {
+  if (monthlyBudget?.adjustment_count && monthlyBudget.adjustment_count > 0) {
     chips.push({
       label: 'Adjustments',
-      value: String(adjustmentsTotal),
+      value: String(monthlyBudget.adjustment_count),
       sub: 'next month',
       color: 'text-purple-600 dark:text-purple-400',
       bg: 'bg-purple-50 dark:bg-purple-900/20',
@@ -230,7 +265,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
     });
   }
 
-  // ── Category tiles ─────────────────────────────────────────────────────────
+  // ── Category sort ──────────────────────────────────────────────────────────
   const sortedCategories = useMemo(
     () =>
       [...analysis.categoryComparisons]
@@ -249,104 +284,157 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
     [analysis.categoryComparisons]
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-  return (
-    <div className="max-w-4xl mx-auto space-y-4">
-      {/* 1. STAT CHIPS — fills 2→3→6 columns responsively */}
-      <div
-        className="grid gap-2"
-        style={{
-          gridTemplateColumns: `repeat(${Math.min(chips.length, 6)}, minmax(0, 1fr))`,
-        }}
-      >
-        {chips.map(({ label, value, sub, color, bg, Icon }) => (
-          <div
-            key={label}
-            className={`rounded-xl p-3 ${bg} border border-white/60 dark:border-gray-700/50`}
+  // ── Reusable chip row renderer ─────────────────────────────────────────────
+  const renderChips = () => (
+    <div
+      className="grid gap-2"
+      style={{ gridTemplateColumns: `repeat(${Math.min(chips.length, 6)}, minmax(0, 1fr))` }}
+    >
+      {chips.map(({ label, value, sub, color, bg, Icon }) => (
+        <div
+          key={label}
+          className={`rounded-xl p-3 ${bg} border border-white/60 dark:border-gray-700/50`}
+        >
+          <div className="flex items-center gap-1 mb-1.5">
+            <Icon className={`h-3 w-3 ${color} flex-shrink-0`} />
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{label}</p>
+          </div>
+          <p className={`text-lg font-bold leading-none ${color} truncate`}>{value}</p>
+          {sub && <p className="text-xs text-gray-400 mt-1 truncate">{sub}</p>}
+        </div>
+      ))}
+    </div>
+  );
+
+  // ── Reusable category grid renderer ───────────────────────────────────────
+  const renderCategoryGrid = (onTileClick: (name: string) => void) => (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      {sortedCategories.length === 0 ? (
+        <div className="p-6 text-center text-gray-400 text-sm">
+          <p>No budget categories configured</p>
+          <button
+            onClick={() => navigate('/?tab=budget')}
+            className="mt-2 text-purple-600 dark:text-purple-400 underline text-xs"
           >
-            <div className="flex items-center gap-1 mb-1.5">
-              <Icon className={`h-3 w-3 ${color} flex-shrink-0`} />
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{label}</p>
-            </div>
-            <p className={`text-lg font-bold leading-none ${color} truncate`}>{value}</p>
-            {sub && <p className="text-xs text-gray-400 mt-1 truncate">{sub}</p>}
-          </div>
-        ))}
-      </div>
+            Set up your budget →
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 p-2 max-h-[320px] overflow-y-auto">
+          {sortedCategories.map((comp) => {
+            const pct =
+              comp.budgeted > 0 ? Math.min(100, (comp.actual / comp.budgeted) * 100) : 0;
+            const catColor = personalBudget?.categories[comp.category]?.color;
+            const isOver = comp.status === 'over';
+            const showDot = isOver && !inspectedCategories.has(comp.category);
+            const isSelected = localSelected === comp.category;
+            const noTxns = !hasCategoryTransactions(comp.category);
 
-      {/* 2. CATEGORY TILES — always 2-per-row, scrollable */}
-      {sortedCategories.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-2 gap-2 p-2 max-h-[320px] overflow-y-auto">
-            {sortedCategories.map((comp) => {
-              const pct =
-                comp.budgeted > 0
-                  ? Math.min(100, (comp.actual / comp.budgeted) * 100)
-                  : 0;
-              const catColor = personalBudget?.categories[comp.category]?.color;
-              const isOver = comp.status === 'over';
-              const showDot = isOver && !inspectedCategories.has(comp.category);
-              const isSelected = localSelected === comp.category;
+            return (
+              <button
+                key={comp.category}
+                onClick={() => onTileClick(comp.category)}
+                // dim tiles with no transactions to signal they're non-interactive on desktop
+                className={`relative text-left p-3 rounded-lg border transition-all ${
+                  isSelected
+                    ? 'border-purple-400 dark:border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-sm'
+                    : noTxns
+                    ? 'border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-700/20 opacity-60 cursor-default'
+                    : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-sm'
+                }`}
+              >
+                {showDot && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-700" />
+                )}
 
-              return (
-                <button
-                  key={comp.category}
-                  onClick={() => handleTileClick(comp.category)}
-                  className={`relative text-left p-3 rounded-lg border transition-all ${
-                    isSelected
-                      ? 'border-purple-400 dark:border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-sm'
-                      : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-sm'
-                  }`}
-                >
-                  {showDot && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-700" />
-                  )}
-
-                  <div className="flex items-center gap-1.5 mb-2">
-                    {catColor && (
-                      <span
-                        className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: catColor }}
-                      />
-                    )}
-                    <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
-                      {comp.category}
-                    </span>
-                  </div>
-
-                  <div className="flex items-baseline justify-between mb-1.5">
-                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                      {formatCurrency(comp.actual)}
-                    </span>
-                    <span className="text-xs text-gray-400 ml-1">
-                      / {formatCurrency(comp.budgeted)}
-                    </span>
-                  </div>
-
-                  <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${progressColor(pct)}`}
-                      style={{ width: `${pct}%` }}
+                <div className="flex items-center gap-1.5 mb-2">
+                  {catColor && (
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: catColor }}
                     />
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">{Math.round(pct)}%</p>
-                </button>
-              );
-            })}
-          </div>
+                  )}
+                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
+                    {comp.category}
+                  </span>
+                </div>
+
+                <div className="flex items-baseline justify-between mb-1.5">
+                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                    {formatCurrency(comp.actual)}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-1">
+                    / {formatCurrency(comp.budgeted)}
+                  </span>
+                </div>
+
+                <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${progressColor(pct)}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-1">{Math.round(pct)}%</p>
+              </button>
+            );
+          })}
         </div>
       )}
+    </div>
+  );
 
-      {/* 3. EXPENSE PIE — centred; slides left when category selected */}
-      <ExpenseChart
-        categoryData={categoryData}
-        transactions={transactions}
-        personalBudget={personalBudget}
-        formatCurrency={formatCurrency}
-        selectedCategory={localSelected}
-        onEditTransaction={onEditTransaction}
-        onViewAllTransactions={onViewAllTransactions}
-      />
+  // ── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <div className="max-w-4xl mx-auto">
+      {/* ── SMALL / MEDIUM: stacked ── */}
+      <div className="lg:hidden space-y-4">
+        {renderChips()}
+        {renderCategoryGrid(handleSmallTileClick)}
+        <ExpenseChart
+          categoryData={categoryData}
+          transactions={transactions}
+          personalBudget={personalBudget}
+          formatCurrency={formatCurrency}
+          selectedCategory={localSelected}
+          onEditTransaction={onEditTransaction}
+          onViewAllTransactions={onViewAllTransactions}
+        />
+      </div>
+
+      {/* ── LARGE: 2-column — [chips + pie] left | [categories] right ── */}
+      <div className="hidden lg:flex gap-4">
+        {/* Left: chips + pie */}
+        <div className="flex-1 min-w-0 space-y-4">
+          {renderChips()}
+          <ExpenseChart
+            categoryData={categoryData}
+            transactions={transactions}
+            personalBudget={personalBudget}
+            formatCurrency={formatCurrency}
+            selectedCategory={localSelected}
+            onEditTransaction={onEditTransaction}
+            onViewAllTransactions={onViewAllTransactions}
+            onDeselect={handleDeselect}
+          />
+        </div>
+
+        {/* Right: categories — fuses out when a category with transactions is selected */}
+        <AnimatePresence>
+          {!isFused && (
+            <motion.div
+              key="categories-panel"
+              initial={{ width: CATEGORY_PANEL_WIDTH, opacity: 1 }}
+              animate={{ width: CATEGORY_PANEL_WIDTH, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.28, ease: 'easeInOut' }}
+              className="overflow-hidden flex-shrink-0"
+              style={{ width: CATEGORY_PANEL_WIDTH }}
+            >
+              {renderCategoryGrid(handleDesktopTileClick)}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

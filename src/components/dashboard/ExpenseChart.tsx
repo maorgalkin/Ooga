@@ -19,6 +19,8 @@ interface ExpenseChartProps {
   selectedCategory?: string | null;
   onEditTransaction: (transaction: Transaction) => void;
   onViewAllTransactions: (category: string) => void;
+  /** Called when the user dismisses the transaction list (X button) */
+  onDeselect?: () => void;
 }
 
 type Point = { x: number; y: number };
@@ -64,6 +66,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   selectedCategory,
   onEditTransaction,
   onViewAllTransactions,
+  onDeselect,
 }) => {
   const [selectedDesktopCategory, setSelectedDesktopCategory] = useState<string | null>(selectedCategory || null);
 
@@ -766,7 +769,10 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                     {selectedDesktopCategory} Transactions
                   </h3>
                   <button
-                    onClick={() => setSelectedDesktopCategory(null)}
+                    onClick={() => {
+                      setSelectedDesktopCategory(null);
+                      onDeselect?.();
+                    }}
                     className="text-gray-400 hover:text-gray-600"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
