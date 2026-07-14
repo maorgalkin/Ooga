@@ -685,7 +685,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
           <motion.div
             ref={chartContainerRef}
             animate={{
-              width: selectedDesktopCategory ? '40%' : '100%'
+              width: selectedDesktopCategory ? '50%' : '100%'
             }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="flex-shrink-0 p-8 relative"
