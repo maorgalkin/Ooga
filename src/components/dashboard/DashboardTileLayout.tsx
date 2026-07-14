@@ -78,7 +78,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
     const ro = new ResizeObserver(check);
     ro.observe(el);
     return () => { el.removeEventListener('scroll', check); ro.disconnect(); };
-  }, [categoryFilter]); // re-check when filter changes
+  }, [categoryFilter, isFused]); // re-check when filter changes or grid mounts/unmounts
 
   // ── Click-away when fused ─────────────────────────────────────────────────
   useEffect(() => {
@@ -150,6 +150,12 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
   };
 
   const handleDeselect = () => { setLocalSelected(null); setIsFused(false); };
+
+  const handlePieSliceSelect = (category: string) => {
+    setInspectedCategories(prev => new Set([...prev, category]));
+    setLocalSelected(category);
+    setIsFused(true);
+  };
 
   // ── Chip definitions + actions ────────────────────────────────────────────
   type Chip = {
@@ -338,7 +344,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none rounded-b-xl"
+                className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none rounded-b-xl"
               />
             )}
           </AnimatePresence>
@@ -412,6 +418,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
               formatCurrency={formatCurrency} selectedCategory={localSelected}
               onEditTransaction={onEditTransaction} onViewAllTransactions={onViewAllTransactions}
               onDeselect={handleDeselect}
+              onCategorySelect={handlePieSliceSelect}
             />
           </div>
         </div>

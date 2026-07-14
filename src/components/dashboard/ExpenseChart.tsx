@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Sector } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCategoryColor } from '../../utils/categoryColors';
 import type { Transaction } from '../../types';
@@ -21,6 +21,8 @@ interface ExpenseChartProps {
   onViewAllTransactions: (category: string) => void;
   /** Called when the user dismisses the transaction list (X button) */
   onDeselect?: () => void;
+  /** Called when a pie slice is clicked on desktop, so the parent can sync selection state */
+  onCategorySelect?: (category: string) => void;
 }
 
 type Point = { x: number; y: number };
@@ -67,6 +69,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   onEditTransaction,
   onViewAllTransactions,
   onDeselect,
+  onCategorySelect,
 }) => {
   const [selectedDesktopCategory, setSelectedDesktopCategory] = useState<string | null>(selectedCategory || null);
 
@@ -581,8 +584,29 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
     } else {
       // On desktop, set selected category for side panel
       setSelectedDesktopCategory(entry.category);
+      onCategorySelect?.(entry.category);
     }
   };
+
+  // Index of the currently selected slice (for activeShape rendering)
+  const selectedIndex = selectedDesktopCategory
+    ? categoryData.findIndex(c => c.category === selectedDesktopCategory)
+    : -1;
+
+  // Render the selected slice larger to make it stand out
+  const renderActiveSlice = (props: any) => (
+    <g data-category={props.category}>
+      <Sector
+        cx={props.cx}
+        cy={props.cy}
+        innerRadius={props.innerRadius}
+        outerRadius={props.outerRadius + 12}
+        startAngle={props.startAngle}
+        endAngle={props.endAngle}
+        fill={props.fill}
+      />
+    </g>
+  );
 
   const playgroundBackgroundPattern = 'radial-gradient(circle at center, rgba(124, 58, 237, 0.08) 0, rgba(124, 58, 237, 0.08) 2px, transparent 2px), linear-gradient(rgba(124, 58, 237, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(124, 58, 237, 0.05) 1px, transparent 1px)';
   const playgroundBackgroundSize = '24px 24px, 24px 24px, 24px 24px';
@@ -676,7 +700,22 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-      <h2 className="max-md:hidden text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Expenses by Category</h2>
+      {/* Header: title + selected category name/color */}
+      <div className="max-md:hidden flex items-center gap-2 mb-4">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0">Expenses by Category</h2>
+        {selectedDesktopCategory && (() => {
+          const catColor = getCategoryColor(selectedDesktopCategory, 'expense', personalBudget).hexColor;
+          return (
+            <>
+              <span className="text-gray-300 dark:text-gray-600 font-light">·</span>
+              <span className="flex items-center gap-1.5 text-lg font-semibold truncate" style={{ color: catColor }}>
+                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: catColor }} />
+                {selectedDesktopCategory}
+              </span>
+            </>
+          );
+        })()}
+      </div>
 
       {/* Desktop Layout - Chart slides left when category selected */}
       <div className="max-md:hidden">
@@ -711,10 +750,13 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                   innerRadius={0}
                   fill="#8884d8"
                   dataKey="amount"
+                  activeIndex={selectedIndex >= 0 ? selectedIndex : undefined}
+                  activeShape={renderActiveSlice}
                 >
                   {categoryData.map((entry, index) => {
                     const colors = getCategoryColor(entry.category, 'expense', personalBudget);
                     const isHovered = hoveredCategory === entry.category;
+                    const isOtherSelected = !!selectedDesktopCategory && selectedDesktopCategory !== entry.category;
                     return (
                       <Cell
                         key={`cell-${index}`}
@@ -723,6 +765,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                         data-category={entry.category}
                         stroke={isHovered ? '#fff' : undefined}
                         strokeWidth={isHovered ? 4 : undefined}
+                        opacity={isOtherSelected ? 0.35 : 1}
                       />
                     );
                   })}
@@ -895,10 +938,15 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 innerRadius={0}
                 fill="#8884d8"
                 dataKey="amount"
+                activeIndex={focusedCategory
+                  ? categoryData.findIndex(c => c.category === focusedCategory.category)
+                  : undefined}
+                activeShape={renderActiveSlice}
               >
                 {categoryData.map((entry, index) => {
                   const colors = getCategoryColor(entry.category, 'expense', personalBudget);
                   const isHovered = hoveredCategory === entry.category;
+                  const isOtherFocused = !!focusedCategory && focusedCategory.category !== entry.category;
                   return (
                     <Cell
                       key={`mobile-cell-${index}`}
@@ -907,6 +955,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                       data-category={entry.category}
                       stroke={isHovered ? '#fff' : undefined}
                       strokeWidth={isHovered ? 4 : undefined}
+                      opacity={isOtherFocused ? 0.35 : 1}
                       onClick={() => {
                         handleCategoryClick(entry);
                       }}
