@@ -762,18 +762,59 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 50 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="flex-1 border-l pl-4 pr-2"
+                className="flex-1 border-l pl-4 pr-2 overflow-y-auto"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {selectedDesktopCategory} Transactions
+                {/* Category budget overview — shown at top of unified panel */}
+                {(() => {
+                  const spent = categoryData.find(c => c.category === selectedDesktopCategory)?.amount ?? 0;
+                  const budget = personalBudget?.categories[selectedDesktopCategory]?.monthlyLimit ?? 0;
+                  const catColor = personalBudget?.categories[selectedDesktopCategory]?.color;
+                  const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+                  const barColor = pct >= 100 ? 'bg-red-500' : pct >= 75 ? 'bg-yellow-500' : 'bg-green-500';
+                  if (budget === 0) return null;
+                  return (
+                    <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        {catColor && (
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: catColor }} />
+                        )}
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate">
+                          {selectedDesktopCategory}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between mb-1.5">
+                        <span className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                          {formatCurrency(spent)}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          of {formatCurrency(budget)}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-xs text-gray-400">{Math.round(pct)}% used</span>
+                        <span className="text-xs text-gray-400">
+                          {formatCurrency(Math.max(0, budget - spent))} remaining
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Header: title + small X (visible on mobile, hidden on desktop where block-level X is used) */}
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Transactions
                   </h3>
                   <button
                     onClick={() => {
                       setSelectedDesktopCategory(null);
                       onDeselect?.();
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded"
+                    aria-label="Close"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -796,20 +837,19 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                         {categoryTransactions.map((transaction) => (
                           <div
                             key={transaction.id}
-                            className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                             onClick={() => onEditTransaction(transaction)}
                           >
-                            <div className="flex-1 min-w-0 text-sm text-gray-900 truncate">
+                            <div className="flex-1 min-w-0 text-sm text-gray-900 dark:text-gray-100 truncate">
                               {transaction.description}
                             </div>
-                            <div className="text-sm font-semibold text-gray-900 ml-3 flex-shrink-0">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 ml-3 flex-shrink-0">
                               {formatCurrency(transaction.amount)}
                             </div>
                           </div>
                         ))}
                       </div>
 
-                      {/* Show "See All" only when more transactions exist than are visible */}
                       {totalTransactions > VISIBLE_COUNT && (
                         <div className="mt-4">
                           <button
