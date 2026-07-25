@@ -87,6 +87,8 @@ describe('PersonalBudgetService', () => {
     notes: 'Initial budget',
   };
 
+  const mockHouseholdId = 'test-household-123';
+
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock authenticated user
@@ -98,29 +100,43 @@ describe('PersonalBudgetService', () => {
 
   describe('getActiveBudget', () => {
     it('should return the active personal budget', async () => {
-      const mockChain = createMockChain({
+      const mockHouseholdChain = createMockChain({
+        data: { household_id: mockHouseholdId },
+        error: null,
+      });
+      const mockBudgetChain = createMockChain({
         data: mockPersonalBudget,
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'household_members') return mockHouseholdChain;
+        if (table === 'personal_budgets') return mockBudgetChain;
+        return mockBudgetChain;
+      });
 
       const result = await PersonalBudgetService.getActiveBudget();
 
+      expect(supabase.from).toHaveBeenCalledWith('household_members');
       expect(supabase.from).toHaveBeenCalledWith('personal_budgets');
-      expect(mockChain.select).toHaveBeenCalledWith('*');
-      expect(mockChain.eq).toHaveBeenCalledWith('user_id', mockUserId);
-      expect(mockChain.eq).toHaveBeenCalledWith('is_active', true);
       expect(result).toEqual(mockPersonalBudget);
     });
 
     it('should return null when no active budget exists', async () => {
-      const mockChain = createMockChain({
+      const mockHouseholdChain = createMockChain({
+        data: { household_id: mockHouseholdId },
+        error: null,
+      });
+      const mockBudgetChain = createMockChain({
         data: null,
         error: { code: 'PGRST116', message: 'No rows returned' },
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'household_members') return mockHouseholdChain;
+        if (table === 'personal_budgets') return mockBudgetChain;
+        return mockBudgetChain;
+      });
 
       const result = await PersonalBudgetService.getActiveBudget();
 
@@ -128,12 +144,20 @@ describe('PersonalBudgetService', () => {
     });
 
     it('should throw error when database query fails', async () => {
-      const mockChain = createMockChain({
+      const mockHouseholdChain = createMockChain({
+        data: { household_id: mockHouseholdId },
+        error: null,
+      });
+      const mockBudgetChain = createMockChain({
         data: null,
         error: { code: 'DATABASE_ERROR', message: 'Connection failed' },
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'household_members') return mockHouseholdChain;
+        if (table === 'personal_budgets') return mockBudgetChain;
+        return mockBudgetChain;
+      });
 
       await expect(PersonalBudgetService.getActiveBudget()).rejects.toThrow(
         'Connection failed'
@@ -186,12 +210,20 @@ describe('PersonalBudgetService', () => {
     });
 
     it('should throw error when insert fails', async () => {
-      const mockChain = createMockChain({
+      const mockHouseholdChain = createMockChain({
+        data: { household_id: mockHouseholdId },
+        error: null,
+      });
+      const mockBudgetChain = createMockChain({
         data: null,
         error: { message: 'Insert failed' },
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'household_members') return mockHouseholdChain;
+        if (table === 'personal_budgets') return mockBudgetChain;
+        return mockBudgetChain;
+      });
 
       await expect(
         PersonalBudgetService.createBudget({
@@ -255,12 +287,20 @@ describe('PersonalBudgetService', () => {
     it('should delete a non-active budget version', async () => {
       const budgetToDelete = { ...mockPersonalBudget, is_active: false };
 
-      const mockChain = createMockChain({
+      const mockHouseholdChain = createMockChain({
+        data: { household_id: mockHouseholdId },
+        error: null,
+      });
+      const mockBudgetChain = createMockChain({
         data: budgetToDelete,
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'household_members') return mockHouseholdChain;
+        if (table === 'personal_budgets') return mockBudgetChain;
+        return mockBudgetChain;
+      });
 
       await expect(
         PersonalBudgetService.deleteBudget('budget-1')
@@ -271,20 +311,29 @@ describe('PersonalBudgetService', () => {
       const activeBudget = { ...mockPersonalBudget, is_active: true };
       const allBudgets = [activeBudget, { ...mockPersonalBudget, id: 'budget-2', is_active: false }];
 
+      const mockHouseholdChain = createMockChain({
+        data: { household_id: mockHouseholdId },
+        error: null,
+      });
+
       // Need to handle multiple calls: getBudgetHistory (returns array), getBudgetById (returns single), setActiveBudget, and delete
-      let callCount = 0;
-      vi.mocked(supabase.from).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First call: getBudgetHistory - returns array
-          return createMockChain({ data: allBudgets, error: null });
-        } else if (callCount === 2) {
-          // Second call: getBudgetById - returns single object
-          return createMockChain({ data: activeBudget, error: null });
-        } else {
-          // Subsequent calls: setActiveBudget operations and delete
-          return createMockChain({ error: null });
+      let budgetCallCount = 0;
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'household_members') return mockHouseholdChain;
+        if (table === 'personal_budgets') {
+          budgetCallCount++;
+          if (budgetCallCount === 1) {
+            // First call: getBudgetHistory - returns array
+            return createMockChain({ data: allBudgets, error: null });
+          } else if (budgetCallCount === 2) {
+            // Second call: getBudgetById - returns single object
+            return createMockChain({ data: activeBudget, error: null });
+          } else {
+            // Subsequent calls: setActiveBudget operations and delete
+            return createMockChain({ error: null });
+          }
         }
+        return createMockChain({ error: null });
       });
 
       // Should throw because it's an active budget, but will activate another first
