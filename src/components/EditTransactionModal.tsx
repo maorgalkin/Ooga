@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget } from '../hooks/useBudgets';
-import { X } from 'lucide-react';
+import { X, Calendar } from 'lucide-react';
 import type { Transaction } from '../types';
 import * as SupabaseService from '../services/supabaseDataService';
 
@@ -28,6 +28,17 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
   
   // Check if this is part of an installment group
   const isInstallment = !!transaction.installment_group_id;
+
+  // Converting a regular expense into an installment plan
+  const [convertToInstallments, setConvertToInstallments] = useState(false);
+  const [numberOfInstallments, setNumberOfInstallments] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const canConvertToInstallments = !isInstallment && formData.type === 'expense';
+  const installmentCount = parseInt(numberOfInstallments) || 0;
+  const totalAmount = parseFloat(formData.amount) || 0;
+  const installmentAmounts = installmentCount >= 2 && installmentCount <= 36
+    ? SupabaseService.splitInstallmentAmounts(totalAmount, installmentCount)
+    : [];
 
   // Get currency symbol - use personal budget if available
   const getCurrencySymbol = (currency: string) => {
@@ -80,15 +91,43 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    const shouldConvert = convertToInstallments && canConvertToInstallments;
+    if (shouldConvert && (installmentCount < 2 || installmentCount > 36)) {
+      alert('Number of installments must be between 2 and 36.');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      await updateTransaction(transaction.id, {
-        ...formData,
-        amount: parseFloat(formData.amount) || 0,
-      });
+      if (shouldConvert) {
+        // Create the installment series first, then remove the original,
+        // so a failure never leaves the user without the transaction
+        await SupabaseService.addInstallmentTransactions(
+          {
+            ...formData,
+            familyMember: formData.familyMember || undefined,
+            amount: totalAmount,
+          },
+          installmentCount,
+          installmentAmounts
+        );
+        await SupabaseService.deleteTransaction(transaction.id);
+        const allTransactions = await SupabaseService.getTransactions();
+        setTransactions(allTransactions);
+      } else {
+        await updateTransaction(transaction.id, {
+          ...formData,
+          amount: parseFloat(formData.amount) || 0,
+        });
+      }
       onClose();
     } catch (error) {
       console.error('Error updating transaction:', error);
       alert('Failed to update transaction. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -203,7 +242,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {/* Amount */}
           <div>
             <label htmlFor="edit-amount" className="block text-sm font-medium text-gray-700 mb-1">
-              Amount ({currencySymbol})
+              {convertToInstallments && canConvertToInstallments ? 'Total Amount' : 'Amount'} ({currencySymbol})
             </label>
             <input
               id="edit-amount"
@@ -276,15 +315,65 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
             </select>
           </div>
 
+          {/* Convert to installments (regular expenses only) */}
+          {canConvertToInstallments && (
+            <div className="border-t border-gray-200 pt-4 space-y-2">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 flex-shrink-0">
+                  <input
+                    id="edit-installments-checkbox"
+                    type="checkbox"
+                    checked={convertToInstallments}
+                    onChange={(e) => {
+                      setConvertToInstallments(e.target.checked);
+                      if (!e.target.checked) setNumberOfInstallments('');
+                    }}
+                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="edit-installments-checkbox" className="flex items-center text-sm font-medium text-gray-700 whitespace-nowrap">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    Convert to installments
+                  </label>
+                </div>
+
+                {convertToInstallments && (
+                  <input
+                    id="edit-installments-count"
+                    type="number"
+                    min="2"
+                    max="36"
+                    value={numberOfInstallments}
+                    onChange={(e) => setNumberOfInstallments(e.target.value)}
+                    placeholder="# months"
+                    required
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
+              </div>
+
+              {convertToInstallments && (
+                <p className="text-xs text-gray-500">
+                  {installmentAmounts.length > 0
+                    ? `${installmentAmounts[0] !== installmentAmounts[1]
+                        ? `${currencySymbol}${installmentAmounts[0].toFixed(2)} + ${installmentCount - 1} × ${currencySymbol}${installmentAmounts[1].toFixed(2)}`
+                        : `${installmentCount} × ${currencySymbol}${installmentAmounts[0].toFixed(2)}`
+                      } — total ${currencySymbol}${totalAmount.toFixed(2)}. The first keeps this date, the rest fall on the 1st of each following month.`
+                    : 'Enter 2–36 installments. The amount above is treated as the total and split equally.'}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
             {!showDeleteConfirm ? (
               <>
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors font-medium"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors font-medium disabled:opacity-50"
                 >
-                  Save Changes
+                  {convertToInstallments && canConvertToInstallments ? 'Create Installments' : 'Save Changes'}
                 </button>
                 <button
                   type="button"

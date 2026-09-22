@@ -8,14 +8,15 @@
 
 ## Overview
 
-The installments feature allows users to create recurring transactions that automatically span multiple months. Each installment is created on the 1st of each month with a standardized description format.
+The installments feature allows users to create recurring transactions that automatically span multiple months. The first installment keeps the original transaction date; the rest are created on the 1st of each following month, with a standardized description format.
 
 ### Key Features
 
 ✅ **Create Installments**
 - Checkbox option in Add Transaction form
 - Input for number of installments (2-36)
-- Transactions created on 1st of each month
+- First installment keeps the chosen date; the rest land on the 1st of each following month
+- Total is split to the cent; any leftover cents go on the first installment
 - Description format: `<Original Description> [1/6]`, `[2/6]`, etc.
 
 ✅ **Delete Installments**
@@ -75,6 +76,7 @@ installment_total?: number;
 - Form reset: Clears installment fields on submit/cancel
 
 **EditTransactionModal.tsx**
+- "Convert to installments" option for regular expenses: the amount is treated as the total, split into N installments, and the original transaction is replaced by the series
 - Detects if transaction is part of installment series
 - Shows radio button options for deletion type
 - Displays installment number (e.g., "3/6")
@@ -84,7 +86,8 @@ installment_total?: number;
 
 **Unit Tests:** `tests/services/installments.test.ts` (14 tests)
 - Transaction creation with installment fields
-- Date calculation (1st of each month)
+- Date calculation (original date first, then 1st of each month)
+- Cent-accurate amount splitting (`splitInstallmentAmounts`)
 - Year rollover handling
 - Family member preservation
 - Delete operations (single, future, all)
@@ -113,12 +116,12 @@ installment_total?: number;
 **Example:** Enter total amount $300 for 6 installments
 
 **Result:** 6 transactions created at $50 each:
-- `Gym Membership [1/6]` - $50 - January 1st
+- `Gym Membership [1/6]` - $50 - January 15th (original date)
 - `Gym Membership [2/6]` - $50 - February 1st
 - `Gym Membership [3/6]` - $50 - March 1st
 - ... and so on
 
-**Note:** The amount entered is the **total cost**, automatically divided equally across all installments.
+**Note:** The amount entered is the **total cost**, divided equally across all installments and rounded to the cent (e.g. $100 over 3 → $33.34, $33.33, $33.33).
 
 ### Deleting Installments
 
@@ -163,7 +166,7 @@ AND column_name LIKE 'installment%';
 ### Basic Creation
 - [ ] Create 3-installment series
 - [ ] Verify 3 transactions appear in list
-- [ ] Check dates are 1st of each month
+- [ ] Check first date matches the chosen date, the rest are 1st of each month
 - [ ] Verify description format `[1/3]`, `[2/3]`, `[3/3]`
 - [ ] Confirm all have same `installment_group_id`
 
@@ -195,7 +198,7 @@ AND column_name LIKE 'installment%';
 ## Technical Notes
 
 ### Date Handling
-- All installments use **1st of month** for consistent billing dates
+- The first installment keeps its original date; later installments use the **1st of month** for consistent billing dates
 - Starting month is determined from the date field in the form
 - Subsequent months increment by 1 month each
 
@@ -229,7 +232,7 @@ AND column_name LIKE 'installment%';
 
 ### Components
 - ✅ `src/components/AddTransaction.tsx` (MODIFIED - UI + submit logic)
-- ✅ `src/components/EditTransactionModal.tsx` (MODIFIED - deletion options)
+- ✅ `src/components/EditTransactionModal.tsx` (MODIFIED - deletion options, convert to installments)
 
 ---
 

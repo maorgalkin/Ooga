@@ -169,9 +169,23 @@ export const deleteTransaction = async (id: string): Promise<void> => {
 
 // ==================== INSTALLMENTS ====================
 
+/**
+ * Split a total into equal installments rounded to the cent.
+ * Leftover cents go on the first installment so the parts always sum to the total.
+ */
+export const splitInstallmentAmounts = (total: number, numberOfInstallments: number): number[] => {
+  const totalCents = Math.round(total * 100);
+  const baseCents = Math.floor(totalCents / numberOfInstallments);
+  const remainderCents = totalCents - baseCents * numberOfInstallments;
+  return Array.from({ length: numberOfInstallments }, (_, i) =>
+    (i === 0 ? baseCents + remainderCents : baseCents) / 100
+  );
+};
+
 export const addInstallmentTransactions = async (
   transaction: Omit<Transaction, 'id'>,
-  numberOfInstallments: number
+  numberOfInstallments: number,
+  amounts?: number[] // Per-installment amounts; defaults to transaction.amount for each
 ): Promise<Transaction[]> => {
   const userId = await getCurrentUserId();
   const householdId = await getHouseholdId();
@@ -185,19 +199,19 @@ export const addInstallmentTransactions = async (
   const baseDate = new Date(transaction.date + 'T00:00:00'); // Ensure local timezone
   
   for (let i = 0; i < numberOfInstallments; i++) {
-    // Calculate date: add i months to the base date (1st of each month)
-    const year = baseDate.getFullYear();
-    const month = baseDate.getMonth() + i;
-    const installmentDate = new Date(year, month, 1);
+    // First installment keeps the original date; the rest fall on the 1st of each following month
+    const installmentDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, 1);
     // Format as YYYY-MM-DD in local timezone (avoid toISOString timezone issues)
-    const dateString = `${installmentDate.getFullYear()}-${String(installmentDate.getMonth() + 1).padStart(2, '0')}-01`;
+    const dateString = i === 0
+      ? transaction.date
+      : `${installmentDate.getFullYear()}-${String(installmentDate.getMonth() + 1).padStart(2, '0')}-01`;
     
     installments.push({
       user_id: userId,
       household_id: householdId,
       date: dateString,
       description: `${transaction.description} [${i + 1}/${numberOfInstallments}]`,
-      amount: transaction.amount,
+      amount: amounts?.[i] ?? transaction.amount,
       category: transaction.category,
       category_id: categoryId,
       type: transaction.type,

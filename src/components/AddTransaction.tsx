@@ -119,22 +119,22 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
     try {
       const totalAmount = parseFloat(formData.amount);
       const installmentCount = isInstallment ? parseInt(numberOfInstallments) : 1;
-      const amountPerInstallment = totalAmount / installmentCount;
 
       const transactionData = {
         type: formData.type,
         description: formData.description || `${formData.category} transaction`,
-        amount: amountPerInstallment,
+        amount: totalAmount,
         category: formData.category,
         familyMember: formData.familyMember || undefined,
         date: formData.date,
       };
 
       if (isInstallment) {
-        // Create installment transactions (amount already divided)
+        // Split the total into cent-rounded installments
         await SupabaseService.addInstallmentTransactions(
           transactionData,
-          installmentCount
+          installmentCount,
+          SupabaseService.splitInstallmentAmounts(totalAmount, installmentCount)
         );
         // Refresh transactions to show all new installments
         const allTransactions = await SupabaseService.getTransactions();
@@ -436,7 +436,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                 <div className="relative group flex-shrink-0">
                   <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
                   <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                    Amount will be divided equally across installments. Transactions created on 1st of each month (2-36 months).
+                    Amount will be divided equally across installments (rounded to the cent; any leftover goes on the first). The first installment keeps the selected date, the rest fall on the 1st of each following month (2-36 months).
                   </div>
                 </div>
               </div>
