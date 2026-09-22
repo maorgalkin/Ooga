@@ -16,6 +16,7 @@ interface DashboardEmptyStateProps {
   personalBudget: PersonalBudget | null | undefined;
   formatCurrency: (n: number) => string;
   householdName?: string;
+  isPastMonth?: boolean; // Viewing a past month from the dashboard month switcher
 }
 
 interface MonthMessage {
@@ -140,17 +141,29 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
   personalBudget,
   formatCurrency,
   householdName,
+  isPastMonth = false,
 }) => {
   const navigate = useNavigate();
 
   const day = monthDate.getDate();
   const monthName = monthDate.toLocaleDateString(getUserLocale(), { month: 'long' });
-  const message = useMemo(() => getMonthMessage(day, monthName), [day, monthName]);
+  const message = useMemo<MonthMessage>(
+    () => isPastMonth
+      ? {
+          emoji: '🗓️',
+          title: `No transactions in ${monthName}`,
+          subtitle: 'Nothing was logged for this month. Add or import transactions to fill it in.',
+        }
+      : getMonthMessage(day, monthName),
+    [isPastMonth, day, monthName]
+  );
 
-  // Previous month data
+  // Previous month data (keyed by year/month so a fresh Date each render doesn't recompute)
+  const monthYear = monthDate.getFullYear();
+  const monthIndex = monthDate.getMonth();
   const prevDate = useMemo(
-    () => new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1),
-    [monthDate]
+    () => new Date(monthYear, monthIndex - 1, 1),
+    [monthYear, monthIndex]
   );
 
   const budgetConfig: BudgetConfiguration | null = useMemo(() => {

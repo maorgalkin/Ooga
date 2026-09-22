@@ -63,6 +63,36 @@ export const getLastNMonths = (count: number = 4) => {
 };
 
 /**
+ * Format a date as a month key (e.g., "2026-09"), used in URLs
+ */
+export const toMonthKey = (date: Date): string => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+/**
+ * Parse a month key (e.g., "2026-09") into the first day of that month
+ * @returns null if the key is missing or malformed
+ */
+export const parseMonthKey = (key: string | null | undefined): Date | null => {
+  const match = key?.match(/^(\d{4})-(\d{2})$/);
+  if (!match) return null;
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+  return new Date(Number(match[1]), month - 1, 1);
+};
+
+/**
+ * Index of the month to show by default in a newest-first month list:
+ * the current month, or the closest past month if the current one has no data.
+ * Future months (e.g. upcoming installments) are skipped.
+ */
+export const getDefaultMonthIndex = (months: { start: Date }[], now: Date = new Date()): number => {
+  const currentMonthStart = getMonthStart(now);
+  const index = months.findIndex(m => m.start <= currentMonthStart);
+  return index === -1 ? Math.max(months.length - 1, 0) : index;
+};
+
+/**
  * Check if a date falls within a date range
  */
 export const isDateInRange = (date: Date, start: Date, end: Date): boolean => {
