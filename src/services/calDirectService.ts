@@ -15,6 +15,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { addMonthsToIsoDate } from '../utils/dateHelpers';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -33,29 +34,25 @@ export interface CalCard {
   last4Digits: string;
 }
 
-interface CalTransaction {
+// Field names verified against live Cal API responses (Sept 2026).
+// Completed = getCardTransactionsDetails, pending = getClearanceRequests.
+export interface CalTransaction {
   merchantName?: string;
-  transactionAmount?: number;
-  chargedAmount?: number;
-  authAmount?: number;
-  activityAmount?: number;
-  trnAmt?: number;
+  trnAmt?: number;                 // Full purchase amount, in trnCurrencySymbol / currencyCode
+  amtBeforeConvAndIndex?: number;  // Completed only: the amount actually charged this cycle, in ILS
+  firstPaymentAmount?: number;     // Pending only: first installment amount
   tpaApprovalAmount?: number;
-  debCrdDate?: string;
-  transDate?: string;
-  purchaseDate?: string;
-  activityDate?: string;
-  trnPurchaseDate?: string;
+  debCrdDate?: string;             // Completed only: billing date
+  trnPurchaseDate?: string;        // Original purchase date (same for every installment in a series)
   trnCurrencySymbol?: string;
   debCrdCurrencySymbol?: string;
   currencyCode?: string;
   trnType?: string;
-  trnTypeCode?: string | number;
+  trnTypeCode?: string | number;   // '8' = installments
   transTypeCommentDetails?: unknown;
-  installmentsNumber?: number;
-  numberOfPayments?: number;
-  currentPaymentNum?: number;
-  firstPaymentAmount?: number;
+  numOfPayments?: number;          // Completed only: number of installments (0 for regular purchases)
+  curPaymentNum?: number;          // Completed only: which installment this charge is
+  numberOfPayments?: number;       // Pending only: number of installments (0 for regular purchases)
   cardUniqueId?: string;
   [key: string]: unknown;
 }
@@ -88,12 +85,10 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
  *    one month before and after the calendar range to handle cycle offsets)
  *  - startDate / endDate: ISO date strings to post-filter the results
  */
-function computeFetchPlan(
+export function computeFetchPlan(
   period: ImportPeriod,
   now: Date
 ): { monthYears: { month: number; year: number }[]; startDate: string; endDate: string } {
-  const today = now.toISOString().slice(0, 10);
-
   const addMonths = (base: Date, delta: number) =>
     new Date(base.getFullYear(), base.getMonth() + delta, 1);
 
@@ -106,11 +101,16 @@ function computeFetchPlan(
     return result;
   };
 
+  // Keep through the end of the current month: installment charges already scheduled
+  // on the upcoming statement can be dated later this month
+  const lastOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const endOfThisMonth = `${lastOfThisMonth.getFullYear()}-${pad2(lastOfThisMonth.getMonth() + 1)}-${pad2(lastOfThisMonth.getDate())}`;
+
   if (period.type === 'current_month') {
     const start = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-01`;
     // Fetch one month before, current month, and next month to cover billing-cycle offsets
     const months = monthsInRange(addMonths(now, -1), addMonths(now, 1));
-    return { monthYears: months, startDate: start, endDate: today };
+    return { monthYears: months, startDate: start, endDate: endOfThisMonth };
   }
 
   if (period.type === 'last_month') {
@@ -125,10 +125,10 @@ function computeFetchPlan(
   // custom
   const start = new Date(period.startDate);
   const months = monthsInRange(addMonths(start, -1), addMonths(now, 1));
-  return { monthYears: months, startDate: period.startDate, endDate: today };
+  return { monthYears: months, startDate: period.startDate, endDate: endOfThisMonth };
 }
 
-interface NormalizedTx {
+export interface NormalizedTx {
   date: string;
   description: string;
   amount: number;
@@ -310,7 +310,12 @@ async function fetchCompletedTransactions(
     const txns: CalTransaction[] = [];
     const bankAccounts = (result?.bankAccounts as Array<Record<string, unknown>>) ?? [];
     for (const acct of bankAccounts) {
-      for (const dd of (acct.debitDates as Array<Record<string, unknown>>) ?? []) {
+      const immediateDebits = acct.immidiateDebits as Record<string, unknown> | undefined;
+      const debitDays = [
+        ...((acct.debitDates as Array<Record<string, unknown>>) ?? []),
+        ...((immediateDebits?.debitDays as Array<Record<string, unknown>>) ?? []),
+      ];
+      for (const dd of debitDays) {
         if (dd.txnIsrael) txns.push(...(dd.txnIsrael as CalTransaction[]));
         if (dd.txnAbroad) txns.push(...(dd.txnAbroad as CalTransaction[]));
         if (dd.transactions) txns.push(...(dd.transactions as CalTransaction[]));
@@ -331,27 +336,35 @@ async function fetchCompletedTransactions(
 
 // ─── Normalization ────────────────────────────────────────────────────────────
 
-async function normalizeTransaction(
+export async function normalizeTransaction(
   tx: CalTransaction,
   cardUniqueId: string,
   isPending: boolean,
   cardLast4: string | null
 ): Promise<NormalizedTx> {
-  // Purchase date (actual transaction date) takes priority over billing/debit date
-  const purchaseDate =
-    tx.trnPurchaseDate ?? tx.purchaseDate ?? tx.activityDate ?? tx.transDate;
+  const purchaseDate = (tx.trnPurchaseDate ?? tx.debCrdDate ?? new Date().toISOString()).slice(0, 10);
   const billingDate = tx.debCrdDate;
-  const date = purchaseDate ?? billingDate ?? new Date().toISOString();
-
   const description = tx.merchantName ?? 'Unknown';
-  const installments = tx.installmentsNumber ?? tx.numberOfPayments ?? null;
+
+  // Installments: pending rows are always the first payment. Regular purchases report 0 payments.
+  const paymentsTotal = Number(isPending ? tx.numberOfPayments : tx.numOfPayments) || 0;
+  const isInstallment = paymentsTotal > 1;
+  const paymentNumber = isInstallment ? (isPending ? 1 : Number(tx.curPaymentNum) || 1) : null;
+
+  // Every charge in a series carries the original purchase date. Date payment n at
+  // purchase date + (n − 1) months so each charge lands in its own month.
+  const date = paymentNumber ? addMonthsToIsoDate(purchaseDate, paymentNumber - 1) : purchaseDate;
 
   // Currency resolution:
-  // chargedAmount is in ILS (what's billed to the card).
-  // transactionAmount / trnAmt may be in a foreign currency.
+  // trnAmt is the full purchase amount in the transaction currency (the whole series for installments).
+  // amtBeforeConvAndIndex (completed) / firstPaymentAmount (pending installments) is what's charged now, in ILS.
   const txCurrency = tx.trnCurrencySymbol ?? tx.currencyCode;
-  const chargedInIls = tx.chargedAmount ?? tx.activityAmount ?? tx.authAmount;
-  const foreignAmount = tx.transactionAmount ?? tx.trnAmt;
+  const purchaseAmount = tx.trnAmt;
+  const chargedInIls: number | undefined =
+    !isPending ? tx.amtBeforeConvAndIndex
+    : isInstallment ? tx.firstPaymentAmount
+    : isIlsCurrency(txCurrency) ? purchaseAmount
+    : undefined;
 
   let amount: number;
   let originalAmount: number | null = null;
@@ -359,35 +372,39 @@ async function normalizeTransaction(
   let fxMemo: string | null = null;
 
   if (chargedInIls != null) {
-    // Settled: chargedAmount is always in ILS for Israeli cards
     amount = Math.abs(chargedInIls);
-    if (foreignAmount != null && !isIlsCurrency(txCurrency) && foreignAmount !== chargedInIls) {
-      originalAmount = Math.abs(foreignAmount);
+    if (purchaseAmount != null && !isIlsCurrency(txCurrency)) {
+      originalAmount = Math.abs(purchaseAmount);
       originalCurrency = txCurrency ?? null;
     }
-  } else if (foreignAmount != null && !isIlsCurrency(txCurrency)) {
+  } else if (purchaseAmount != null && !isIlsCurrency(txCurrency)) {
     // Pending foreign transaction: only foreign amount available, no ILS rate yet
-    amount = Math.abs(foreignAmount);
-    originalAmount = Math.abs(foreignAmount);
+    amount = Math.abs(purchaseAmount);
+    originalAmount = Math.abs(purchaseAmount);
     originalCurrency = txCurrency ?? null;
     fxMemo = `Foreign currency (${txCurrency ?? 'unknown'}) — ILS amount not yet settled`;
   } else {
-    amount = Math.abs(foreignAmount ?? 0);
+    amount = Math.abs(purchaseAmount ?? 0);
   }
 
   // Refund / credit detection: check trnType for Hebrew/English credit indicators,
   // then fall back to sign of the raw charged amount
-  const rawSign = chargedInIls ?? foreignAmount ?? 0;
+  const rawSign = chargedInIls ?? purchaseAmount ?? 0;
   const refund = isRefund(tx) || rawSign < 0;
   const type: 'income' | 'expense' = refund ? 'income' : 'expense';
 
   const memoFromTx = tx.transTypeCommentDetails ? String(tx.transTypeCommentDetails) : null;
   const memo = [fxMemo, memoFromTx].filter(Boolean).join(' | ') || null;
 
-  const dedupe_hash = await sha256Hex(`${date.slice(0, 10)}|${amount}|${description}`);
+  // Regular purchases keep the original hash inputs (purchase date | |trnAmt| | merchant) so rows
+  // imported before this change are still recognised as duplicates. Installment charges add n/N,
+  // otherwise every charge in a series would collide with the first one.
+  const dedupe_hash = isInstallment
+    ? await sha256Hex(`${date}|${amount}|${description}|${paymentNumber}/${paymentsTotal}`)
+    : await sha256Hex(`${purchaseDate}|${Math.abs(purchaseAmount ?? 0)}|${description}`);
 
   return {
-    date: date.slice(0, 10),
+    date,
     description,
     amount,
     type,
@@ -395,8 +412,8 @@ async function normalizeTransaction(
     original_amount: originalAmount,
     original_currency: originalCurrency,
     processed_date: isPending ? null : (billingDate?.slice(0, 10) ?? null),
-    installment_number: tx.currentPaymentNum ?? null,
-    installment_total: installments,
+    installment_number: paymentNumber,
+    installment_total: isInstallment ? paymentsTotal : null,
     memo,
     bank_card_last4: cardLast4,
     dedupe_hash,

@@ -124,6 +124,39 @@ export class BudgetAdjustmentService {
   }
 
   /**
+   * Get all pending adjustments effective on or before a month (read-only).
+   * Used to build a projected budget for a future month.
+   */
+  static async getPendingAdjustmentsThrough(
+    year: number,
+    month: number
+  ): Promise<BudgetAdjustment[]> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
+        .from('budget_adjustments')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_applied', false)
+        .or(`effective_year.lt.${year},and(effective_year.eq.${year},effective_month.lte.${month})`)
+        .order('effective_year', { ascending: true })
+        .order('effective_month', { ascending: true });
+
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching pending adjustments:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get pending adjustments for next month
    */
   static async getNextMonthAdjustments(): Promise<PendingAdjustmentsSummary> {

@@ -10,6 +10,7 @@ export interface Transaction {
   installment_group_id?: string;  // UUID linking all transactions in an installment series
   installment_number?: number;    // Current installment number (1-based)
   installment_total?: number;     // Total number of installments
+  projected?: boolean;            // Not in the database: an expected future charge (see utils/projections)
 }
 
 export interface Budget {

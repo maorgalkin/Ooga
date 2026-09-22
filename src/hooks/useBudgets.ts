@@ -314,6 +314,18 @@ export function usePendingAdjustments(year?: number, month?: number) {
 }
 
 /**
+ * Hook to get pending adjustments effective on or before a month (for projected budgets)
+ */
+export function usePendingAdjustmentsThrough(year?: number, month?: number) {
+  return useQuery({
+    queryKey: ['budgetAdjustments', 'pendingThrough', year, month],
+    queryFn: () => year && month ? BudgetAdjustmentService.getPendingAdjustmentsThrough(year, month) : [],
+    enabled: !!year && !!month,
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
+}
+
+/**
  * Hook to get next month's pending adjustments summary
  */
 export function useNextMonthAdjustments() {
