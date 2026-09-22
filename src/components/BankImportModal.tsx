@@ -10,6 +10,12 @@ import {
   type ImportPeriod,
 } from '../services/bankImportService';
 import ImportReviewStep from './ImportReviewStep';
+import {
+  startServerImport,
+  waitForServerImport,
+  type ServerImportStatus,
+  type SkippedCardBill,
+} from '../services/scraperService';
 
 interface Props {
   onClose: () => void;
@@ -29,6 +35,21 @@ const SIX_MONTHS_AGO = (() => {
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
+const toIsoDay = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Calendar date range for an import period (the import service fetches by date, not billing cycle) */
+function periodDateRange(period: ImportPeriod, now: Date = new Date()): { startDate: string; endDate: string } {
+  if (period.type === 'last_month') {
+    return {
+      startDate: toIsoDay(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
+      endDate: toIsoDay(new Date(now.getFullYear(), now.getMonth(), 0)),
+    };
+  }
+  const startDate = period.type === 'custom' ? period.startDate : toIsoDay(new Date(now.getFullYear(), now.getMonth(), 1));
+  return { startDate, endDate: toIsoDay(now) };
+}
+
 export default function BankImportModal({ onClose, onImportComplete, onAddAccount, selectedConnectionId }: Props) {
   const [step, setStep] = useState<Step>('loading');
   const [period, setPeriod] = useState<ImportPeriod>({ type: 'current_month' });
@@ -41,6 +62,8 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   const [activeConnection, setActiveConnection] = useState<BankConnection | null>(null);
   const [otpCode, setOtpCode] = useState('');
   const [otpSubmitting, setOtpSubmitting] = useState(false);
+  const [serverStatus, setServerStatus] = useState<ServerImportStatus | null>(null);
+  const [skippedCardBills, setSkippedCardBills] = useState<SkippedCardBill[]>([]);
 
   useEffect(() => {
     listConnections()
@@ -103,6 +126,30 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       setStep('error');
     } finally {
       setOtpSubmitting(false);
+    }
+  };
+
+  // Accounts other than Cal are imported by the import service (it logs in to the bank)
+  const handleServerImport = async () => {
+    if (!activeConnection) return;
+    setStep('importing');
+    setServerStatus('logging_in');
+    try {
+      const { startDate, endDate } = periodDateRange(
+        period.type === 'custom' ? { type: 'custom', startDate: customStart } : period
+      );
+      const sessionId = await startServerImport(activeConnection.id, startDate, endDate);
+      const state = await waitForServerImport(sessionId, setServerStatus);
+      if (state.status === 'error' || !state.result) throw new Error(state.error ?? 'Import failed');
+
+      setResult({ imported: state.result.imported, skipped: state.result.skipped });
+      setSkippedCardBills(state.result.skippedCardBills ?? []);
+      setDbSessionId(state.dbSessionId);
+      setStep(state.dbSessionId ? 'review' : 'complete');
+      onImportComplete?.(state.result.imported);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Import failed');
+      setStep('error');
     }
   };
 
@@ -259,7 +306,9 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
 
               <p className="text-xs text-gray-500 dark:text-gray-500">
                 {activeConnection && !isCalProvider(activeConnection.provider) ? (
-                  <>Direct import for <strong>{providerLabel(activeConnection.provider)}</strong> is not yet supported. Stay tuned!</>
+                  <>Ooga’s import service logs in to <strong>{providerLabel(activeConnection.provider)}</strong> and
+                  fetches completed transactions. Credit-card bill payments are skipped, because the card’s purchases are
+                  imported on their own. This can take up to 2 minutes. Duplicates are skipped.</>
                 ) : (
                   <>Tapping <strong>Send OTP</strong> will text a verification code to your registered phone number.
                   Imported transactions start as <strong>Uncategorized</strong>. Duplicates are skipped.</>
@@ -273,7 +322,14 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 >
                   Cancel
                 </button>
-                {(!activeConnection || isCalProvider(activeConnection.provider)) && (
+                {activeConnection && !isCalProvider(activeConnection.provider) ? (
+                  <button
+                    onClick={handleServerImport}
+                    className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+                  >
+                    Import →
+                  </button>
+                ) : (
                   <button
                     onClick={handleStart}
                     className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
@@ -324,7 +380,30 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
           )}
 
           {step === 'importing' && (
-            <SpinnerStep message="Importing transactions…" detail="Verifying OTP and fetching from Visa Cal — this may take up to 30 seconds" />
+            activeConnection && !isCalProvider(activeConnection.provider) ? (
+              <SpinnerStep
+                message={serverStatus === 'logging_in' ? `Logging in to ${providerLabel(activeConnection.provider)}…` : 'Fetching transactions…'}
+                detail="Bank logins can take up to 2 minutes. Keep this window open."
+              />
+            ) : (
+              <SpinnerStep message="Importing transactions…" detail="Verifying OTP and fetching from Visa Cal — this may take up to 30 seconds" />
+            )
+          )}
+
+          {(step === 'review' || step === 'complete') && skippedCardBills.length > 0 && (
+            <div className="mb-4 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
+              <p className="font-medium mb-1">
+                Skipped {skippedCardBills.length} credit-card bill payment{skippedCardBills.length === 1 ? '' : 's'} (the card’s purchases are imported separately):
+              </p>
+              <ul className="space-y-0.5">
+                {skippedCardBills.map((bill, i) => (
+                  <li key={i} className="flex justify-between gap-3">
+                    <span className="truncate" dir="auto">{bill.date} · {bill.description}</span>
+                    <span className="flex-shrink-0">₪{bill.amount.toLocaleString()}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           {step === 'review' && result && dbSessionId && (

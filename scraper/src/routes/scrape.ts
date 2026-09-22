@@ -9,25 +9,45 @@ import { getUserAndHousehold } from '../supabase-push.js';
 
 const router = Router();
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The session, if it exists and belongs to the caller */
+async function getOwnSession(req: Request) {
+  const { userId } = await getUserAndHousehold(req.headers.authorization ?? '');
+  const session = getSession(String(req.params.sessionId ?? req.body?.sessionId ?? ''));
+  return session && session.userId === userId ? session : undefined;
+}
+
 /**
  * POST /scrape/start
  * Initiates a new bank scrape session.
- * Body: { months?: number }  (default: 3 months back from today)
+ * Body: {
+ *   connectionId?: string,          // import one connection (default: all with stored credentials)
+ *   startDate?: 'YYYY-MM-DD',       // default: `months` back from today
+ *   endDate?: 'YYYY-MM-DD',         // default: today
+ *   months?: number                 // default: 3
+ * }
  */
 router.post('/start', async (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization ?? '';
     const { userId, householdId } = await getUserAndHousehold(authHeader);
 
-    const months: number = req.body?.months ?? 3;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - months);
+    const { connectionId, startDate: startParam, endDate: endParam } = req.body ?? {};
+    if ((startParam && !ISO_DATE.test(startParam)) || (endParam && !ISO_DATE.test(endParam))) {
+      res.status(400).json({ error: 'startDate/endDate must be YYYY-MM-DD' });
+      return;
+    }
 
-    const session = createSession();
+    const months: number = req.body?.months ?? 3;
+    const endDate = endParam ? new Date(`${endParam}T23:59:59Z`) : new Date();
+    const startDate = startParam ? new Date(`${startParam}T00:00:00Z`) : new Date();
+    if (!startParam) startDate.setMonth(startDate.getMonth() - months);
+
+    const session = createSession(userId);
 
     // Run the scrape asynchronously — don't await here
-    startScrape(session.id, userId, householdId, startDate, endDate).catch(
+    startScrape(session.id, userId, householdId, startDate, endDate, connectionId).catch(
       (err) => {
         console.error('Unhandled scrape error:', err);
         updateSession(session.id, {
@@ -49,7 +69,7 @@ router.post('/start', async (req: Request, res: Response) => {
  * Submits the OTP code for a session awaiting it.
  * Body: { sessionId: string, code: string }
  */
-router.post('/otp', (req: Request, res: Response) => {
+router.post('/otp', async (req: Request, res: Response) => {
   const { sessionId, code } = req.body ?? {};
 
   if (!sessionId || !code) {
@@ -57,7 +77,7 @@ router.post('/otp', (req: Request, res: Response) => {
     return;
   }
 
-  const session = getSession(sessionId);
+  const session = await getOwnSession(req).catch(() => undefined);
   if (!session) {
     res.status(404).json({ error: 'Session not found or expired' });
     return;
@@ -79,8 +99,8 @@ router.post('/otp', (req: Request, res: Response) => {
  * GET /scrape/status/:sessionId
  * Returns the current status of a scrape session.
  */
-router.get('/status/:sessionId', (req: Request, res: Response) => {
-  const session = getSession(req.params.sessionId);
+router.get('/status/:sessionId', async (req: Request, res: Response) => {
+  const session = await getOwnSession(req).catch(() => undefined);
 
   if (!session) {
     res.status(404).json({ error: 'Session not found or expired' });

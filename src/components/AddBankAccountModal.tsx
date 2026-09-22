@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { X, Building2, CreditCard, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { addConnection } from '../services/bankImportService';
+import { addSecureConnection } from '../services/scraperService';
+
+// Cal fast access is imported straight from the browser; it only needs the (non-secret) ID and
+// last 4 card digits to request the SMS code. Every other provider logs in on the import service,
+// which stores the credentials encrypted and never returns them.
+const BROWSER_IMPORT_PROVIDERS = new Set(['visaCalFast']);
 
 interface Props {
   onClose: () => void;
@@ -107,13 +113,13 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
   const [step, setStep] = useState<Step>('select');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [displayName, setDisplayName] = useState('');
-  const [metadata, setMetadata] = useState<Record<string, string>>({});
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleSelectProvider = (p: Provider) => {
     setSelectedProvider(p);
     setDisplayName(p.label);
-    setMetadata({});
+    setFieldValues({});
     setStep('credentials');
   };
 
@@ -121,7 +127,11 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
     if (!selectedProvider) return;
     setStep('testing');
     try {
-      await addConnection(selectedProvider.id, metadata, displayName);
+      if (BROWSER_IMPORT_PROVIDERS.has(selectedProvider.id)) {
+        await addConnection(selectedProvider.id, fieldValues, displayName);
+      } else {
+        await addSecureConnection(selectedProvider.id, fieldValues, displayName);
+      }
       setStep('success');
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to save connection');
@@ -129,7 +139,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
     }
   };
 
-  const allFieldsFilled = selectedProvider?.fields.every((f) => metadata[f.key]?.trim());
+  const allFieldsFilled = selectedProvider?.fields.every((f) => fieldValues[f.key]?.trim());
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -194,8 +204,8 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                     type={field.type}
                     inputMode={field.inputMode}
                     placeholder={field.placeholder}
-                    value={metadata[field.key] ?? ''}
-                    onChange={(e) => setMetadata((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                    value={fieldValues[field.key] ?? ''}
+                    onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
                     autoComplete="off"
                     className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
                   />
@@ -206,7 +216,9 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
               ))}
 
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Credentials are encrypted end-to-end — Ooga never stores them in plaintext.
+                {BROWSER_IMPORT_PROVIDERS.has(selectedProvider.id)
+                  ? 'Only your ID and the card’s last 4 digits are saved. Each import is confirmed with an SMS code.'
+                  : 'Sent once to Ooga’s import service and stored encrypted there. They’re never stored in your browser or shown again.'}
               </p>
 
               <div className="flex gap-3 pt-1">

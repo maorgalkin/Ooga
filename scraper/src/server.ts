@@ -28,8 +28,17 @@ const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
 const API_KEY = process.env.SCRAPER_API_KEY;
 
+// Browser origins allowed to call the service. Override with ALLOWED_ORIGINS (comma-separated).
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) ?? [
+  'https://haooga.com',
+  'https://www.haooga.com',
+  'https://galfin.vercel.app',
+  'https://ooga.vercel.app',
+  'http://localhost:5173',
+];
+
 app.use(cors({
-  origin: ['https://galfin.vercel.app', 'https://ooga.vercel.app', 'http://localhost:5173'],
+  origin: ALLOWED_ORIGINS,
   credentials: true,
 }));
 app.use(express.json());
@@ -45,9 +54,10 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'ooga-scraper' });
 });
 
-// Simple API key guard for protected routes
+// API key guard for server-to-server callers. Browser requests carry the user's Supabase
+// session instead (a key shipped to the browser wouldn't be secret); every route verifies it.
 function apiKeyGuard(req: express.Request, res: express.Response, next: express.NextFunction) {
-  if (!API_KEY) {
+  if (!API_KEY || req.headers.authorization?.startsWith('Bearer ')) {
     next();
     return;
   }

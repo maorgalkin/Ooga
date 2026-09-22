@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { decrypt } from './encryption.js';
+import { isBankProvider, makeBankExternalId } from './bank-rules.js';
 
 export const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -35,18 +36,31 @@ function makeExternalId(tx: TransactionRow): string {
   return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 32);
 }
 
-export async function getUserConnections(userId: string): Promise<BankConnection[]> {
-  const { data, error } = await supabase
+/**
+ * Active connections with server-stored (encrypted) credentials. Connections that are imported
+ * directly from the browser (Cal fast access) have none and are left out.
+ * With `connectionId`, returns just that connection or throws if it can't be imported here.
+ */
+export async function getUserConnections(userId: string, connectionId?: string): Promise<BankConnection[]> {
+  let query = supabase
     .from('bank_connections')
     .select('id, provider, display_name, credentials_encrypted')
     .eq('user_id', userId)
     .eq('is_active', true)
     .order('created_at', { ascending: true });
+  if (connectionId) query = query.eq('id', connectionId);
+
+  const { data, error } = await query;
 
   if (error) throw new Error(`Failed to fetch bank connections: ${error.message}`);
-  if (!data || data.length === 0) throw new Error('No bank accounts connected. Add a bank account in Settings first.');
+  if (connectionId && (!data || data.length === 0)) throw new Error('Bank connection not found.');
+  if (connectionId && !data![0].credentials_encrypted) {
+    throw new Error('This account has no securely stored credentials. Remove it and add it again.');
+  }
+  const importable = (data ?? []).filter((row) => row.credentials_encrypted);
+  if (importable.length === 0) throw new Error('No bank accounts connected. Add a bank account in Settings first.');
 
-  return data.map((row) => ({
+  return importable.map((row) => ({
     id: row.id,
     provider: row.provider,
     displayName: row.display_name ?? row.provider,
@@ -60,13 +74,15 @@ export async function pushTransactions(
   transactions: TransactionRow[],
   accountNumber: string,
   connectionId: string,
-  importSessionId?: string
+  importSessionId?: string,
+  provider?: string
 ): Promise<{ imported: number; skipped: number }> {
   let imported = 0;
   let skipped = 0;
+  const isBank = !!provider && isBankProvider(provider);
 
   for (const tx of transactions) {
-    const externalId = makeExternalId(tx);
+    const externalId = isBank ? makeBankExternalId(provider!, accountNumber, tx) : makeExternalId(tx);
 
     const { data: existing } = await supabase
       .from('transactions')
