@@ -1,12 +1,20 @@
 import crypto from 'crypto';
 
+export interface SkippedCardBill {
+  date: string;
+  description: string;
+  amount: number;
+}
+
 export interface ScrapeSession {
   id: string;
+  userId: string; // Owner — status/OTP requests from other users are rejected
   status: 'logging_in' | 'awaiting_otp' | 'importing' | 'complete' | 'error';
   otpResolver?: (code: string) => void;
   result?: {
     imported: number;
     skipped: number;
+    skippedCardBills?: SkippedCardBill[];
   };
   error?: string;
   createdAt: Date;
@@ -18,10 +26,11 @@ const sessions = new Map<string, ScrapeSession>();
 
 const SESSION_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-export function createSession(): ScrapeSession {
+export function createSession(userId: string): ScrapeSession {
   const id = crypto.randomUUID();
   const session: ScrapeSession = {
     id,
+    userId,
     status: 'logging_in',
     createdAt: new Date(),
   };

@@ -12,6 +12,8 @@ import {
   updateConnectionLastSync,
 } from './supabase-push.js';
 import { VisaCalFastScraper, type VisaCalFastCredentials } from './scrapers/visa-cal-fast.js';
+import { isBankProvider, isCardBillPayment } from './bank-rules.js';
+import type { SkippedCardBill } from './session-manager.js';
 
 function mapTransaction(tx: Transaction): TransactionRow {
   return {
@@ -45,7 +47,8 @@ export async function startScrape(
   userId: string,
   householdId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  connectionId?: string // Import just this connection (default: all with stored credentials)
 ): Promise<void> {
   const dbSessionId = await createImportSessionRecord(
     userId,
@@ -57,7 +60,9 @@ export async function startScrape(
   updateSession(sessionId, { status: 'logging_in', dbSessionId });
 
   try {
-    const connections = await getUserConnections(userId);
+    const connections = await getUserConnections(userId, connectionId);
+    const skippedCardBills: SkippedCardBill[] = [];
+    const endDay = endDate.toISOString().slice(0, 10);
 
     console.log(`Starting scrape for ${connections.length} connection(s)`);
     updateSession(sessionId, { status: 'importing' });
@@ -109,14 +114,29 @@ export async function startScrape(
         let imported = 0;
         let skipped = 0;
         for (const account of result.accounts ?? []) {
-          const txns = account.txns.map(mapTransaction);
+          let txns: TransactionRow[] = account.txns.map(mapTransaction).filter((tx: TransactionRow) => tx.date.slice(0, 10) <= endDay);
+
+          if (isBankProvider(conn.provider)) {
+            // Checking accounts: completed only (future/scheduled debits may still change), and
+            // no credit-card bills — the card's purchases are imported individually.
+            txns = txns.filter((tx: TransactionRow) => {
+              if (tx.status === 'pending') return false;
+              if (isCardBillPayment(tx.description)) {
+                skippedCardBills.push({ date: tx.date.slice(0, 10), description: tx.description, amount: Math.abs(tx.chargedAmount) });
+                return false;
+              }
+              return true;
+            });
+          }
+
           const stats = await pushTransactions(
             userId,
             householdId,
             txns,
             account.accountNumber,
             conn.id,
-            dbSessionId
+            dbSessionId,
+            conn.provider
           );
           imported += stats.imported;
           skipped += stats.skipped;
@@ -153,7 +173,7 @@ export async function startScrape(
     const partialError = errors.length > 0 ? `Partial errors: ${errors.join('; ')}` : undefined;
     updateSession(sessionId, {
       status: 'complete',
-      result: { imported: totalImported, skipped: totalSkipped },
+      result: { imported: totalImported, skipped: totalSkipped, skippedCardBills },
       error: partialError,
     });
     await recordImportSession(dbSessionId, 'complete', totalImported, totalSkipped, partialError);
