@@ -125,8 +125,9 @@ describe('Installments Feature', () => {
         installment_total: 3,
       });
       
-      // Check date is 1st of month
-      expect(insertedData[0].date).toMatch(/^\d{4}-\d{2}-01$/);
+      // First installment keeps the original date, the rest are on the 1st
+      expect(insertedData[0].date).toBe('2025-12-15');
+      expect(insertedData[1].date).toBe('2026-01-01');
       
       // Check second installment
       expect(insertedData[1]).toMatchObject({
@@ -147,7 +148,7 @@ describe('Installments Feature', () => {
       expect(insertedData[1].installment_group_id).toBe(insertedData[2].installment_group_id);
     });
 
-    it('should create installments on 1st of each subsequent month', async () => {
+    it('should keep the original date for the first installment and use the 1st for the rest', async () => {
       // Arrange
       const transactionData = {
         type: 'expense' as const,
@@ -167,8 +168,8 @@ describe('Installments Feature', () => {
       // Assert
       const insertedData = mockChain.insert.mock.calls[0][0];
       
-      // Check dates are 1st of each month
-      expect(insertedData[0].date).toBe('2025-12-01');
+      // First keeps original date, following ones are on the 1st
+      expect(insertedData[0].date).toBe('2025-12-15');
       expect(insertedData[1].date).toBe('2026-01-01');
       expect(insertedData[2].date).toBe('2026-02-01');
       expect(insertedData[3].date).toBe('2026-03-01');
@@ -221,9 +222,52 @@ describe('Installments Feature', () => {
       // Assert
       const insertedData = mockChain.insert.mock.calls[0][0];
       
-      expect(insertedData[0].date).toBe('2025-11-01');
+      expect(insertedData[0].date).toBe('2025-11-15');
       expect(insertedData[1].date).toBe('2025-12-01');
       expect(insertedData[2].date).toBe('2026-01-01'); // Year rollover
+    });
+
+    it('should use per-installment amounts when provided', async () => {
+      const transactionData = {
+        type: 'expense' as const,
+        description: 'Laptop',
+        amount: 100,
+        category: 'Other',
+        date: '2025-12-10',
+      };
+
+      const mockResult = { data: [], error: null };
+      const mockChain = createMockChain(mockResult);
+      vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+
+      await SupabaseService.addInstallmentTransactions(
+        transactionData,
+        3,
+        SupabaseService.splitInstallmentAmounts(100, 3)
+      );
+
+      const insertedData = mockChain.insert.mock.calls[0][0];
+      expect(insertedData.map((row: { amount: number }) => row.amount)).toEqual([33.34, 33.33, 33.33]);
+    });
+  });
+
+  describe('splitInstallmentAmounts', () => {
+    it('should split evenly when divisible', () => {
+      expect(SupabaseService.splitInstallmentAmounts(300, 6)).toEqual([50, 50, 50, 50, 50, 50]);
+    });
+
+    it('should round to the cent and put leftover cents on the first installment', () => {
+      expect(SupabaseService.splitInstallmentAmounts(100, 3)).toEqual([33.34, 33.33, 33.33]);
+      expect(SupabaseService.splitInstallmentAmounts(10, 7)).toEqual([1.48, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42]);
+    });
+
+    it('should always sum back to the total', () => {
+      for (const [total, n] of [[99.99, 4], [1234.56, 12], [0.1, 3], [15.99, 36]] as const) {
+        const parts = SupabaseService.splitInstallmentAmounts(total, n);
+        const sumCents = parts.reduce((acc, p) => acc + Math.round(p * 100), 0);
+        expect(sumCents).toBe(Math.round(total * 100));
+        expect(parts.every(p => Number(p.toFixed(2)) === p)).toBe(true);
+      }
     });
   });
 

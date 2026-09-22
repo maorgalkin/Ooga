@@ -64,7 +64,7 @@ COMMENT ON COLUMN transactions.installment_total IS 'Total number of installment
 
 1. Check transaction list
 2. Should see 3 transactions:
-   - `Test Subscription [1/3]` - 1st of current month
+   - `Test Subscription [1/3]` - the date you picked
    - `Test Subscription [2/3]` - 1st of next month
    - `Test Subscription [3/3]` - 1st of month after
 
@@ -132,7 +132,7 @@ COMMENT ON COLUMN transactions.installment_total IS 'Total number of installment
 
 **Minimum installments:** 2  
 **Maximum installments:** 36  
-**Date used:** 1st of each month  
+**Date used:** original date for the first installment, 1st of each month after  
 **Description format:** `<Original> [n/total]`  
 **UUID generation:** Automatic  
 **Deletion options:** Single, Future, All  

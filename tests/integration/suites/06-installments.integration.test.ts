@@ -99,12 +99,13 @@ describe('Integration: Installments', () => {
       expect(installments[2].description).toContain('[3/3]');
     });
 
-    it('should have dates on 1st of each month', async () => {
+    it('should keep the original date first, then the 1st of each month', async () => {
       // Act
       const installments = await getInstallmentGroupTransactions(groupId);
 
       // Assert
-      installments.forEach(inst => {
+      expect(installments[0].date).toBe('2025-12-15');
+      installments.slice(1).forEach(inst => {
         expect(inst.date).toMatch(/^\d{4}-\d{2}-01$/);
       });
       
@@ -338,7 +339,7 @@ describe('Integration: Installments', () => {
       expect(installments).toHaveLength(3);
       
       const dates = installments.map(i => i.date);
-      expect(dates[0]).toBe('2025-11-01');
+      expect(dates[0]).toBe('2025-11-15');
       expect(dates[1]).toBe('2025-12-01');
       expect(dates[2]).toBe('2026-01-01'); // Year rollover
     });
