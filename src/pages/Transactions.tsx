@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget } from '../hooks/useBudgets';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -10,6 +10,7 @@ import { TransactionsList } from '../components/dashboard/TransactionsList';
 import EditTransactionModal from '../components/EditTransactionModal';
 import { formatCurrencyFromSettings } from '../utils/formatCurrency';
 import { getHeadingColor, getSubheadingColor } from '../utils/themeColors';
+import { getDefaultMonthIndex, getMonthsWithData } from '../utils/dateHelpers';
 import type { Transaction } from '../types';
 
 /**
@@ -22,8 +23,9 @@ export const Transactions: React.FC = () => {
   const { data: personalBudget } = useActiveBudget();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   
-  // Initialize with month index from filter hook
-  const [monthIndex, setMonthIndex] = useState(0);
+  // Start on the current month, not the newest month with data (future installments would win)
+  const [initialMonthIndex] = useState(() => getDefaultMonthIndex(getMonthsWithData(transactions)));
+  const [monthIndex, setMonthIndex] = useState(initialMonthIndex);
   
   // Get month data using dashboard data hook
   const {
@@ -54,7 +56,7 @@ export const Transactions: React.FC = () => {
     transactions,
     months,
     getTransactionsForMonth,
-    initialMonthIndex: 0,
+    initialMonthIndex,
   });
   
   // Sync month index between hook and local state
@@ -64,6 +66,16 @@ export const Transactions: React.FC = () => {
     resetFiltersExceptMonth();
   };
   
+  // If transactions weren't loaded yet on mount, jump to the current month once they arrive
+  const hasPositionedCarousel = useRef(transactions.length > 0);
+  useEffect(() => {
+    if (hasPositionedCarousel.current || transactions.length === 0) return;
+    hasPositionedCarousel.current = true;
+    const index = getDefaultMonthIndex(months);
+    setMonthIndex(index);
+    updateMonthIndex(index);
+  }, [transactions.length, months, updateMonthIndex]);
+
   // Format currency using budget settings
   const formatCurrency = (amount: number) => {
     return formatCurrencyFromSettings(amount, personalBudget?.global_settings);

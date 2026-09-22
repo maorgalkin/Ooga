@@ -28,7 +28,8 @@ import * as HouseholdService from '../services/householdService';
 import type { Transaction, BudgetConfiguration } from '../types';
 import type { Household } from '../services/householdService';
 import { getHeadingColor, getSubheadingColor } from '../utils/themeColors';
-import { AlignJustify, LayoutGrid } from 'lucide-react';
+import { AlignJustify, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getMonthsWithData, getMonthStart, toMonthKey, parseMonthKey } from '../utils/dateHelpers';
 
 type LayoutMode = 'wide' | 'tiled' | 'both';
 
@@ -245,8 +246,38 @@ const Dashboard: React.FC = () => {
     }
   }, [activeTab]);
 
+  // Dashboard month: from ?month=YYYY-MM, defaulting to the current calendar month.
+  // Navigable range is the oldest month with data up to the current month
+  // (future months — e.g. upcoming installments — are reserved for a later projection view).
+  const currentMonthStart = getMonthStart(new Date());
+  const currentMonthTime = currentMonthStart.getTime();
+  const oldestMonthStart = useMemo(() => {
+    const months = getMonthsWithData(transactions);
+    const oldest = months[months.length - 1].start;
+    return oldest.getTime() < currentMonthTime ? oldest : new Date(currentMonthTime);
+  }, [transactions, currentMonthTime]);
+  const requestedMonth = parseMonthKey(searchParams.get('month'));
+  const dashboardMonth = !requestedMonth || requestedMonth > currentMonthStart
+    ? currentMonthStart
+    : requestedMonth < oldestMonthStart ? oldestMonthStart : requestedMonth;
+  const isViewingCurrentMonth = dashboardMonth.getTime() === currentMonthStart.getTime();
+  const canGoToPrevMonth = dashboardMonth > oldestMonthStart;
+
+  const setDashboardMonth = (month: Date) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (month.getTime() === currentMonthStart.getTime()) {
+      newParams.delete('month'); // Clean URL for the current month
+    } else {
+      newParams.set('month', toMonthKey(month));
+    }
+    setSearchParams(newParams);
+  };
+  const shiftDashboardMonth = (delta: number) => {
+    setDashboardMonth(new Date(dashboardMonth.getFullYear(), dashboardMonth.getMonth() + delta, 1));
+  };
+
   // Use custom hook for data management
-  // Dashboard tab uses null (current month only), Transactions tab uses transactionsMonthIndex
+  // Dashboard tab shows a single month (dashboardMonth), Transactions tab uses its own carousel
   const {
     monthTransactions: dashboardMonthTransactions,
     monthCategoryData: dashboardCategoryData,
@@ -256,7 +287,8 @@ const Dashboard: React.FC = () => {
     transactions,
     familyMembers,
     budgetConfig: null,
-    activeMonthIndex: null, // Always null for Dashboard - current month only
+    activeMonthIndex: null, // Always null for Dashboard - single month mode
+    dashboardMonth,
   });
 
   const formatCurrency = (amount: number) => {
@@ -369,9 +401,35 @@ const Dashboard: React.FC = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className={`text-3xl font-bold ${getHeadingColor('purple')} mb-1`}>
-                  {dashboardMonthDate.toLocaleDateString(getUserLocale(), { month: 'long' })} '{String(dashboardMonthDate.getFullYear()).slice(2)} Dashboard
-                </h1>
+                <div className="flex items-center gap-1 mb-1 -ml-2">
+                  <button
+                    onClick={() => shiftDashboardMonth(-1)}
+                    disabled={!canGoToPrevMonth}
+                    aria-label="Previous month"
+                    className="p-1 rounded-full text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <h1 className={`text-3xl font-bold ${getHeadingColor('purple')}`}>
+                    {dashboardMonthDate.toLocaleDateString(getUserLocale(), { month: 'long' })} '{String(dashboardMonthDate.getFullYear()).slice(2)} Dashboard
+                  </h1>
+                  <button
+                    onClick={() => shiftDashboardMonth(1)}
+                    disabled={isViewingCurrentMonth}
+                    aria-label="Next month"
+                    className="p-1 rounded-full text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                  {!isViewingCurrentMonth && (
+                    <button
+                      onClick={() => setDashboardMonth(currentMonthStart)}
+                      className="ml-2 px-2.5 py-0.5 text-xs font-medium rounded-full bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                    >
+                      Today
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center gap-3">
                   <p className={getSubheadingColor('purple')}>
                     {household?.name ? `${household.name}'s budget at a glance` : 'Your monthly budget at a glance'}
@@ -407,7 +465,8 @@ const Dashboard: React.FC = () => {
           {/* Empty State - Show when no transactions this month */}
           {dashboardMonthTransactions.length === 0 ? (
             <DashboardEmptyState
-              monthDate={dashboardMonthDate}
+              monthDate={isViewingCurrentMonth ? new Date() : dashboardMonthDate}
+              isPastMonth={!isViewingCurrentMonth}
               allTransactions={transactions}
               personalBudget={personalBudget}
               formatCurrency={formatCurrency}

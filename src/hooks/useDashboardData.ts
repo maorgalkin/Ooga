@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { getMonthsWithData, isDateInRange } from '../utils/dateHelpers';
+import { getMonthsWithData, getMonthStart, getMonthEnd, isDateInRange } from '../utils/dateHelpers';
 import type { Transaction, FamilyMember, BudgetConfiguration } from '../types';
 
 interface MonthData {
@@ -19,7 +19,8 @@ interface UseDashboardDataProps {
   transactions: Transaction[];
   familyMembers: FamilyMember[];
   budgetConfig: BudgetConfiguration | null; // Reserved for future budget-aware calculations
-  activeMonthIndex: number | null; // null = current month only mode (Dashboard), number = multi-month carousel mode (Transactions)
+  activeMonthIndex: number | null; // null = single month mode (Dashboard), number = multi-month carousel mode (Transactions)
+  dashboardMonth?: Date; // Month shown in single month mode; defaults to the current calendar month
 }
 
 interface UseDashboardDataReturn {
@@ -40,6 +41,7 @@ export function useDashboardData({
   familyMembers,
   budgetConfig: _budgetConfig, // Reserved for future budget-aware calculations
   activeMonthIndex,
+  dashboardMonth,
 }: UseDashboardDataProps): UseDashboardDataReturn {
   
   // Get months that have transaction data (sorted newest to oldest)
@@ -56,11 +58,19 @@ export function useDashboardData({
   );
 
   // Determine month data based on mode
-  // null activeMonthIndex = current month only (Dashboard)
+  // null activeMonthIndex = single month (Dashboard): the requested month, or the current calendar month.
+  //   Not months[0] — that is the newest month with data, which can be far in the future with installments.
   // number activeMonthIndex = carousel mode (Transactions)
-  const selectedMonthStart = activeMonthIndex === null ? months[0].start : months[activeMonthIndex].start;
-  const selectedMonthEnd = activeMonthIndex === null ? months[0].end : months[activeMonthIndex].end;
-  const selectedMonthDate = activeMonthIndex === null ? months[0].start : months[activeMonthIndex].start;
+  const dashboardMonthTime = getMonthStart(dashboardMonth ?? new Date()).getTime();
+  const { selectedMonthStart, selectedMonthEnd } = useMemo(() => {
+    if (activeMonthIndex === null) {
+      const start = new Date(dashboardMonthTime);
+      return { selectedMonthStart: start, selectedMonthEnd: getMonthEnd(start) };
+    }
+    const month = months[Math.min(activeMonthIndex, months.length - 1)];
+    return { selectedMonthStart: month.start, selectedMonthEnd: month.end };
+  }, [activeMonthIndex, dashboardMonthTime, months]);
+  const selectedMonthDate = selectedMonthStart;
 
   // Filter transactions for the selected month
   const monthTransactions = useMemo(
