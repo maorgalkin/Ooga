@@ -14,6 +14,11 @@ describe('isCardBillPayment', () => {
     'דיינרס קלוב',
     'VISA CAL',
     'Isracard',
+    // Real Discount Bank descriptions
+    'כ.א.ל חיוב',
+    'חיוב לכרטיס ויזה 7466',
+    'חיוב לכרטיס ויזה 7433',
+    'כרטיס מאסטרקארד 2532',
   ])('skips the card bill line "%s"', description => {
     expect(isCardBillPayment(description)).toBe(true);
   });
@@ -21,6 +26,7 @@ describe('isCardBillPayment', () => {
   it.each([
     'משכורת',
     'כרטיס דביט',
+    'חיוב כרטיס דביט',
     'מקס סטוק',
     'העברה לחשבון',
     'משיכת מזומן',
