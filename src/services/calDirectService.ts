@@ -16,6 +16,8 @@
 
 import { supabase } from '../lib/supabase';
 import { addMonthsToIsoDate } from '../utils/dateHelpers';
+import { convertAmount, toCurrencyCode } from './exchangeRateService';
+import { PersonalBudgetService } from './personalBudgetService';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -144,6 +146,7 @@ export interface NormalizedTx {
   dedupe_hash: string;
   status: string;
   _cardUniqueId: string;
+  _chargeCurrency: string | null; // ISO code `amount` is in (null if unknown); not stored
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -367,22 +370,26 @@ export async function normalizeTransaction(
     : undefined;
 
   let amount: number;
+  let chargeCurrency: string | null = 'ILS';
   let originalAmount: number | null = null;
   let originalCurrency: string | null = null;
   let fxMemo: string | null = null;
 
   if (chargedInIls != null) {
     amount = Math.abs(chargedInIls);
+    if (!isPending) chargeCurrency = toCurrencyCode(tx.debCrdCurrencySymbol) ?? 'ILS';
     if (purchaseAmount != null && !isIlsCurrency(txCurrency)) {
       originalAmount = Math.abs(purchaseAmount);
       originalCurrency = txCurrency ?? null;
     }
   } else if (purchaseAmount != null && !isIlsCurrency(txCurrency)) {
-    // Pending foreign transaction: only foreign amount available, no ILS rate yet
+    // Pending foreign transaction: only the foreign amount is known until it's billed.
+    // convertToBudgetCurrency() replaces it with an estimate at that day's exchange rate.
     amount = Math.abs(purchaseAmount);
+    chargeCurrency = toCurrencyCode(txCurrency);
     originalAmount = Math.abs(purchaseAmount);
     originalCurrency = txCurrency ?? null;
-    fxMemo = `Foreign currency (${txCurrency ?? 'unknown'}) — ILS amount not yet settled`;
+    fxMemo = `${FX_UNSETTLED_MEMO} (${txCurrency ?? 'unknown'}) — ILS amount not yet settled`;
   } else {
     amount = Math.abs(purchaseAmount ?? 0);
   }
@@ -419,53 +426,183 @@ export async function normalizeTransaction(
     dedupe_hash,
     status: isPending ? 'pending' : 'completed',
     _cardUniqueId: cardUniqueId,
+    _chargeCurrency: chargeCurrency,
   };
 }
 
+// ─── Currency conversion ─────────────────────────────────────────────────────
+
+const FX_UNSETTLED_MEMO = 'Foreign currency';
+export const FX_CONVERTED_MEMO = '≈ Converted';
+
+const withoutFxMemo = (memo: string | null) =>
+  (memo ?? '').split(' | ').filter(part => part && !part.startsWith(FX_UNSETTLED_MEMO) && !part.startsWith(FX_CONVERTED_MEMO));
+
+/**
+ * Convert amounts that aren't in the budget currency, at the exchange rate for the transaction date.
+ * These are estimates: the billed charge replaces them on a later import (see planImport).
+ * Transactions whose currency is unknown or whose rate can't be fetched are left as they are.
+ */
+export async function convertToBudgetCurrency(txns: NormalizedTx[], budgetCurrency: string): Promise<number> {
+  let converted = 0;
+  await Promise.all(txns.map(async tx => {
+    const from = tx._chargeCurrency;
+    if (!from || from === budgetCurrency) return;
+    try {
+      const result = await convertAmount(tx.amount, from, budgetCurrency, tx.date);
+      if (tx.original_amount == null) {
+        tx.original_amount = tx.amount;
+        tx.original_currency = from;
+      }
+      tx.memo = [
+        `${FX_CONVERTED_MEMO} from ${tx.amount} ${from} at ${result.rate} (${result.source}, ${result.rateDate})`,
+        ...withoutFxMemo(tx.memo),
+      ].join(' | ');
+      tx.amount = result.amount;
+      tx._chargeCurrency = budgetCurrency;
+      converted++;
+    } catch (err) {
+      console.warn(`[cal-direct] No ${from}→${budgetCurrency} rate for ${tx.date}; keeping the original amount`, err);
+    }
+  }));
+  return converted;
+}
+
 // ─── Supabase push ────────────────────────────────────────────────────────────
+
+export interface ExistingImportRow {
+  id: string;
+  dedupe_hash: string;
+  status: string | null;
+  amount: number | string;
+  original_amount: number | string | null;
+  original_currency: string | null;
+}
+
+/** A stored foreign-currency row whose amount was never converted (amount still equals the foreign amount) */
+function isUnconvertedForeign(row: Pick<ExistingImportRow, 'amount' | 'original_amount' | 'original_currency'>, budgetCurrency: string) {
+  const currency = toCurrencyCode(row.original_currency);
+  return !!currency && currency !== budgetCurrency &&
+    row.original_amount != null && Number(row.amount) === Number(row.original_amount);
+}
+
+/**
+ * Split incoming rows into new ones and better versions of rows already stored.
+ * An existing row is replaced when the incoming one is the billed version of a pending row, or
+ * carries the real budget-currency charge for a row still stored in a foreign amount.
+ */
+export function planImport(
+  incoming: NormalizedTx[],
+  existing: ExistingImportRow[],
+  budgetCurrency: string
+): { toInsert: NormalizedTx[]; toUpdate: { id: string; tx: NormalizedTx }[]; skipped: number } {
+  const existingByHash = new Map(existing.map(row => [row.dedupe_hash, row]));
+  const seenInBatch = new Set<string>();
+  const toInsert: NormalizedTx[] = [];
+  const toUpdate: { id: string; tx: NormalizedTx }[] = [];
+
+  for (const tx of incoming) {
+    if (seenInBatch.has(tx.dedupe_hash)) continue;
+    seenInBatch.add(tx.dedupe_hash);
+
+    const row = existingByHash.get(tx.dedupe_hash);
+    if (!row) {
+      toInsert.push(tx);
+      continue;
+    }
+    const billedVersionOfPending = row.status === 'pending' && tx.status === 'completed';
+    const realChargeForUnconverted = isUnconvertedForeign(row, budgetCurrency) &&
+      tx._chargeCurrency === budgetCurrency && tx.amount !== Number(row.amount);
+    if (billedVersionOfPending || realChargeForUnconverted) toUpdate.push({ id: row.id, tx });
+  }
+
+  return { toInsert, toUpdate, skipped: incoming.length - toInsert.length - toUpdate.length };
+}
 
 async function pushToSupabase(
   txns: NormalizedTx[],
   userId: string,
   householdId: string,
   connectionId: string,
-  dbSessionId: string | null
-): Promise<{ imported: number; skipped: number }> {
-  // Dedup within batch
-  const seenInBatch = new Set<string>();
-  const dedupedTxns = txns.filter(t => {
-    if (seenInBatch.has(t.dedupe_hash)) return false;
-    seenInBatch.add(t.dedupe_hash);
-    return true;
-  });
-
+  dbSessionId: string | null,
+  budgetCurrency: string
+): Promise<{ imported: number; updated: number; skipped: number }> {
   // Check which hashes already exist in DB
-  const hashes = dedupedTxns.map(t => t.dedupe_hash);
+  const hashes = [...new Set(txns.map(t => t.dedupe_hash))];
   const { data: existing } = await supabase
     .from('transactions')
-    .select('dedupe_hash')
+    .select('id, dedupe_hash, status, amount, original_amount, original_currency')
     .eq('household_id', householdId)
     .in('dedupe_hash', hashes);
 
-  const existingSet = new Set((existing ?? []).map((r: { dedupe_hash: string }) => r.dedupe_hash));
-  const newTxns = dedupedTxns.filter(t => !existingSet.has(t.dedupe_hash));
+  const { toInsert, toUpdate, skipped } = planImport(txns, (existing ?? []) as ExistingImportRow[], budgetCurrency);
 
-  if (newTxns.length === 0) {
-    return { imported: 0, skipped: txns.length };
+  // Replace pending / unconverted rows with the billed amounts; keep the user's category and description
+  for (const { id, tx } of toUpdate) {
+    const { error } = await supabase
+      .from('transactions')
+      .update({
+        amount: tx.amount,
+        original_amount: tx.original_amount,
+        original_currency: tx.original_currency,
+        processed_date: tx.processed_date,
+        status: tx.status,
+        memo: tx.memo,
+      })
+      .eq('id', id);
+    if (error) throw new Error(`Supabase update failed: ${error.message}`);
   }
 
-  const rows = newTxns.map(({ _cardUniqueId: _cid, ...tx }) => ({
-    ...tx,
-    user_id: userId,
-    household_id: householdId,
-    bank_connection_id: connectionId,
-    import_session_id: dbSessionId,
-  }));
+  if (toInsert.length > 0) {
+    // Drop internal `_` fields (card id, charge currency) that aren't columns
+    const rows = toInsert.map(tx => ({
+      ...Object.fromEntries(Object.entries(tx).filter(([key]) => !key.startsWith('_'))),
+      user_id: userId,
+      household_id: householdId,
+      bank_connection_id: connectionId,
+      import_session_id: dbSessionId,
+    }));
 
-  const { error } = await supabase.from('transactions').insert(rows);
-  if (error) throw new Error(`Supabase insert failed: ${error.message}`);
+    const { error } = await supabase.from('transactions').insert(rows);
+    if (error) throw new Error(`Supabase insert failed: ${error.message}`);
+  }
 
-  return { imported: newTxns.length, skipped: txns.length - newTxns.length };
+  return { imported: toInsert.length, updated: toUpdate.length, skipped };
+}
+
+/**
+ * Convert stored bank rows still held in a foreign amount (imported before conversion existed,
+ * or outside the latest import window) at the exchange rate for their date.
+ */
+async function convertStoredForeignRows(householdId: string, budgetCurrency: string): Promise<number> {
+  const { data } = await supabase
+    .from('transactions')
+    .select('id, date, amount, original_amount, original_currency, memo')
+    .eq('household_id', householdId)
+    .eq('source', 'bank_import')
+    .not('original_currency', 'is', null);
+
+  type StoredRow = { id: string; date: string; amount: number | string; original_amount: number | string | null; original_currency: string | null; memo: string | null };
+  const unconverted = ((data ?? []) as StoredRow[]).filter(row =>
+    isUnconvertedForeign(row, budgetCurrency) && !row.memo?.includes(FX_CONVERTED_MEMO));
+
+  let converted = 0;
+  for (const row of unconverted) {
+    const from = toCurrencyCode(row.original_currency)!;
+    const original = Number(row.original_amount);
+    try {
+      const result = await convertAmount(original, from, budgetCurrency, row.date);
+      const memo = [
+        `${FX_CONVERTED_MEMO} from ${original} ${from} at ${result.rate} (${result.source}, ${result.rateDate})`,
+        ...withoutFxMemo(row.memo),
+      ].join(' | ');
+      const { error } = await supabase.from('transactions').update({ amount: result.amount, memo }).eq('id', row.id);
+      if (!error) converted++;
+    } catch (err) {
+      console.warn(`[cal-direct] Could not convert stored row ${row.id} (${from})`, err);
+    }
+  }
+  return converted;
 }
 
 // ─── Main import ──────────────────────────────────────────────────────────────
@@ -479,7 +616,7 @@ export async function importCalTransactions(
   otpToken: string,
   period: ImportPeriod,
   onProgress?: (msg: string) => void
-): Promise<{ dbSessionId: string; imported: number; skipped: number }> {
+): Promise<{ dbSessionId: string; imported: number; updated: number; skipped: number }> {
   const log = (msg: string) => {
     console.log(`[cal-direct] ${msg}`);
     onProgress?.(msg);
@@ -543,8 +680,20 @@ export async function importCalTransactions(
     .single();
   dbSessionId = (sessionRow as { id: string } | null)?.id ?? null;
 
+  // Convert foreign amounts into the budget currency (estimates until billed)
+  const activeBudget = await PersonalBudgetService.getActiveBudget().catch(() => null);
+  const budgetCurrency = toCurrencyCode(activeBudget?.global_settings?.currency) ?? 'ILS';
+  const convertedCount = await convertToBudgetCurrency(filtered, budgetCurrency);
+  if (convertedCount > 0) log(`Converted ${convertedCount} foreign-currency amount(s) to ${budgetCurrency}`);
+
   // Push to Supabase
-  const { imported, skipped } = await pushToSupabase(filtered, user.id, householdId, connectionId, dbSessionId);
+  const { imported, updated, skipped } = await pushToSupabase(
+    filtered, user.id, householdId, connectionId, dbSessionId, budgetCurrency
+  );
+
+  // Older rows still stored in a foreign amount (e.g. outside this import's window)
+  const storedConverted = await convertStoredForeignRows(householdId, budgetCurrency);
+  if (storedConverted > 0) log(`Converted ${storedConverted} stored foreign-currency row(s) to ${budgetCurrency}`);
 
   // Update last_sync_at
   await supabase
@@ -552,6 +701,6 @@ export async function importCalTransactions(
     .update({ last_sync_at: new Date().toISOString() })
     .eq('id', connectionId);
 
-  log(`Done: ${imported} imported, ${skipped} skipped`);
-  return { dbSessionId, imported, skipped };
+  log(`Done: ${imported} imported, ${updated} updated with billed amounts, ${skipped} skipped`);
+  return { dbSessionId, imported, updated, skipped };
 }

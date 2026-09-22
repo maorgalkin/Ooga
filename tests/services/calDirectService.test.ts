@@ -2,10 +2,22 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   normalizeTransaction,
   computeFetchPlan,
+  convertToBudgetCurrency,
+  planImport,
   type CalTransaction,
+  type NormalizedTx,
+  type ExistingImportRow,
 } from '../../src/services/calDirectService';
 
 vi.mock('../../src/lib/supabase', () => ({ supabase: {} }));
+vi.mock('../../src/services/exchangeRateService', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/services/exchangeRateService')>()),
+  // USD→ILS at 3.0 on any date; everything else has no rate
+  convertAmount: vi.fn(async (amount: number, from: string, to: string, date: string) => {
+    if (from !== 'USD' || to !== 'ILS') throw new Error('no rate');
+    return { amount: Math.round(amount * 3 * 100) / 100, rate: 3, rateDate: date, source: 'ECB' };
+  }),
+}));
 
 // Shapes mirror live Cal API responses (Sept 2026), merchant names anonymized.
 // A 3-payment purchase of ₪7,412 on 17/07: Cal puts the leftover agora on the first payment.
@@ -155,5 +167,82 @@ describe('computeFetchPlan', () => {
   it('runs a custom import through the end of the current month', () => {
     const plan = computeFetchPlan({ type: 'custom', startDate: '2026-04-01' }, new Date(2026, 8, 22));
     expect(plan.endDate).toBe('2026-09-30');
+  });
+});
+
+const pendingForeign: CalTransaction = {
+  merchantName: 'Streaming service',
+  trnPurchaseDate: '2026-09-22T08:00:00',
+  trnAmt: 5.99,
+  trnCurrencySymbol: '$',
+  numberOfPayments: 0,
+};
+const completedForeign: CalTransaction = {
+  ...pendingForeign,
+  debCrdDate: '2026-10-02',
+  amtBeforeConvAndIndex: 18.14,
+  debCrdCurrencySymbol: '₪',
+  numOfPayments: 0,
+};
+
+describe('convertToBudgetCurrency', () => {
+  it('converts a pending foreign amount at that day\'s rate and records the original', async () => {
+    const tx = await normalize(pendingForeign, true);
+    expect(await convertToBudgetCurrency([tx], 'ILS')).toBe(1);
+    expect(tx).toMatchObject({ amount: 17.97, original_amount: 5.99, original_currency: '$', _chargeCurrency: 'ILS' });
+    expect(tx.memo).toContain('≈ Converted from 5.99 USD at 3');
+    expect(tx.memo).not.toContain('not yet settled');
+  });
+
+  it('leaves amounts already in the budget currency alone', async () => {
+    const tx = await normalize(completedForeign);
+    expect(await convertToBudgetCurrency([tx], 'ILS')).toBe(0);
+    expect(tx.amount).toBe(18.14);
+  });
+
+  it('keeps the original amount when no rate is available', async () => {
+    const tx = await normalize({ ...pendingForeign, trnCurrencySymbol: '€' }, true);
+    expect(await convertToBudgetCurrency([tx], 'ILS')).toBe(0);
+    expect(tx.amount).toBe(5.99);
+    expect(tx.memo).toContain('not yet settled');
+  });
+});
+
+describe('planImport', () => {
+  const existingRow = (tx: NormalizedTx, overrides: Partial<ExistingImportRow> = {}): ExistingImportRow => ({
+    id: 'row-1', dedupe_hash: tx.dedupe_hash, status: tx.status, amount: tx.amount,
+    original_amount: tx.original_amount, original_currency: tx.original_currency, ...overrides,
+  });
+
+  it('inserts new rows and skips unchanged duplicates, including repeats within the batch', async () => {
+    const a = await normalize(completedForeign);
+    const b = await normalize({ ...completedForeign, merchantName: 'Bookshop' });
+    const plan = planImport([a, b, { ...b }], [existingRow(a)], 'ILS');
+    expect(plan.toInsert).toEqual([b]);
+    expect(plan.toUpdate).toEqual([]);
+    expect(plan.skipped).toBe(2);
+  });
+
+  it('replaces a pending row with its billed version', async () => {
+    const pending = await normalize(pendingForeign, true);
+    await convertToBudgetCurrency([pending], 'ILS');
+    const billed = await normalize(completedForeign);
+    expect(billed.dedupe_hash).toBe(pending.dedupe_hash);
+
+    const plan = planImport([billed], [existingRow(pending)], 'ILS');
+    expect(plan.toUpdate).toEqual([{ id: 'row-1', tx: billed }]);
+    expect(plan.toInsert).toEqual([]);
+  });
+
+  it('replaces a stored row that still holds the foreign amount with the real charge', async () => {
+    const billed = await normalize(completedForeign);
+    // Imported by the old code: status completed, amount = the dollar amount
+    const legacy = existingRow(billed, { status: 'completed', amount: '5.99', original_amount: '5.99', original_currency: '$' });
+    expect(planImport([billed], [legacy], 'ILS').toUpdate).toEqual([{ id: 'row-1', tx: billed }]);
+  });
+
+  it('does not touch a row already stored with the right amount', async () => {
+    const billed = await normalize(completedForeign);
+    expect(planImport([billed], [existingRow(billed)], 'ILS').toUpdate).toEqual([]);
   });
 });
