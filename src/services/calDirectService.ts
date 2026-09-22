@@ -15,6 +15,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { addMonthsToIsoDate } from '../utils/dateHelpers';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -335,14 +336,6 @@ async function fetchCompletedTransactions(
 
 // ─── Normalization ────────────────────────────────────────────────────────────
 
-/** Shift a YYYY-MM-DD date by whole months, clamping the day (Jan 31 + 1 month → Feb 28) */
-function addMonthsToDate(isoDate: string, months: number): string {
-  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number);
-  const target = new Date(Date.UTC(y, m - 1 + months, 1));
-  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
-  return `${target.getUTCFullYear()}-${pad2(target.getUTCMonth() + 1)}-${pad2(Math.min(d, lastDay))}`;
-}
-
 export async function normalizeTransaction(
   tx: CalTransaction,
   cardUniqueId: string,
@@ -360,7 +353,7 @@ export async function normalizeTransaction(
 
   // Every charge in a series carries the original purchase date. Date payment n at
   // purchase date + (n − 1) months so each charge lands in its own month.
-  const date = paymentNumber ? addMonthsToDate(purchaseDate, paymentNumber - 1) : purchaseDate;
+  const date = paymentNumber ? addMonthsToIsoDate(purchaseDate, paymentNumber - 1) : purchaseDate;
 
   // Currency resolution:
   // trnAmt is the full purchase amount in the transaction currency (the whole series for installments).

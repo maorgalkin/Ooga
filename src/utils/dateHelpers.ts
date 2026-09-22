@@ -63,6 +63,18 @@ export const getLastNMonths = (count: number = 4) => {
 };
 
 /**
+ * Shift a YYYY-MM-DD date by whole months, clamping the day to the target month
+ * (e.g., 2026-01-31 + 1 month → 2026-02-28)
+ */
+export const addMonthsToIsoDate = (isoDate: string, months: number): string => {
+  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number);
+  const target = new Date(Date.UTC(y, m - 1 + months, 1));
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${target.getUTCFullYear()}-${pad(target.getUTCMonth() + 1)}-${pad(Math.min(d, lastDay))}`;
+};
+
+/**
  * Format a date as a month key (e.g., "2026-09"), used in URLs
  */
 export const toMonthKey = (date: Date): string => {

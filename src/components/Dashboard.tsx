@@ -17,6 +17,7 @@ import { getUserLocale } from '../utils/locale';
 import { DashboardTabNavigation } from './dashboard/DashboardTabNavigation';
 import { DashboardEmptyState } from './dashboard/DashboardEmptyState';
 import { DashboardTileLayout } from './dashboard/DashboardTileLayout';
+import { ProjectedMonthView } from './dashboard/ProjectedMonthView';
 import { ExpenseChart } from './dashboard/ExpenseChart';
 import { formatCurrencyFromSettings } from '../utils/formatCurrency';
 import { DummyDataControls } from './dashboard/DummyDataControls';
@@ -30,6 +31,7 @@ import type { Household } from '../services/householdService';
 import { getHeadingColor, getSubheadingColor } from '../utils/themeColors';
 import { AlignJustify, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getMonthsWithData, getMonthStart, toMonthKey, parseMonthKey } from '../utils/dateHelpers';
+import { getProjectedBankInstallments, getLastCommittedMonth } from '../utils/projections';
 
 type LayoutMode = 'wide' | 'tiled' | 'both';
 
@@ -247,8 +249,8 @@ const Dashboard: React.FC = () => {
   }, [activeTab]);
 
   // Dashboard month: from ?month=YYYY-MM, defaulting to the current calendar month.
-  // Navigable range is the oldest month with data up to the current month
-  // (future months — e.g. upcoming installments — are reserved for a later projection view).
+  // Navigable range is the oldest month with data up to the last month with a committed charge;
+  // months after the current one show a projection of those committed charges.
   const currentMonthStart = getMonthStart(new Date());
   const currentMonthTime = currentMonthStart.getTime();
   const oldestMonthStart = useMemo(() => {
@@ -256,12 +258,26 @@ const Dashboard: React.FC = () => {
     const oldest = months[months.length - 1].start;
     return oldest.getTime() < currentMonthTime ? oldest : new Date(currentMonthTime);
   }, [transactions, currentMonthTime]);
+  // Committed future charges: in-app installment plans already have a row per month;
+  // bank installments are projected from their latest imported charge
+  const projectedTransactions = useMemo(() => getProjectedBankInstallments(transactions), [transactions]);
+  const lastCommittedMonthStart = useMemo(
+    () => getLastCommittedMonth([...transactions, ...projectedTransactions]),
+    [transactions, projectedTransactions]
+  );
   const requestedMonth = parseMonthKey(searchParams.get('month'));
-  const dashboardMonth = !requestedMonth || requestedMonth > currentMonthStart
+  const dashboardMonth = !requestedMonth
     ? currentMonthStart
+    : requestedMonth > lastCommittedMonthStart ? lastCommittedMonthStart
     : requestedMonth < oldestMonthStart ? oldestMonthStart : requestedMonth;
   const isViewingCurrentMonth = dashboardMonth.getTime() === currentMonthStart.getTime();
+  const isProjectedMonth = dashboardMonth > currentMonthStart;
   const canGoToPrevMonth = dashboardMonth > oldestMonthStart;
+  const canGoToNextMonth = dashboardMonth < lastCommittedMonthStart;
+  const dashboardTransactions = useMemo(
+    () => isProjectedMonth ? [...transactions, ...projectedTransactions] : transactions,
+    [isProjectedMonth, transactions, projectedTransactions]
+  );
 
   const setDashboardMonth = (month: Date) => {
     const newParams = new URLSearchParams(searchParams);
@@ -284,7 +300,7 @@ const Dashboard: React.FC = () => {
     selectedMonthDate: dashboardMonthDate,
     getFamilyMemberName,
   } = useDashboardData({
-    transactions,
+    transactions: dashboardTransactions,
     familyMembers,
     budgetConfig: null,
     activeMonthIndex: null, // Always null for Dashboard - single month mode
@@ -415,12 +431,17 @@ const Dashboard: React.FC = () => {
                   </h1>
                   <button
                     onClick={() => shiftDashboardMonth(1)}
-                    disabled={isViewingCurrentMonth}
+                    disabled={!canGoToNextMonth}
                     aria-label="Next month"
                     className="p-1 rounded-full text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   >
                     <ChevronRight className="h-6 w-6" />
                   </button>
+                  {isProjectedMonth && (
+                    <span className="ml-1 px-2 py-0.5 text-xs font-medium rounded-full border border-dashed border-purple-400 text-purple-700 dark:text-purple-300">
+                      Projected
+                    </span>
+                  )}
                   {!isViewingCurrentMonth && (
                     <button
                       onClick={() => setDashboardMonth(currentMonthStart)}
@@ -462,8 +483,16 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Empty State - Show when no transactions this month */}
-          {dashboardMonthTransactions.length === 0 ? (
+          {/* Future month: committed charges only. Otherwise the empty state when there are no transactions */}
+          {isProjectedMonth ? (
+            <ProjectedMonthView
+              monthDate={dashboardMonthDate}
+              transactions={dashboardMonthTransactions}
+              personalBudget={personalBudget}
+              formatCurrency={formatCurrency}
+              onViewTransaction={setViewingTransactionDetails}
+            />
+          ) : dashboardMonthTransactions.length === 0 ? (
             <DashboardEmptyState
               monthDate={isViewingCurrentMonth ? new Date() : dashboardMonthDate}
               isPastMonth={!isViewingCurrentMonth}
