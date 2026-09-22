@@ -7,6 +7,7 @@ import {
   fetchImportedTransactions,
   deleteTransactions,
   type BankConnection,
+  type DuplicateSummary,
   type ImportPeriod,
 } from '../services/bankImportService';
 import ImportReviewStep from './ImportReviewStep';
@@ -55,7 +56,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   const [period, setPeriod] = useState<ImportPeriod>({ type: 'current_month' });
   const [customStart, setCustomStart] = useState(SIX_MONTHS_AGO);
   const [connections, setConnections] = useState<BankConnection[]>([]);
-  const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [result, setResult] = useState<{ imported: number; skipped: number; duplicates?: DuplicateSummary[] } | null>(null);
   const [dbSessionId, setDbSessionId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [calSessionToken, setCalSessionToken] = useState<string | null>(null);
@@ -111,13 +112,13 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
     const activePeriod: ImportPeriod =
       period.type === 'custom' ? { type: 'custom', startDate: customStart } : period;
     try {
-      const { dbSessionId: sid, imported, skipped } = await importCalDirect(
+      const { dbSessionId: sid, imported, skipped, duplicates } = await importCalDirect(
         activeConnection,
         calSessionToken,
         otpCode.trim(),
         activePeriod
       );
-      setResult({ imported, skipped });
+      setResult({ imported, skipped, duplicates });
       setDbSessionId(sid ?? null);
       setStep(sid ? 'review' : 'complete');
       onImportComplete?.(imported);
@@ -142,7 +143,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       const state = await waitForServerImport(sessionId, setServerStatus);
       if (state.status === 'error' || !state.result) throw new Error(state.error ?? 'Import failed');
 
-      setResult({ imported: state.result.imported, skipped: state.result.skipped });
+      setResult({ imported: state.result.imported, skipped: state.result.skipped, duplicates: state.result.duplicates });
       setSkippedCardBills(state.result.skippedCardBills ?? []);
       setDbSessionId(state.dbSessionId);
       setStep(state.dbSessionId ? 'review' : 'complete');

@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase';
 import { requestCalOtp as _requestCalOtp, verifyCalOtp, importCalTransactions } from './calDirectService';
 export type { ImportPeriod } from './calDirectService';
+import type { DuplicateSummary } from './calDirectService';
+export type { DuplicateSummary } from './calDirectService';
 
 export type ImportStatus =
   | 'logging_in'
@@ -109,7 +111,7 @@ export async function importCalDirect(
   otpCode: string,
   period: import('./calDirectService').ImportPeriod,
   onProgress?: (msg: string) => void
-): Promise<{ dbSessionId: string; imported: number; updated: number; skipped: number }> {
+): Promise<{ dbSessionId: string; imported: number; updated: number; skipped: number; duplicates: DuplicateSummary[] }> {
   const nationalId = (connection.metadata?.id as string | undefined) ?? '';
   if (!nationalId) throw new Error('Connection is missing national ID in metadata. Please reconnect your account.');
 

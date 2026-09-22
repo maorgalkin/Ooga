@@ -470,6 +470,17 @@ export async function convertToBudgetCurrency(txns: NormalizedTx[], budgetCurren
 
 // ─── Supabase push ────────────────────────────────────────────────────────────
 
+/** A fetched transaction that was already in the account (shown in the import review) */
+export interface DuplicateSummary {
+  date: string;
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
+}
+
+const toDuplicateSummary = (tx: NormalizedTx): DuplicateSummary =>
+  ({ date: tx.date, description: tx.description, amount: tx.amount, type: tx.type });
+
 export interface ExistingImportRow {
   id: string;
   dedupe_hash: string;
@@ -495,13 +506,16 @@ export function planImport(
   incoming: NormalizedTx[],
   existing: ExistingImportRow[],
   budgetCurrency: string
-): { toInsert: NormalizedTx[]; toUpdate: { id: string; tx: NormalizedTx }[]; skipped: number } {
+): { toInsert: NormalizedTx[]; toUpdate: { id: string; tx: NormalizedTx }[]; duplicates: NormalizedTx[] } {
   const existingByHash = new Map(existing.map(row => [row.dedupe_hash, row]));
   const seenInBatch = new Set<string>();
   const toInsert: NormalizedTx[] = [];
   const toUpdate: { id: string; tx: NormalizedTx }[] = [];
+  const duplicates: NormalizedTx[] = []; // Already in the account and unchanged
 
   for (const tx of incoming) {
+    // The same transaction can come back from more than one billing cycle; that's not a duplicate
+    // of anything stored, so it's dropped without being reported
     if (seenInBatch.has(tx.dedupe_hash)) continue;
     seenInBatch.add(tx.dedupe_hash);
 
@@ -514,9 +528,10 @@ export function planImport(
     const realChargeForUnconverted = isUnconvertedForeign(row, budgetCurrency) &&
       tx._chargeCurrency === budgetCurrency && tx.amount !== Number(row.amount);
     if (billedVersionOfPending || realChargeForUnconverted) toUpdate.push({ id: row.id, tx });
+    else duplicates.push(tx);
   }
 
-  return { toInsert, toUpdate, skipped: incoming.length - toInsert.length - toUpdate.length };
+  return { toInsert, toUpdate, duplicates };
 }
 
 async function pushToSupabase(
@@ -526,7 +541,7 @@ async function pushToSupabase(
   connectionId: string,
   dbSessionId: string | null,
   budgetCurrency: string
-): Promise<{ imported: number; updated: number; skipped: number }> {
+): Promise<{ imported: number; updated: number; skipped: number; duplicates: DuplicateSummary[] }> {
   // Check which hashes already exist in DB
   const hashes = [...new Set(txns.map(t => t.dedupe_hash))];
   const { data: existing } = await supabase
@@ -535,7 +550,7 @@ async function pushToSupabase(
     .eq('household_id', householdId)
     .in('dedupe_hash', hashes);
 
-  const { toInsert, toUpdate, skipped } = planImport(txns, (existing ?? []) as ExistingImportRow[], budgetCurrency);
+  const { toInsert, toUpdate, duplicates } = planImport(txns, (existing ?? []) as ExistingImportRow[], budgetCurrency);
 
   // Replace pending / unconverted rows with the billed amounts; keep the user's category and description
   for (const { id, tx } of toUpdate) {
@@ -567,7 +582,12 @@ async function pushToSupabase(
     if (error) throw new Error(`Supabase insert failed: ${error.message}`);
   }
 
-  return { imported: toInsert.length, updated: toUpdate.length, skipped };
+  return {
+    imported: toInsert.length,
+    updated: toUpdate.length,
+    skipped: duplicates.length,
+    duplicates: duplicates.map(toDuplicateSummary),
+  };
 }
 
 /**
@@ -616,7 +636,7 @@ export async function importCalTransactions(
   otpToken: string,
   period: ImportPeriod,
   onProgress?: (msg: string) => void
-): Promise<{ dbSessionId: string; imported: number; updated: number; skipped: number }> {
+): Promise<{ dbSessionId: string; imported: number; updated: number; skipped: number; duplicates: DuplicateSummary[] }> {
   const log = (msg: string) => {
     console.log(`[cal-direct] ${msg}`);
     onProgress?.(msg);
@@ -687,7 +707,7 @@ export async function importCalTransactions(
   if (convertedCount > 0) log(`Converted ${convertedCount} foreign-currency amount(s) to ${budgetCurrency}`);
 
   // Push to Supabase
-  const { imported, updated, skipped } = await pushToSupabase(
+  const { imported, updated, skipped, duplicates } = await pushToSupabase(
     filtered, user.id, householdId, connectionId, dbSessionId, budgetCurrency
   );
 
@@ -702,5 +722,5 @@ export async function importCalTransactions(
     .eq('id', connectionId);
 
   log(`Done: ${imported} imported, ${updated} updated with billed amounts, ${skipped} skipped`);
-  return { dbSessionId, imported, updated, skipped };
+  return { dbSessionId, imported, updated, skipped, duplicates };
 }

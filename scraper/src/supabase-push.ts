@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { decrypt } from './encryption.js';
 import { isBankProvider, makeBankExternalId } from './bank-rules.js';
+import type { DuplicateSummary } from './session-manager.js';
 
 export const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -76,9 +77,10 @@ export async function pushTransactions(
   connectionId: string,
   importSessionId?: string,
   provider?: string
-): Promise<{ imported: number; skipped: number }> {
+): Promise<{ imported: number; skipped: number; duplicates: DuplicateSummary[] }> {
   let imported = 0;
   let skipped = 0;
+  const duplicates: DuplicateSummary[] = [];
   const isBank = !!provider && isBankProvider(provider);
 
   for (const tx of transactions) {
@@ -93,6 +95,12 @@ export async function pushTransactions(
 
     if (existing) {
       skipped++;
+      duplicates.push({
+        date: tx.date.slice(0, 10),
+        description: tx.description,
+        amount: Math.abs(tx.chargedAmount),
+        type: tx.chargedAmount < 0 ? 'expense' : 'income',
+      });
       continue;
     }
 
@@ -125,7 +133,7 @@ export async function pushTransactions(
     }
   }
 
-  return { imported, skipped };
+  return { imported, skipped, duplicates };
 }
 
 export async function updateConnectionLastSync(connectionId: string): Promise<void> {

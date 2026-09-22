@@ -13,7 +13,7 @@ import {
 } from './supabase-push.js';
 import { VisaCalFastScraper, type VisaCalFastCredentials } from './scrapers/visa-cal-fast.js';
 import { isBankProvider, isCardBillPayment } from './bank-rules.js';
-import type { SkippedCardBill } from './session-manager.js';
+import type { DuplicateSummary, SkippedCardBill } from './session-manager.js';
 
 function mapTransaction(tx: Transaction): TransactionRow {
   return {
@@ -62,6 +62,7 @@ export async function startScrape(
   try {
     const connections = await getUserConnections(userId, connectionId);
     const skippedCardBills: SkippedCardBill[] = [];
+    const duplicates: DuplicateSummary[] = [];
     const endDay = endDate.toISOString().slice(0, 10);
 
     console.log(`Starting scrape for ${connections.length} connection(s)`);
@@ -140,6 +141,7 @@ export async function startScrape(
           );
           imported += stats.imported;
           skipped += stats.skipped;
+          duplicates.push(...stats.duplicates);
         }
 
         await updateConnectionLastSync(conn.id);
@@ -173,7 +175,7 @@ export async function startScrape(
     const partialError = errors.length > 0 ? `Partial errors: ${errors.join('; ')}` : undefined;
     updateSession(sessionId, {
       status: 'complete',
-      result: { imported: totalImported, skipped: totalSkipped, skippedCardBills },
+      result: { imported: totalImported, skipped: totalSkipped, skippedCardBills, duplicates },
       error: partialError,
     });
     await recordImportSession(dbSessionId, 'complete', totalImported, totalSkipped, partialError);
