@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronDown, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import DuplicatesBubble from './DuplicatesBubble';
 import { useCategories } from '../hooks/useCategories';
 import {
   fetchImportedTransactions,
   updateTransactionCategory,
   deleteTransactions,
+  type DuplicateSummary,
   type ReviewTransaction,
 } from '../services/bankImportService';
 import type { Category } from '../types/category';
 
 interface Props {
   dbSessionId: string;
-  result: { imported: number; skipped: number };
+  result: { imported: number; skipped: number; duplicates?: DuplicateSummary[] };
   onDone: (kept: number) => void;
   onCancel: () => void;
 }
@@ -42,7 +44,6 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
   const [categoryOverrides, setCategoryOverrides] = useState<Map<string, { id: string | null; name: string }>>(new Map());
   // Bulk category apply
   const [bulkCategoryId, setBulkCategoryId] = useState('');
-  const [duplicatesOpen, setDuplicatesOpen] = useState(false);
 
   const { data: categories = [] } = useCategories(false);
   const expenseCategories = categories.filter((c: Category) => c.isActive);
@@ -157,7 +158,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         </span>
         {result.skipped > 0 && (
           <span className="text-gray-500 dark:text-gray-400 text-xs">
-            · {result.skipped} duplicate{result.skipped !== 1 ? 's' : ''} skipped
+            · <DuplicatesBubble count={result.skipped} duplicates={result.duplicates} />
           </span>
         )}
       </div>
@@ -352,27 +353,6 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
             Unchecked rows will be <strong>deleted</strong>. You can always re-import later.
           </p>
         </>
-      )}
-
-      {/* Duplicates section */}
-      {result.skipped > 0 && (
-        <button
-          onClick={() => setDuplicatesOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors w-full text-left"
-        >
-          {duplicatesOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-          {result.skipped} duplicate{result.skipped !== 1 ? 's' : ''} already in your account — skipped
-        </button>
-      )}
-      {duplicatesOpen && (
-        <div className="rounded-lg bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
-          <p>
-            {result.skipped} transaction{result.skipped !== 1 ? 's were' : ' was'} skipped because identical records already exist in your account (matched by date + amount + description).
-          </p>
-          <p>
-            To review them, use the <strong>month filter</strong> in the Transactions tab after closing this.
-          </p>
-        </div>
       )}
 
       {/* Footer actions */}

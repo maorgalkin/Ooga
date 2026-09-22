@@ -214,13 +214,13 @@ describe('planImport', () => {
     original_amount: tx.original_amount, original_currency: tx.original_currency, ...overrides,
   });
 
-  it('inserts new rows and skips unchanged duplicates, including repeats within the batch', async () => {
+  it('inserts new rows and reports rows already stored as duplicates, ignoring repeats within the batch', async () => {
     const a = await normalize(completedForeign);
     const b = await normalize({ ...completedForeign, merchantName: 'Bookshop' });
     const plan = planImport([a, b, { ...b }], [existingRow(a)], 'ILS');
     expect(plan.toInsert).toEqual([b]);
     expect(plan.toUpdate).toEqual([]);
-    expect(plan.skipped).toBe(2);
+    expect(plan.duplicates).toEqual([a]); // the repeated `b` isn't a duplicate of anything stored
   });
 
   it('replaces a pending row with its billed version', async () => {
@@ -232,6 +232,7 @@ describe('planImport', () => {
     const plan = planImport([billed], [existingRow(pending)], 'ILS');
     expect(plan.toUpdate).toEqual([{ id: 'row-1', tx: billed }]);
     expect(plan.toInsert).toEqual([]);
+    expect(plan.duplicates).toEqual([]);
   });
 
   it('replaces a stored row that still holds the foreign amount with the real charge', async () => {
@@ -243,6 +244,8 @@ describe('planImport', () => {
 
   it('does not touch a row already stored with the right amount', async () => {
     const billed = await normalize(completedForeign);
-    expect(planImport([billed], [existingRow(billed)], 'ILS').toUpdate).toEqual([]);
+    const plan = planImport([billed], [existingRow(billed)], 'ILS');
+    expect(plan.toUpdate).toEqual([]);
+    expect(plan.duplicates).toEqual([billed]);
   });
 });

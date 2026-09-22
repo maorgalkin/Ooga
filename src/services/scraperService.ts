@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import type { DuplicateSummary } from './bankImportService';
 
 const SCRAPER_URL = (import.meta.env.VITE_SCRAPER_URL as string | undefined) ?? 'https://api.haooga.com';
 
@@ -22,7 +23,12 @@ export interface ServerImportState {
   sessionId: string;
   dbSessionId: string | null;
   status: ServerImportStatus;
-  result: { imported: number; skipped: number; skippedCardBills?: SkippedCardBill[] } | null;
+  result: {
+    imported: number;
+    skipped: number;
+    skippedCardBills?: SkippedCardBill[];
+    duplicates?: DuplicateSummary[];
+  } | null;
   error: string | null;
 }
 

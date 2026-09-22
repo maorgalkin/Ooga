@@ -6,6 +6,14 @@ export interface SkippedCardBill {
   amount: number;
 }
 
+/** A fetched transaction that was already in the account (shown in the import review) */
+export interface DuplicateSummary {
+  date: string;
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
+}
+
 export interface ScrapeSession {
   id: string;
   userId: string; // Owner — status/OTP requests from other users are rejected
@@ -15,6 +23,7 @@ export interface ScrapeSession {
     imported: number;
     skipped: number;
     skippedCardBills?: SkippedCardBill[];
+    duplicates?: DuplicateSummary[];
   };
   error?: string;
   createdAt: Date;
