@@ -18,6 +18,14 @@ import { DashboardTabNavigation } from './dashboard/DashboardTabNavigation';
 import { DashboardEmptyState } from './dashboard/DashboardEmptyState';
 import { DashboardTileLayout } from './dashboard/DashboardTileLayout';
 import { ProjectedMonthView } from './dashboard/ProjectedMonthView';
+import {
+  DESKTOP_MEDIA_QUERY,
+  SHOW_LAYOUT_PICKER,
+  initialLayoutMode,
+  resolveLayout,
+  type LayoutMode,
+} from './dashboard/layoutMode';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { ExpenseChart } from './dashboard/ExpenseChart';
 import { formatCurrencyFromSettings } from '../utils/formatCurrency';
 import { DummyDataControls } from './dashboard/DummyDataControls';
@@ -29,11 +37,10 @@ import * as HouseholdService from '../services/householdService';
 import type { Transaction, BudgetConfiguration } from '../types';
 import type { Household } from '../services/householdService';
 import { getHeadingColor, getSubheadingColor } from '../utils/themeColors';
-import { AlignJustify, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getMonthsWithData, getMonthStart, toMonthKey, parseMonthKey } from '../utils/dateHelpers';
 import { getProjectedBankInstallments, getLastCommittedMonth } from '../utils/projections';
 
-type LayoutMode = 'wide' | 'tiled' | 'both';
 
 const Dashboard: React.FC = () => {
   const { transactions, familyMembers, addTransaction, deleteTransaction } = useFinance();
@@ -68,9 +75,16 @@ const Dashboard: React.FC = () => {
   const [showBreakdownInHeader, setShowBreakdownInHeader] = useState(false);
   const [viewedAlertIds, setViewedAlertIds] = useState<Set<string>>(new Set());
   const [viewingTransactionDetails, setViewingTransactionDetails] = useState<Transaction | null>(null);
+  // Production: tiled on desktop, wide (legacy) on phones. The picker only exists in development.
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
-    return (localStorage.getItem('dashboard-layout') as LayoutMode) || 'both';
+    try {
+      return initialLayoutMode(localStorage.getItem('dashboard-layout'));
+    } catch {
+      return 'auto';
+    }
   });
+  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY);
+  const layout = resolveLayout(layoutMode, isDesktop);
   const expenseChartRef = React.useRef<HTMLDivElement>(null);
 
   // Household data
@@ -503,37 +517,40 @@ const Dashboard: React.FC = () => {
             />
           ) : (
             <>
-              {/* Layout toggle — top right of content */}
-              <div className="flex items-center justify-end mb-4 gap-1">
-                <span className="text-xs text-gray-400 mr-2">Layout:</span>
-                {(
-                  [
-                    { id: 'wide', label: 'Wide', Icon: AlignJustify },
-                    { id: 'both', label: 'Both', Icon: LayoutGrid },
-                    { id: 'tiled', label: 'Tiled', Icon: LayoutGrid },
-                  ] as const
-                ).map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    onClick={() => {
-                      setLayoutMode(id);
-                      localStorage.setItem('dashboard-layout', id);
-                    }}
-                    className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                      layoutMode === id
-                        ? 'bg-purple-100 dark:bg-purple-900/40 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 font-medium'
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              {/* Layout toggle — development only (production is always 'auto') */}
+              {SHOW_LAYOUT_PICKER && (
+                <div className="flex items-center justify-end mb-4 gap-1">
+                  <span className="text-xs text-gray-400 mr-2">Layout:</span>
+                  {(
+                    [
+                      { id: 'auto', label: 'Auto (prod)' },
+                      { id: 'wide', label: 'Wide' },
+                      { id: 'both', label: 'Both' },
+                      { id: 'tiled', label: 'Tiled' },
+                    ] as const
+                  ).map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        setLayoutMode(id);
+                        try { localStorage.setItem('dashboard-layout', id); } catch { /* per-viewer convenience only */ }
+                      }}
+                      className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                        layoutMode === id
+                          ? 'bg-purple-100 dark:bg-purple-900/40 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 font-medium'
+                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* WIDE layout */}
-              {(layoutMode === 'wide' || layoutMode === 'both') && (
+              {(layout === 'wide' || layout === 'both') && (
                 <div>
-                  {layoutMode === 'both' && (
+                  {layout === 'both' && (
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                       Layout A — Wide
                     </p>
@@ -580,7 +597,7 @@ const Dashboard: React.FC = () => {
               )}
 
               {/* Divider between layouts in "both" mode */}
-              {layoutMode === 'both' && (
+              {layout === 'both' && (
                 <div className="relative my-8">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t-2 border-dashed border-gray-300 dark:border-gray-600" />
@@ -594,9 +611,9 @@ const Dashboard: React.FC = () => {
               )}
 
               {/* TILED layout */}
-              {(layoutMode === 'tiled' || layoutMode === 'both') && (
+              {(layout === 'tiled' || layout === 'both') && (
                 <div>
-                  {layoutMode === 'both' && (
+                  {layout === 'both' && (
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                       Layout B — Tiled
                     </p>
