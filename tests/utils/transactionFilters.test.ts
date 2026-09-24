@@ -9,6 +9,8 @@ import {
   applyTransactionFilters,
   createInitialFilterState,
   resetFiltersExceptMonth,
+  getCategoryGroups,
+  flattenCategoryGroups,
 } from '../../src/utils/transactionFilters';
 
 // Helper to create mock transactions
@@ -300,5 +302,43 @@ describe('transactionFilters', () => {
         categories: [],
       });
     });
+  });
+});
+
+describe('getCategoryGroups', () => {
+  const tx = (category: string, type: 'income' | 'expense'): Transaction => ({
+    id: `${type}-${category}`, date: '2026-09-10', description: category, amount: 10, category, type,
+  });
+  const month = [
+    tx('Groceries', 'expense'),
+    tx('Dining', 'expense'),
+    tx('Groceries', 'expense'),
+    tx('Salary', 'income'),
+    tx('Gift', 'income'),
+    tx('Other', 'income'),
+    tx('Other', 'expense'),
+  ];
+
+  it('lists both types, expenses first, when no type is selected', () => {
+    expect(getCategoryGroups(month, [])).toEqual([
+      { type: 'expense', label: 'Expenses', categories: ['Dining', 'Groceries', 'Other'] },
+      { type: 'income', label: 'Income', categories: ['Gift', 'Other', 'Salary'] },
+    ]);
+  });
+
+  it('follows the selected transaction type', () => {
+    expect(getCategoryGroups(month, ['income']).map(g => g.type)).toEqual(['income']);
+    expect(getCategoryGroups(month, ['expense']).map(g => g.type)).toEqual(['expense']);
+    expect(getCategoryGroups(month, ['income', 'expense'])).toHaveLength(2);
+  });
+
+  it('leaves out a type with no categories this month', () => {
+    expect(getCategoryGroups([tx('Salary', 'income')], [])).toEqual([
+      { type: 'income', label: 'Income', categories: ['Salary'] },
+    ]);
+  });
+
+  it('flattens to unique names', () => {
+    expect(flattenCategoryGroups(getCategoryGroups(month, []))).toEqual(['Dining', 'Groceries', 'Other', 'Gift', 'Salary']);
   });
 });

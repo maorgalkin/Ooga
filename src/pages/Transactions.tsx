@@ -11,6 +11,7 @@ import EditTransactionModal from '../components/EditTransactionModal';
 import { formatCurrencyFromSettings } from '../utils/formatCurrency';
 import { getHeadingColor, getSubheadingColor } from '../utils/themeColors';
 import { getDefaultMonthIndex, getMonthsWithData } from '../utils/dateHelpers';
+import { getCategoryGroups, flattenCategoryGroups } from '../utils/transactionFilters';
 import type { Transaction } from '../types';
 
 /**
@@ -30,7 +31,7 @@ export const Transactions: React.FC = () => {
   // Get month data using dashboard data hook
   const {
     months,
-    monthCategoryData,
+    monthTransactions,
     getTransactionsForMonth,
   } = useDashboardData({
     transactions,
@@ -81,10 +82,19 @@ export const Transactions: React.FC = () => {
     return formatCurrencyFromSettings(amount, personalBudget?.global_settings);
   };
   
-  // Extract unique categories from current month data for filter dropdown
-  const availableCategories = useMemo(() => {
-    return monthCategoryData.map(c => c.category).sort();
-  }, [monthCategoryData]);
+  // Categories in this month, grouped by type and following the Trans. Type filter
+  const categoryGroups = useMemo(
+    () => getCategoryGroups(monthTransactions, filters.types),
+    [monthTransactions, filters.types]
+  );
+
+  // Drop selected categories that are no longer listed (e.g. income categories after deselecting
+  // Income), so a hidden filter can't silently empty the list
+  useEffect(() => {
+    const visible = new Set(flattenCategoryGroups(categoryGroups));
+    const kept = filters.categories.filter(c => visible.has(c));
+    if (kept.length !== filters.categories.length) setCategoryFilters(kept);
+  }, [categoryGroups, filters.categories, setCategoryFilters]);
   
   return (
     <div>
@@ -115,7 +125,7 @@ export const Transactions: React.FC = () => {
           selectedMembers={filters.members}
           selectedCategories={filters.categories}
           familyMembers={familyMembers}
-          categories={availableCategories}
+          categoryGroups={categoryGroups}
           onTypeChange={setTypeFilters}
           onMemberChange={setMemberFilters}
           onCategoryChange={setCategoryFilters}
@@ -131,7 +141,7 @@ export const Transactions: React.FC = () => {
               monthFilter={filters.month}
               categoryFilter={filters.categories.length === 0 ? 'all' : filters.categories.length === 1 ? filters.categories[0] : 'all'}
               familyMembers={familyMembers}
-              categories={availableCategories}
+              categoryGroups={categoryGroups}
               months={months}
               activeMonthIndex={monthIndex}
               onTypeChange={setTypeFilter}

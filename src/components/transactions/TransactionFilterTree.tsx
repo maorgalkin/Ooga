@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import type { FamilyMember } from '../../types';
+import { flattenCategoryGroups, type CategoryGroup } from '../../utils/transactionFilters';
 
 interface TransactionFilterTreeProps {
   // Multi-select filter arrays
@@ -10,7 +11,7 @@ interface TransactionFilterTreeProps {
   
   // Available options
   familyMembers: FamilyMember[];
-  categories: string[];
+  categoryGroups: CategoryGroup[]; // Follows the selected transaction types
   
   // Callbacks
   onTypeChange: (types: ('income' | 'expense')[]) => void;
@@ -23,11 +24,13 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
   selectedMembers,
   selectedCategories,
   familyMembers,
-  categories,
+  categoryGroups,
   onTypeChange,
   onMemberChange,
   onCategoryChange,
 }) => {
+  const categories = useMemo(() => flattenCategoryGroups(categoryGroups), [categoryGroups]);
+
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['type', 'members', 'categories'])
   );
@@ -281,22 +284,31 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
               </span>
             </label>
 
-            {/* Individual Categories */}
-            {categories.map(category => (
-              <label
-                key={category}
-                className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedCategories.includes(category)}
-                  onChange={() => handleCategoryToggle(category)}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-2 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {category}
-                </span>
-              </label>
+            {/* Individual categories, headed by type when both types are listed */}
+            {categoryGroups.map(group => (
+              <div key={group.type}>
+                {categoryGroups.length > 1 && (
+                  <p className="px-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    {group.label}
+                  </p>
+                )}
+                {group.categories.map(category => (
+                  <label
+                    key={category}
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(category)}
+                      onChange={() => handleCategoryToggle(category)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {category}
+                    </span>
+                  </label>
+                ))}
+              </div>
             ))}
           </div>
         )}
