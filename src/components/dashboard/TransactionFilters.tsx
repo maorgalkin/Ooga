@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { FamilyMember } from '../../types';
+import type { CategoryGroup } from '../../utils/transactionFilters';
 import { getUserLocale } from '../../utils/locale';
 
 interface MonthData {
@@ -17,7 +18,7 @@ interface TransactionFiltersProps {
   monthFilter: string; // 'current' or YYYY-MM format or month index as string
   categoryFilter: string; // 'all' or category name
   familyMembers: FamilyMember[];
-  categories: string[]; // Available categories
+  categoryGroups: CategoryGroup[]; // Available categories, following the type filter
   months: MonthData[]; // Available months from carousel
   activeMonthIndex: number; // Currently selected month in carousel
   onTypeChange: (type: 'all' | 'income' | 'expense') => void;
@@ -33,7 +34,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   monthFilter,
   categoryFilter,
   familyMembers,
-  categories,
+  categoryGroups,
   months,
   activeMonthIndex,
   onTypeChange,
@@ -250,16 +251,25 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
             >
               All Categories
             </div>
-            {categories.map(category => (
-              <div
-                key={category}
-                onClick={() => {
-                  onCategoryChange(category);
-                  setOpenDropdown(null);
-                }}
-                className={categoryFilter === category ? activeOptionClasses : optionClasses}
-              >
-                {category}
+            {categoryGroups.map(group => (
+              <div key={group.type}>
+                {categoryGroups.length > 1 && (
+                  <div className="px-4 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    {group.label}
+                  </div>
+                )}
+                {group.categories.map(category => (
+                  <div
+                    key={category}
+                    onClick={() => {
+                      onCategoryChange(category);
+                      setOpenDropdown(null);
+                    }}
+                    className={categoryFilter === category ? activeOptionClasses : optionClasses}
+                  >
+                    {category}
+                  </div>
+                ))}
               </div>
             ))}
           </div>

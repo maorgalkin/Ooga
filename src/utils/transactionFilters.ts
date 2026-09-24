@@ -153,3 +153,38 @@ export function resetFiltersExceptMonth(
     categories: [], // Empty = show all
   };
 }
+
+/** A titled list of category names for the filter UI */
+export interface CategoryGroup {
+  type: 'income' | 'expense';
+  label: string;
+  categories: string[];
+}
+
+/**
+ * Categories present in these transactions, grouped by type and limited to the selected
+ * transaction types (none selected = both). Expenses come first; empty groups are left out.
+ */
+export function getCategoryGroups(
+  transactions: Transaction[],
+  selectedTypes: ('income' | 'expense')[]
+): CategoryGroup[] {
+  const byType: Record<'income' | 'expense', Set<string>> = { expense: new Set(), income: new Set() };
+  transactions.forEach(t => {
+    if (t.category) byType[t.type]?.add(t.category);
+  });
+
+  return (['expense', 'income'] as const)
+    .filter(type => selectedTypes.length === 0 || selectedTypes.includes(type))
+    .map(type => ({
+      type,
+      label: type === 'income' ? 'Income' : 'Expenses',
+      categories: [...byType[type]].sort((a, b) => a.localeCompare(b)),
+    }))
+    .filter(group => group.categories.length > 0);
+}
+
+/** Every category name across the groups, once (a name can exist for both types, e.g. "Other") */
+export function flattenCategoryGroups(groups: CategoryGroup[]): string[] {
+  return [...new Set(groups.flatMap(group => group.categories))];
+}
