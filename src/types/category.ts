@@ -85,11 +85,6 @@ export interface CategoryMergeHistoryEntry {
   undoneBy?: string;
 }
 
-export interface CategoryMigrationResult {
-  step: string;
-  result: unknown;
-}
-
 // Default category colors for new categories
 export const DEFAULT_CATEGORY_COLORS = [
   '#3B82F6', // Blue
