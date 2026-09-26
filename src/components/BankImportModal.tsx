@@ -11,6 +11,7 @@ import {
   type ImportPeriod,
 } from '../services/bankImportService';
 import ImportReviewStep from './ImportReviewStep';
+import { undoMergesForSession } from '../services/reconcileService';
 import {
   startServerImport,
   waitForServerImport,
@@ -159,10 +160,11 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
 
   const isCalProvider = (p: string) => p === 'visaCal' || p === 'visaCalFast';
 
-  // When closing during review, delete all imported transactions first
+  // When closing during review, undo the import's merges and delete its transactions first
   const handleClose = async () => {
     if (step === 'review' && dbSessionId) {
       try {
+        await undoMergesForSession(dbSessionId);
         const txns = await fetchImportedTransactions(dbSessionId);
         if (txns.length > 0) await deleteTransactions(txns.map(t => t.id));
       } catch { /* best-effort */ }

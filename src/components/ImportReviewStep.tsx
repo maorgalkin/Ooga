@@ -1,6 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Loader2, AlertCircle, Link2 } from 'lucide-react';
 import DuplicatesBubble from './DuplicatesBubble';
+import {
+  reconcileImport,
+  mergeBankIntoEntry,
+  undoMerge,
+  undoMergesForSession,
+  type MatchedEntry,
+} from '../services/reconcileService';
 import { useCategories } from '../hooks/useCategories';
 import {
   fetchImportedTransactions,
@@ -48,15 +55,72 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
   const { data: categories = [] } = useCategories(false);
   const expenseCategories = categories.filter((c: Category) => c.isActive);
 
-  useEffect(() => {
-    fetchImportedTransactions(dbSessionId)
-      .then((txns) => {
-        setTransactions(txns);
-        setSelected(new Set(txns.map((t) => t.id)));
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load transactions'))
-      .finally(() => setLoading(false));
+  // Bank rows merged into manual entries, and pairs that might be the same purchase
+  const [merged, setMerged] = useState<MatchedEntry[]>([]);
+  const [suggestions, setSuggestions] = useState<MatchedEntry[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const transactionsRef = useRef<ReviewTransaction[]>([]);
+  const loadRows = useCallback(async () => {
+    const txns = await fetchImportedTransactions(dbSessionId);
+    setTransactions(txns);
+    // Keep earlier choices; new rows (e.g. restored by an undo) start selected
+    setSelected((prev) => {
+      const known = new Set(transactionsRef.current.map((t) => t.id));
+      return new Set(txns.filter((t) => prev.has(t.id) || !known.has(t.id)).map((t) => t.id));
+    });
+    transactionsRef.current = txns;
   }, [dbSessionId]);
+
+  // Match the new rows against manual entries once per import, then load what's left to review
+  const reconciledFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (reconciledFor.current === dbSessionId) return;
+    reconciledFor.current = dbSessionId;
+    (async () => {
+      try {
+        const result = await reconcileImport(dbSessionId).catch(() => ({ merged: [], suggestions: [] }));
+        setMerged(result.merged);
+        setSuggestions(result.suggestions);
+        await loadRows();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load transactions');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [dbSessionId, loadRows]);
+
+  const handleUndoMerge = useCallback(async (match: MatchedEntry) => {
+    setBusyId(match.entry.id);
+    try {
+      await undoMerge(match.entry.id);
+      setMerged((prev) => prev.filter((m) => m.entry.id !== match.entry.id));
+      await loadRows(); // the bank row is back in the list
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to undo');
+    } finally {
+      setBusyId(null);
+    }
+  }, [loadRows]);
+
+  const handleMergeSuggestion = useCallback(async (match: MatchedEntry) => {
+    setBusyId(match.bank.id);
+    try {
+      await mergeBankIntoEntry(match.entry.id, match.bank.id);
+      setSuggestions((prev) => prev.filter((m) => m.bank.id !== match.bank.id));
+      setMerged((prev) => [...prev, match]);
+      await loadRows(); // the bank row is now part of the entry
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to merge');
+    } finally {
+      setBusyId(null);
+    }
+  }, [loadRows]);
+
+  const handleKeepBoth = useCallback((match: MatchedEntry) => {
+    setSuggestions((prev) => prev.filter((m) => m.bank.id !== match.bank.id));
+  }, []);
 
   const toggleAll = useCallback((checked: boolean) => {
     setSelected(checked ? new Set(transactions.map((t) => t.id)) : new Set());
@@ -112,13 +176,16 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
   const handleCancel = useCallback(async () => {
     setSaving(true);
     try {
-      await deleteTransactions(transactions.map((t) => t.id));
+      // Cancelling the import also undoes its merges, so your entries are as they were
+      await undoMergesForSession(dbSessionId);
+      const rows = await fetchImportedTransactions(dbSessionId);
+      await deleteTransactions(rows.map((t) => t.id));
       onCancel();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to cancel import');
       setSaving(false);
     }
-  }, [transactions, onCancel]);
+  }, [dbSessionId, onCancel]);
 
   const allChecked = transactions.length > 0 && selected.size === transactions.length;
   const someChecked = selected.size > 0 && selected.size < transactions.length;
@@ -152,16 +219,71 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       {/* Summary banner */}
       <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
         <span className="text-green-700 dark:text-green-300 text-sm font-medium">
-          {result.imported > 0
-            ? `${result.imported} new transaction${result.imported !== 1 ? 's' : ''} fetched`
+          {transactions.length > 0
+            ? `${transactions.length} new transaction${transactions.length !== 1 ? 's' : ''} fetched`
             : 'No new transactions'}
         </span>
+        {merged.length > 0 && (
+          <span className="text-gray-500 dark:text-gray-400 text-xs">
+            · {merged.length} matched with your entries
+          </span>
+        )}
         {result.skipped > 0 && (
           <span className="text-gray-500 dark:text-gray-400 text-xs">
             · <DuplicatesBubble count={result.skipped} duplicates={result.duplicates} />
           </span>
         )}
       </div>
+
+      {/* Bank rows merged into manual entries paid with this account */}
+      {merged.length > 0 && (
+        <MatchList
+          title={`Matched with your entries (${merged.length})`}
+          hint="Your category, family member and description were kept; the amount and date now come from the bank."
+          matches={merged}
+          busyId={busyId}
+          renderActions={(m) => (
+            <button
+              onClick={() => handleUndoMerge(m)}
+              disabled={busyId !== null}
+              className="px-2 py-1 rounded text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+            >
+              Undo
+            </button>
+          )}
+          busyKey={(m) => m.entry.id}
+        />
+      )}
+
+      {/* Bank rows that might be the same purchase as a manual entry */}
+      {suggestions.length > 0 && (
+        <MatchList
+          title={`Possible duplicates (${suggestions.length})`}
+          hint="These look like entries you added by hand. Merge them, or keep both if they're different purchases."
+          matches={suggestions}
+          busyId={busyId}
+          tone="warning"
+          renderActions={(m) => (
+            <>
+              <button
+                onClick={() => handleMergeSuggestion(m)}
+                disabled={busyId !== null}
+                className="px-2 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40"
+              >
+                Merge
+              </button>
+              <button
+                onClick={() => handleKeepBoth(m)}
+                disabled={busyId !== null}
+                className="px-2 py-1 rounded text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+              >
+                Keep both
+              </button>
+            </>
+          )}
+          busyKey={(m) => m.bank.id}
+        />
+      )}
 
       {transactions.length > 0 && (
         <>
@@ -376,6 +498,49 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           )}
         </button>
       </div>
+    </div>
+  );
+}
+
+interface MatchListProps {
+  title: string;
+  hint: string;
+  matches: MatchedEntry[];
+  busyId: string | null;
+  busyKey: (m: MatchedEntry) => string;
+  renderActions: (m: MatchedEntry) => React.ReactNode;
+  tone?: 'neutral' | 'warning';
+}
+
+function MatchList({ title, hint, matches, busyId, busyKey, renderActions, tone = 'neutral' }: MatchListProps) {
+  const money = (amount: number) =>
+    `₪${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return (
+    <div className={`rounded-lg border px-3 py-2 ${tone === 'warning'
+      ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
+      : 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20'}`}
+    >
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200">
+        <Link2 className="w-3.5 h-3.5" /> {title}
+      </p>
+      <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">{hint}</p>
+      <ul className="max-h-40 overflow-y-auto divide-y divide-gray-200/70 dark:divide-gray-700">
+        {matches.map((m) => (
+          <li key={`${m.entry.id}:${m.bank.id}`} className="flex items-center gap-2 py-1.5 text-xs">
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-gray-800 dark:text-gray-100" dir="auto">
+                <span className="text-gray-400">You:</span> {m.entry.description} · {formatDate(m.entry.date)} · {money(m.entry.amount)}
+              </p>
+              <p className="truncate text-gray-500 dark:text-gray-400" dir="auto">
+                <span className="text-gray-400">Bank:</span> {m.bank.description} · {formatDate(m.bank.date)} · {money(m.bank.amount)}
+              </p>
+            </div>
+            <div className="flex-shrink-0 flex items-center gap-1">
+              {busyId === busyKey(m) ? <Loader2 className="w-4 h-4 animate-spin text-gray-400" /> : renderActions(m)}
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

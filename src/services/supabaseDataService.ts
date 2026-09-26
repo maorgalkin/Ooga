@@ -72,6 +72,8 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     installment_group_id: row.installment_group_id || undefined,
     installment_number: row.installment_number || undefined,
     installment_total: row.installment_total || undefined,
+    paidWith: row.paid_with_connection_id || undefined,
+    source: row.source,
   }));
 };
 
@@ -94,6 +96,7 @@ export const addTransaction = async (transaction: Omit<Transaction, 'id'>): Prom
       category_id: categoryId,
       type: transaction.type,
       family_member_id: transaction.familyMember || null,
+      paid_with_connection_id: transaction.paidWith || null,
     })
     .select()
     .single();
@@ -110,6 +113,8 @@ export const addTransaction = async (transaction: Omit<Transaction, 'id'>): Prom
     category: data.category,
     type: data.type as 'income' | 'expense',
     familyMember: data.family_member_id || undefined,
+    paidWith: data.paid_with_connection_id || undefined,
+    source: data.source,
   };
 };
 
@@ -130,6 +135,7 @@ export const updateTransaction = async (id: string, transaction: Omit<Transactio
       category_id: categoryId,
       type: transaction.type,
       family_member_id: transaction.familyMember || null,
+      paid_with_connection_id: transaction.paidWith || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -150,6 +156,8 @@ export const updateTransaction = async (id: string, transaction: Omit<Transactio
     category: data.category,
     type: data.type as 'income' | 'expense',
     familyMember: data.family_member_id || undefined,
+    paidWith: data.paid_with_connection_id || undefined,
+    source: data.source,
   };
 };
 
@@ -241,6 +249,7 @@ export const addInstallmentTransactions = async (
       category_id: categoryId,
       type: transaction.type,
       family_member_id: transaction.familyMember || null,
+      paid_with_connection_id: transaction.paidWith || null,
       installment_group_id: installmentGroupId,
       installment_number: i + 1,
       installment_total: numberOfInstallments,

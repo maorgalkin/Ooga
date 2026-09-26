@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget } from '../hooks/useBudgets';
 import { X, Calendar } from 'lucide-react';
 import type { Transaction } from '../types';
 import * as SupabaseService from '../services/supabaseDataService';
+import { listConnections, type BankConnection } from '../services/bankImportService';
 
 interface EditTransactionModalProps {
   transaction: Transaction;
@@ -21,7 +22,15 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
     category: transaction.category,
     type: transaction.type,
     familyMember: transaction.familyMember || '',
+    paidWith: transaction.paidWith || '',
   });
+
+  // Connected accounts for "Paid with" (manual entries only; imported rows already have their account)
+  const isManualEntry = transaction.source !== 'bank_import';
+  const [connections, setConnections] = useState<BankConnection[]>([]);
+  useEffect(() => {
+    if (isManualEntry) listConnections().then(setConnections).catch(() => {});
+  }, [isManualEntry]);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [installmentDeleteOption, setInstallmentDeleteOption] = useState<'single' | 'future' | 'all'>('single');
@@ -314,6 +323,27 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
               ))}
             </select>
           </div>
+
+          {/* Paid with / Received in (manual entries) */}
+          {isManualEntry && connections.length > 0 && (
+            <div>
+              <label htmlFor="edit-paid-with" className="block text-sm font-medium text-gray-700 mb-1">
+                {formData.type === 'income' ? 'Received in' : 'Paid with'}
+              </label>
+              <select
+                id="edit-paid-with"
+                name="paidWith"
+                value={formData.paidWith}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Cash / not a connected account</option>
+                {connections.map(conn => (
+                  <option key={conn.id} value={conn.id}>{conn.display_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Convert to installments (regular expenses only) */}
           {canConvertToInstallments && (

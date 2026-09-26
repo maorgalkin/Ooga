@@ -15,6 +15,8 @@ interface AddTransactionProps {
   onClose: () => void;
 }
 
+const LAST_PAID_WITH_KEY = 'last-paid-with';
+
 const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { addTransaction, familyMembers, setTransactions } = useFinance();
@@ -26,6 +28,10 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
   const [connections, setConnections] = useState<BankConnection[]>([]);
   const [importConnectionId, setImportConnectionId] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  // Connected account that paid (empty = cash / not connected); remembered per browser
+  const [paidWith, setPaidWith] = useState<string>(() => {
+    try { return localStorage.getItem(LAST_PAID_WITH_KEY) ?? ''; } catch { return ''; }
+  });
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -127,7 +133,10 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
         category: formData.category,
         familyMember: formData.familyMember || undefined,
         date: formData.date,
+        // Paid by a connected account: a placeholder until the import brings the bank's charge
+        paidWith: paidWith || undefined,
       };
+      try { localStorage.setItem(LAST_PAID_WITH_KEY, paidWith); } catch { /* per-browser convenience only */ }
 
       if (isInstallment) {
         // Split the total into cent-rounded installments
@@ -210,7 +219,13 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
   // Load bank connections when modal opens
   useEffect(() => {
     if (isOpen) {
-      listConnections().then(setConnections).catch(() => {});
+      listConnections()
+        .then(conns => {
+          setConnections(conns);
+          // Forget a remembered account that's no longer connected
+          setPaidWith(current => (conns.some(c => c.id === current) ? current : ''));
+        })
+        .catch(() => {});
     }
   }, [isOpen]);
 
@@ -382,6 +397,30 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
               ))}
             </select>
           </div>
+
+          {connections.length > 0 && (
+            <div>
+              <label htmlFor="transaction-paid-with" className="block text-sm font-medium text-gray-700 mb-1">
+                {formData.type === 'income' ? 'Received in' : 'Paid with'}
+              </label>
+              <select
+                id="transaction-paid-with"
+                value={paidWith}
+                onChange={(e) => setPaidWith(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Cash / not a connected account</option>
+                {connections.map(conn => (
+                  <option key={conn.id} value={conn.id}>{conn.display_name}</option>
+                ))}
+              </select>
+              {paidWith && (
+                <p className="mt-1 text-xs text-gray-500">
+                  The next import from this account will match the bank’s charge to this entry instead of adding it twice.
+                </p>
+              )}
+            </div>
+          )}
 
           <div>
             <label htmlFor="transaction-date" className="block text-sm font-medium text-gray-700 mb-1">

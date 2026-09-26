@@ -11,6 +11,8 @@ export interface Transaction {
   installment_number?: number;    // Current installment number (1-based)
   installment_total?: number;     // Total number of installments
   projected?: boolean;            // Not in the database: an expected future charge (see utils/projections)
+  paidWith?: string;              // Manual entries: connected account (bank_connections.id) that paid; unset = cash/other
+  source?: 'manual' | 'bank_import';
 }
 
 export interface Budget {
