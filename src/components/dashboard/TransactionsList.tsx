@@ -189,6 +189,14 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                   <div className="text-sm text-gray-500 dark:text-gray-400">
                     {new Date(t.date).toLocaleDateString(getUserLocale())}
                     {t.familyMember && ` • ${familyMembers.find(m => m.id === t.familyMember)?.name || 'Unknown'}`}
+                    {t.source === 'manual' && t.paidWith && (
+                      <span
+                        className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
+                        title="Added by hand and paid with a connected account: the next import will match the bank's charge to it"
+                      >
+                        awaiting bank
+                      </span>
+                    )}
                   </div>
                 </div>
 
