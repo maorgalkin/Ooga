@@ -8,7 +8,7 @@ import {
   pushTransactions,
   recordImportSession,
   createImportSessionRecord,
-  getUserConnections,
+  getHouseholdConnections,
   updateConnectionLastSync,
 } from './supabase-push.js';
 import { VisaCalFastScraper, type VisaCalFastCredentials } from './scrapers/visa-cal-fast.js';
@@ -60,7 +60,7 @@ export async function startScrape(
   updateSession(sessionId, { status: 'logging_in', dbSessionId });
 
   try {
-    const connections = await getUserConnections(userId, connectionId);
+    const connections = await getHouseholdConnections(householdId, connectionId);
     const skippedCardBills: SkippedCardBill[] = [];
     const duplicates: DuplicateSummary[] = [];
     const endDay = endDate.toISOString().slice(0, 10);

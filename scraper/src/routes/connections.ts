@@ -79,12 +79,13 @@ router.delete('/:id', async (req: Request, res: Response) => {
 router.get('/list', async (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization ?? '';
-    const { userId } = await getUserAndHousehold(authHeader);
+    const { householdId } = await getUserAndHousehold(authHeader);
 
+    // Connections are shared with the whole household
     const { data, error } = await supabase
       .from('bank_connections')
-      .select('id, provider, display_name, last_sync_at, is_active, created_at')
-      .eq('user_id', userId)
+      .select('id, user_id, provider, display_name, last_sync_at, is_active, created_at')
+      .eq('household_id', householdId)
       .eq('is_active', true)
       .order('created_at', { ascending: true });
 
@@ -104,13 +105,14 @@ router.get('/list', async (req: Request, res: Response) => {
 router.post('/test/:id', async (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization ?? '';
-    const { userId } = await getUserAndHousehold(authHeader);
+    const { householdId } = await getUserAndHousehold(authHeader);
 
+    // Any household member may test a shared connection (credentials never leave the server)
     const { data: conn, error } = await supabase
       .from('bank_connections')
       .select('provider, credentials_encrypted')
       .eq('id', req.params.id)
-      .eq('user_id', userId)
+      .eq('household_id', householdId)
       .single();
 
     if (error || !conn) {

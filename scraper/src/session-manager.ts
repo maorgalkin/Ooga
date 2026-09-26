@@ -12,6 +12,7 @@ export interface DuplicateSummary {
   description: string;
   amount: number;
   type: 'income' | 'expense';
+  reason?: 'exists' | 'deleted'; // already in the account / a member deleted it earlier
 }
 
 export interface ScrapeSession {

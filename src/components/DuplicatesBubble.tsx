@@ -72,6 +72,11 @@ export default function DuplicatesBubble({ count, duplicates }: Props) {
                   <span className="flex-1 min-w-0 truncate text-gray-700 dark:text-gray-200" dir="auto" title={d.description}>
                     {d.description}
                   </span>
+                  {d.reason === 'deleted' && (
+                    <span className="flex-shrink-0 rounded px-1 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400" title="A household member deleted this earlier">
+                      deleted
+                    </span>
+                  )}
                   <span className={`flex-shrink-0 tabular-nums ${d.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-300'}`}>
                     {d.type === 'income' ? '+' : '−'}₪{d.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
@@ -80,7 +85,7 @@ export default function DuplicatesBubble({ count, duplicates }: Props) {
             </ul>
           )}
           <p className="px-3 py-1.5 text-[11px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-            Already in your account, so they weren’t imported again.
+            Already in your account, or deleted earlier on purpose, so they weren’t imported again.
           </p>
         </div>
       )}

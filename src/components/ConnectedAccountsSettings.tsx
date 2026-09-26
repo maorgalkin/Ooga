@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, Trash2, RefreshCw, Building2, CreditCard, Loader2 } from 'lucide-react';
 import { listConnections, deleteConnection, type BankConnection } from '../services/bankImportService';
 import AddBankAccountModal from './AddBankAccountModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const PROVIDER_LABELS: Record<string, string> = {
   discount: 'Discount Bank',
@@ -26,6 +27,7 @@ function formatDate(iso: string | null) {
 }
 
 export default function ConnectedAccountsSettings() {
+  const { user } = useAuth();
   const [connections, setConnections] = useState<BankConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -122,19 +124,23 @@ export default function ConnectedAccountsSettings() {
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {PROVIDER_LABELS[conn.provider] ?? conn.provider} · Last sync: {formatDate(conn.last_sync_at)}
+                    {conn.user_id !== user?.id && ' · Added by another household member'}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleDelete(conn.id)}
-                  disabled={deletingId === conn.id}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
-                  title="Remove connection"
-                >
-                  {deletingId === conn.id
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <Trash2 className="w-4 h-4" />
-                  }
-                </button>
+                {/* Everyone can import a shared connection; only whoever added it can remove it */}
+                {conn.user_id === user?.id && (
+                  <button
+                    onClick={() => handleDelete(conn.id)}
+                    disabled={deletingId === conn.id}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                    title="Remove connection"
+                  >
+                    {deletingId === conn.id
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <Trash2 className="w-4 h-4" />
+                    }
+                  </button>
+                )}
               </li>
             );
           })}
