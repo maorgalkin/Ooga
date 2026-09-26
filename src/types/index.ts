@@ -80,8 +80,7 @@ export type {
   CategoryCreateInput,
   CategoryUpdateInput,
   CategoryMergeResult,
-  CategoryMergeHistoryEntry,
-  CategoryMigrationResult
+  CategoryMergeHistoryEntry
 } from './category';
 
 export { DEFAULT_CATEGORY_COLORS, getNextCategoryColor } from './category';
