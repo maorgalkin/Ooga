@@ -38,15 +38,16 @@ function makeExternalId(tx: TransactionRow): string {
 }
 
 /**
- * Active connections with server-stored (encrypted) credentials. Connections that are imported
- * directly from the browser (Cal fast access) have none and are left out.
+ * The household's active connections with server-stored (encrypted) credentials. Connections are
+ * shared: any household member can import any of them. Connections imported directly from the
+ * browser (Cal fast access) have no stored credentials and are left out.
  * With `connectionId`, returns just that connection or throws if it can't be imported here.
  */
-export async function getUserConnections(userId: string, connectionId?: string): Promise<BankConnection[]> {
+export async function getHouseholdConnections(householdId: string, connectionId?: string): Promise<BankConnection[]> {
   let query = supabase
     .from('bank_connections')
     .select('id, provider, display_name, credentials_encrypted')
-    .eq('user_id', userId)
+    .eq('household_id', householdId)
     .eq('is_active', true)
     .order('created_at', { ascending: true });
   if (connectionId) query = query.eq('id', connectionId);
@@ -83,24 +84,42 @@ export async function pushTransactions(
   const duplicates: DuplicateSummary[] = [];
   const isBank = !!provider && isBankProvider(provider);
 
+  const summarize = (tx: TransactionRow, reason: 'exists' | 'deleted'): DuplicateSummary => ({
+    date: tx.date.slice(0, 10),
+    description: tx.description,
+    amount: Math.abs(tx.chargedAmount),
+    type: tx.chargedAmount < 0 ? 'expense' : 'income',
+    reason,
+  });
+
   for (const tx of transactions) {
     const externalId = isBank ? makeBankExternalId(provider!, accountNumber, tx) : makeExternalId(tx);
 
+    // Household-wide: any member may already have imported this account
     const { data: existing } = await supabase
       .from('transactions')
       .select('id')
-      .eq('user_id', userId)
+      .eq('household_id', householdId)
       .eq('external_id', externalId)
       .maybeSingle();
 
     if (existing) {
       skipped++;
-      duplicates.push({
-        date: tx.date.slice(0, 10),
-        description: tx.description,
-        amount: Math.abs(tx.chargedAmount),
-        type: tx.chargedAmount < 0 ? 'expense' : 'income',
-      });
+      duplicates.push(summarize(tx, 'exists'));
+      continue;
+    }
+
+    // Deleted on purpose by a member earlier: don't bring it back (no table before migration 036)
+    const { data: tombstone } = await supabase
+      .from('import_tombstones')
+      .select('import_key')
+      .eq('household_id', householdId)
+      .eq('import_key', externalId)
+      .maybeSingle();
+
+    if (tombstone) {
+      skipped++;
+      duplicates.push(summarize(tx, 'deleted'));
       continue;
     }
 
@@ -126,7 +145,11 @@ export async function pushTransactions(
       memo: tx.memo ?? null,
     });
 
-    if (error) {
+    if (error?.code === '23505') {
+      // Another member imported it moments ago
+      skipped++;
+      duplicates.push(summarize(tx, 'exists'));
+    } else if (error) {
       console.error('Failed to insert transaction:', error.message);
     } else {
       imported++;

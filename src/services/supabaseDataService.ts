@@ -154,6 +154,31 @@ export const updateTransaction = async (id: string, transaction: Omit<Transactio
 };
 
 export const deleteTransaction = async (id: string): Promise<void> => {
+  // Remember bank-imported rows deleted on purpose, so a later import doesn't bring them back.
+  // (Rows unticked in the import review use bankImportService.deleteTransactions instead.)
+  const { data: row } = await supabase
+    .from('transactions')
+    .select('household_id, dedupe_hash, external_id, date, description, amount')
+    .eq('id', id)
+    .maybeSingle();
+  const importKey = row?.dedupe_hash ?? row?.external_id;
+  if (row && importKey) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error: tombstoneError } = await supabase.from('import_tombstones').upsert(
+      {
+        household_id: row.household_id,
+        import_key: importKey,
+        date: row.date,
+        description: row.description,
+        amount: row.amount,
+        deleted_by: user?.id ?? null,
+      },
+      { onConflict: 'household_id,import_key', ignoreDuplicates: true }
+    );
+    // Never block the deletion itself (e.g. before migration 036 creates the table)
+    if (tombstoneError) console.warn('Could not record deleted import:', tombstoneError.message);
+  }
+
   const { error } = await supabase
     .from('transactions')
     .delete()

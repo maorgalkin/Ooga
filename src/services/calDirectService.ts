@@ -55,6 +55,7 @@ export interface CalTransaction {
   numOfPayments?: number;          // Completed only: number of installments (0 for regular purchases)
   curPaymentNum?: number;          // Completed only: which installment this charge is
   numberOfPayments?: number;       // Pending only: number of installments (0 for regular purchases)
+  trnIntId?: string | number;      // Completed only: Cal's own id for the transaction
   cardUniqueId?: string;
   [key: string]: unknown;
 }
@@ -147,6 +148,8 @@ export interface NormalizedTx {
   status: string;
   _cardUniqueId: string;
   _chargeCurrency: string | null; // ISO code `amount` is in (null if unknown); not stored
+  _legacyHash: string;            // Key rows were stored under before Sept 2026; matched, never stored
+  _linkKey: string;               // Pairs a pending row with its billed version (amounts can change)
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -403,11 +406,18 @@ export async function normalizeTransaction(
   const memoFromTx = tx.transTypeCommentDetails ? String(tx.transTypeCommentDetails) : null;
   const memo = [fxMemo, memoFromTx].filter(Boolean).join(' | ') || null;
 
-  // Regular purchases keep the original hash inputs (purchase date | |trnAmt| | merchant) so rows
-  // imported before this change are still recognised as duplicates. Installment charges add n/N,
-  // otherwise every charge in a series would collide with the first one.
-  const dedupe_hash = isInstallment
-    ? await sha256Hex(`${date}|${amount}|${description}|${paymentNumber}/${paymentsTotal}`)
+  // Import keys. The stored key uses Cal's own transaction id once billed, so two identical
+  // purchases on the same day stay separate; pending rows have no id yet. Income/expense is part
+  // of the key so a same-day refund isn't mistaken for the purchase.
+  const installmentPart = paymentNumber ? `${paymentNumber}/${paymentsTotal}` : '';
+  const calId = !isPending && tx.trnIntId != null && tx.trnIntId !== '' ? String(tx.trnIntId) : null;
+  const dedupe_hash = calId
+    ? await sha256Hex(`cal|${cardUniqueId}|${calId}|${installmentPart}|${type}`)
+    : await sha256Hex(`cal-pending|${cardUniqueId}|${purchaseDate}|${amount}|${description}|${installmentPart}|${type}`);
+  // How rows were keyed before (purchase date | |trnAmt| | merchant, plus n/N for installments),
+  // so rows already stored are still recognised
+  const _legacyHash = isInstallment
+    ? await sha256Hex(`${date}|${amount}|${description}|${installmentPart}`)
     : await sha256Hex(`${purchaseDate}|${Math.abs(purchaseAmount ?? 0)}|${description}`);
 
   return {
@@ -427,7 +437,14 @@ export async function normalizeTransaction(
     status: isPending ? 'pending' : 'completed',
     _cardUniqueId: cardUniqueId,
     _chargeCurrency: chargeCurrency,
+    _legacyHash,
+    _linkKey: linkKey({ card: cardLast4 ?? cardUniqueId, date, description, type, installmentPart }),
   };
+}
+
+/** Same card, date, merchant, type and installment: the pending and billed versions of one charge */
+function linkKey(parts: { card: string | null; date: string; description: string; type: string; installmentPart: string }) {
+  return [parts.card ?? '', parts.date, parts.description, parts.type, parts.installmentPart].join('|');
 }
 
 // ─── Currency conversion ─────────────────────────────────────────────────────
@@ -470,16 +487,17 @@ export async function convertToBudgetCurrency(txns: NormalizedTx[], budgetCurren
 
 // ─── Supabase push ────────────────────────────────────────────────────────────
 
-/** A fetched transaction that was already in the account (shown in the import review) */
+/** A fetched transaction that wasn't imported (shown in the import review) */
 export interface DuplicateSummary {
   date: string;
   description: string;
   amount: number;
   type: 'income' | 'expense';
+  reason?: 'exists' | 'deleted'; // already in the account / a member deleted it earlier
 }
 
-const toDuplicateSummary = (tx: NormalizedTx): DuplicateSummary =>
-  ({ date: tx.date, description: tx.description, amount: tx.amount, type: tx.type });
+const toDuplicateSummary = (tx: NormalizedTx, reason: 'exists' | 'deleted'): DuplicateSummary =>
+  ({ date: tx.date, description: tx.description, amount: tx.amount, type: tx.type, reason });
 
 export interface ExistingImportRow {
   id: string;
@@ -488,7 +506,22 @@ export interface ExistingImportRow {
   amount: number | string;
   original_amount: number | string | null;
   original_currency: string | null;
+  // Needed to pair stored pending rows with their billed version
+  date?: string;
+  description?: string;
+  type?: string;
+  bank_card_last4?: string | null;
+  installment_number?: number | null;
+  installment_total?: number | null;
 }
+
+const storedLinkKey = (row: ExistingImportRow) => linkKey({
+  card: row.bank_card_last4 ?? null,
+  date: (row.date ?? '').slice(0, 10),
+  description: row.description ?? '',
+  type: row.type ?? '',
+  installmentPart: row.installment_number ? `${row.installment_number}/${row.installment_total}` : '',
+});
 
 /** A stored foreign-currency row whose amount was never converted (amount still equals the foreign amount) */
 function isUnconvertedForeign(row: Pick<ExistingImportRow, 'amount' | 'original_amount' | 'original_currency'>, budgetCurrency: string) {
@@ -498,40 +531,78 @@ function isUnconvertedForeign(row: Pick<ExistingImportRow, 'amount' | 'original_
 }
 
 /**
- * Split incoming rows into new ones and better versions of rows already stored.
- * An existing row is replaced when the incoming one is the billed version of a pending row, or
- * carries the real budget-currency charge for a row still stored in a foreign amount.
+ * Split incoming rows into new ones, better versions of rows already stored, and ones to skip.
+ *
+ * - A row matches a stored one by its key, or by the key it was stored under before (legacy).
+ * - A stored pending row is paired with an incoming version of the same charge by card, date,
+ *   merchant and type, since the amount (and so the key) can change once billed.
+ * - A stored row is updated when the incoming one is its billed version, its pending amount
+ *   changed, or it carries the real budget-currency charge for a row stored in a foreign amount.
+ * - Rows a household member deleted on purpose (tombstones) aren't brought back.
  */
 export function planImport(
   incoming: NormalizedTx[],
   existing: ExistingImportRow[],
-  budgetCurrency: string
-): { toInsert: NormalizedTx[]; toUpdate: { id: string; tx: NormalizedTx }[]; duplicates: NormalizedTx[] } {
+  budgetCurrency: string,
+  { pendingRows = [], tombstoneKeys = new Set<string>() }: { pendingRows?: ExistingImportRow[]; tombstoneKeys?: Set<string> } = {}
+): {
+  toInsert: NormalizedTx[];
+  toUpdate: { id: string; tx: NormalizedTx }[];
+  duplicates: NormalizedTx[];
+  deleted: NormalizedTx[];
+} {
   const existingByHash = new Map(existing.map(row => [row.dedupe_hash, row]));
+  const pendingByLink = new Map(pendingRows.map(row => [storedLinkKey(row), row]));
   const seenInBatch = new Set<string>();
+  const claimed = new Set<string>(); // stored rows already matched in this batch
   const toInsert: NormalizedTx[] = [];
   const toUpdate: { id: string; tx: NormalizedTx }[] = [];
   const duplicates: NormalizedTx[] = []; // Already in the account and unchanged
+  const deleted: NormalizedTx[] = [];    // Deleted earlier by a household member
+
+  // A charge can be both still-pending and already billed in the same fetch: keep the billed one
+  const billedLinks = new Set(incoming.filter(tx => tx.status === 'completed').map(tx => tx._linkKey));
 
   for (const tx of incoming) {
     // The same transaction can come back from more than one billing cycle; that's not a duplicate
     // of anything stored, so it's dropped without being reported
     if (seenInBatch.has(tx.dedupe_hash)) continue;
     seenInBatch.add(tx.dedupe_hash);
+    if (tx.status === 'pending' && billedLinks.has(tx._linkKey)) continue;
 
-    const row = existingByHash.get(tx.dedupe_hash);
-    if (!row) {
+    if (tombstoneKeys.has(tx.dedupe_hash) || tombstoneKeys.has(tx._legacyHash)) {
+      deleted.push(tx);
+      continue;
+    }
+
+    let row = existingByHash.get(tx.dedupe_hash) ?? existingByHash.get(tx._legacyHash);
+    if (!row) row = pendingByLink.get(tx._linkKey);
+    if (!row || claimed.has(row.id)) {
       toInsert.push(tx);
       continue;
     }
-    const billedVersionOfPending = row.status === 'pending' && tx.status === 'completed';
+    claimed.add(row.id);
+
+    const pendingNowBilledOrChanged = row.status === 'pending' &&
+      (tx.status === 'completed' || tx.amount !== Number(row.amount));
     const realChargeForUnconverted = isUnconvertedForeign(row, budgetCurrency) &&
       tx._chargeCurrency === budgetCurrency && tx.amount !== Number(row.amount);
-    if (billedVersionOfPending || realChargeForUnconverted) toUpdate.push({ id: row.id, tx });
+    if (pendingNowBilledOrChanged || realChargeForUnconverted) toUpdate.push({ id: row.id, tx });
     else duplicates.push(tx);
   }
 
-  return { toInsert, toUpdate, duplicates };
+  return { toInsert, toUpdate, duplicates, deleted };
+}
+
+/** `.in()` filters go in the URL; keep each request's list short */
+async function selectInChunks<T>(values: string[], query: (chunk: string[]) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[]> {
+  const rows: T[] = [];
+  for (let i = 0; i < values.length; i += 100) {
+    const { data, error } = await query(values.slice(i, i + 100));
+    if (error) throw error;
+    rows.push(...(data ?? []));
+  }
+  return rows;
 }
 
 async function pushToSupabase(
@@ -542,15 +613,34 @@ async function pushToSupabase(
   dbSessionId: string | null,
   budgetCurrency: string
 ): Promise<{ imported: number; updated: number; skipped: number; duplicates: DuplicateSummary[] }> {
-  // Check which hashes already exist in DB
-  const hashes = [...new Set(txns.map(t => t.dedupe_hash))];
-  const { data: existing } = await supabase
+  const keys = [...new Set(txns.flatMap(t => [t.dedupe_hash, t._legacyHash]))];
+
+  // Stored rows under any of the keys (household-wide: any member may have imported them)
+  const existing = await selectInChunks<ExistingImportRow>(keys, chunk => supabase
     .from('transactions')
     .select('id, dedupe_hash, status, amount, original_amount, original_currency')
     .eq('household_id', householdId)
-    .in('dedupe_hash', hashes);
+    .in('dedupe_hash', chunk));
 
-  const { toInsert, toUpdate, duplicates } = planImport(txns, (existing ?? []) as ExistingImportRow[], budgetCurrency);
+  // Pending rows from this account, to pair with their billed version
+  const { data: pendingRows } = await supabase
+    .from('transactions')
+    .select('id, dedupe_hash, status, amount, original_amount, original_currency, date, description, type, bank_card_last4, installment_number, installment_total')
+    .eq('household_id', householdId)
+    .eq('bank_connection_id', connectionId)
+    .eq('status', 'pending');
+
+  // Rows a member deleted on purpose (empty if migration 036 isn't applied yet)
+  const tombstones = await selectInChunks<{ import_key: string }>(keys, chunk => supabase
+    .from('import_tombstones')
+    .select('import_key')
+    .eq('household_id', householdId)
+    .in('import_key', chunk)).catch(() => []);
+
+  const { toInsert, toUpdate, duplicates, deleted } = planImport(txns, existing, budgetCurrency, {
+    pendingRows: (pendingRows ?? []) as ExistingImportRow[],
+    tombstoneKeys: new Set(tombstones.map(t => t.import_key)),
+  });
 
   // Replace pending / unconverted rows with the billed amounts; keep the user's category and description
   for (const { id, tx } of toUpdate) {
@@ -563,30 +653,46 @@ async function pushToSupabase(
         processed_date: tx.processed_date,
         status: tx.status,
         memo: tx.memo,
+        dedupe_hash: tx.dedupe_hash,
       })
       .eq('id', id);
     if (error) throw new Error(`Supabase update failed: ${error.message}`);
   }
 
-  if (toInsert.length > 0) {
-    // Drop internal `_` fields (card id, charge currency) that aren't columns
-    const rows = toInsert.map(tx => ({
-      ...Object.fromEntries(Object.entries(tx).filter(([key]) => !key.startsWith('_'))),
-      user_id: userId,
-      household_id: householdId,
-      bank_connection_id: connectionId,
-      import_session_id: dbSessionId,
-    }));
+  // Drop internal `_` fields (card id, charge currency, match keys) that aren't columns
+  const toRow = (tx: NormalizedTx) => ({
+    ...Object.fromEntries(Object.entries(tx).filter(([key]) => !key.startsWith('_'))),
+    user_id: userId,
+    household_id: householdId,
+    bank_connection_id: connectionId,
+    import_session_id: dbSessionId,
+  });
 
-    const { error } = await supabase.from('transactions').insert(rows);
-    if (error) throw new Error(`Supabase insert failed: ${error.message}`);
+  let imported = toInsert.length;
+  if (toInsert.length > 0) {
+    const { error } = await supabase.from('transactions').insert(toInsert.map(toRow));
+    if (error?.code === '23505') {
+      // Another member imported some of these moments ago: insert one by one, skipping those
+      imported = 0;
+      for (const tx of toInsert) {
+        const { error: rowError } = await supabase.from('transactions').insert(toRow(tx));
+        if (!rowError) imported++;
+        else if (rowError.code === '23505') duplicates.push(tx);
+        else throw new Error(`Supabase insert failed: ${rowError.message}`);
+      }
+    } else if (error) {
+      throw new Error(`Supabase insert failed: ${error.message}`);
+    }
   }
 
   return {
-    imported: toInsert.length,
+    imported,
     updated: toUpdate.length,
-    skipped: duplicates.length,
-    duplicates: duplicates.map(toDuplicateSummary),
+    skipped: duplicates.length + deleted.length,
+    duplicates: [
+      ...duplicates.map(tx => toDuplicateSummary(tx, 'exists')),
+      ...deleted.map(tx => toDuplicateSummary(tx, 'deleted')),
+    ],
   };
 }
 
@@ -715,11 +821,12 @@ export async function importCalTransactions(
   const storedConverted = await convertStoredForeignRows(householdId, budgetCurrency);
   if (storedConverted > 0) log(`Converted ${storedConverted} stored foreign-currency row(s) to ${budgetCurrency}`);
 
-  // Update last_sync_at
-  await supabase
-    .from('bank_connections')
-    .update({ last_sync_at: new Date().toISOString() })
-    .eq('id', connectionId);
+  // Update last_sync_at (any household member may import a shared account)
+  const { error: syncError } = await supabase.rpc('mark_connection_synced', { p_connection_id: connectionId });
+  if (syncError) {
+    // Before migration 036: only the owner can update the row directly
+    await supabase.from('bank_connections').update({ last_sync_at: new Date().toISOString() }).eq('id', connectionId);
+  }
 
   log(`Done: ${imported} imported, ${updated} updated with billed amounts, ${skipped} skipped`);
   return { dbSessionId, imported, updated, skipped, duplicates };

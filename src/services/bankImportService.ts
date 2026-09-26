@@ -30,6 +30,7 @@ export interface ReviewTransaction {
 
 export interface BankConnection {
   id: string;
+  user_id: string; // Who added it — only they can remove it; everyone in the household can import it
   provider: string;
   display_name: string;
   last_sync_at: string | null;
@@ -47,7 +48,7 @@ export type { CalCard } from './calDirectService';
 export async function listConnections(): Promise<BankConnection[]> {
   const { data, error } = await supabase
     .from('bank_connections')
-    .select('id, provider, display_name, last_sync_at, is_active, created_at, metadata')
+    .select('id, user_id, provider, display_name, last_sync_at, is_active, created_at, metadata')
     .eq('is_active', true)
     .order('created_at', { ascending: true });
 
@@ -63,16 +64,25 @@ export async function addConnection(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  // Connections are shared with the household
+  const { data: membership } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+
   const { data, error } = await supabase
     .from('bank_connections')
     .insert({
       user_id: user.id,
+      household_id: membership?.household_id ?? null,
       provider,
       display_name: displayName,
       metadata,
       is_active: true,
     })
-    .select('id, provider, display_name, last_sync_at, is_active, created_at, metadata')
+    .select('id, user_id, provider, display_name, last_sync_at, is_active, created_at, metadata')
     .single();
 
   if (error) throw new Error(error.message);
