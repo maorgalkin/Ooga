@@ -85,20 +85,6 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
     })();
   }, [user, familyMembers]);
 
-  // When transactions load, pre-fill family member overrides with the detected default
-  useEffect(() => {
-    if (transactions.length === 0) return;
-    setFamilyMemberOverrides((prev) => {
-      const next = new Map(prev);
-      transactions.forEach((tx) => {
-        if (!next.has(tx.id)) {
-          next.set(tx.id, defaultFamilyMemberId);
-        }
-      });
-      return next;
-    });
-  }, [transactions, defaultFamilyMemberId]);
-
 
   const [merged, setMerged] = useState<MatchedEntry[]>([]);
   const [suggestions, setSuggestions] = useState<MatchedEntry[]>([]);
@@ -215,9 +201,12 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         updateTransactionCategory(id, cat.id, cat.name)
       );
       keptIds.forEach((id) => {
-        const memberId = familyMemberOverrides.get(id);
-        if (memberId !== undefined) {
-          updatePromises.push(updateTransactionFamilyMember(id, memberId));
+        // Use explicit override if set, otherwise fall back to the auto-detected default
+        const effectiveMemberId = familyMemberOverrides.has(id)
+          ? familyMemberOverrides.get(id)!
+          : defaultFamilyMemberId;
+        if (effectiveMemberId !== null) {
+          updatePromises.push(updateTransactionFamilyMember(id, effectiveMemberId));
         }
       });
       await Promise.all(updatePromises);

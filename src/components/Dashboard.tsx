@@ -6,7 +6,8 @@ import { useActiveBudget, useCurrentMonthBudget, useAutoApplyScheduledAdjustment
 import { budgetService } from '../services/budgetService';
 import { userAlertViewService } from '../services/userAlertViewService';
 import { BudgetPerformanceCard } from './BudgetPerformanceCard';
-import EditTransactionModal from './EditTransactionModal';import HouseholdSettingsModal from './HouseholdSettingsModal';
+import EditTransactionModal from './EditTransactionModal';
+import HouseholdSettingsModal from './HouseholdSettingsModal';
 import { BudgetManagement } from '../pages/BudgetManagement';
 import { InsightsPage } from '../pages/InsightsPage';
 import { generateDummyTransactions, countDummyTransactions, isDummyTransaction } from '../utils/dummyData';
