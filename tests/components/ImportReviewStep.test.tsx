@@ -5,6 +5,10 @@ import ImportReviewStep from '../../src/components/ImportReviewStep';
 import * as reconcile from '../../src/services/reconcileService';
 import * as bankImport from '../../src/services/bankImportService';
 
+vi.mock('../../src/context/FinanceContext', () => ({
+  useFinance: () => ({ familyMembers: [] }),
+}));
+
 vi.mock('../../src/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }) }));
 vi.mock('../../src/services/reconcileService', () => ({
   reconcileImport: vi.fn(),
@@ -16,6 +20,20 @@ vi.mock('../../src/services/bankImportService', () => ({
   fetchImportedTransactions: vi.fn(),
   deleteTransactions: vi.fn(async () => {}),
   updateTransactionCategory: vi.fn(async () => {}),
+  updateTransactionFamilyMember: vi.fn(async () => {}),
+  updateTransactionFamilyMembers: vi.fn(async () => {}),
+}));
+vi.mock('../../src/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+      in: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+    })),
+  },
 }));
 
 const summary = (id: string, description: string, date: string, amount: number) =>
@@ -82,3 +100,4 @@ describe('ImportReviewStep matching', () => {
     expect(undoOrder).toBeLessThan(deleteOrder);
   });
 });
+

@@ -13,6 +13,7 @@ import {
   fetchImportedTransactions,
   updateTransactionCategory,
   updateTransactionFamilyMember,
+  updateTransactionFamilyMembers,
   deleteTransactions,
   type DuplicateSummary,
   type ReviewTransaction,
@@ -84,7 +85,6 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       }
     })();
   }, [user, familyMembers]);
-
 
   const [merged, setMerged] = useState<MatchedEntry[]>([]);
   const [suggestions, setSuggestions] = useState<MatchedEntry[]>([]);
@@ -196,19 +196,24 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       await deleteTransactions(toDelete);
 
       const keptIds = transactions.filter((t) => selected.has(t.id)).map((t) => t.id);
+      const keptSet = new Set(keptIds);
 
-      const updatePromises: Promise<void>[] = Array.from(categoryOverrides.entries()).map(([id, cat]) =>
+      const categoryEntries = Array.from(categoryOverrides.entries()).filter(([id]) => keptSet.has(id));
+      const updatePromises: Promise<void>[] = categoryEntries.map(([id, cat]) =>
         updateTransactionCategory(id, cat.id, cat.name)
       );
-      keptIds.forEach((id) => {
-        // Use explicit override if set, otherwise fall back to the auto-detected default
-        const effectiveMemberId = familyMemberOverrides.has(id)
-          ? familyMemberOverrides.get(id)!
-          : defaultFamilyMemberId;
-        if (effectiveMemberId !== null) {
-          updatePromises.push(updateTransactionFamilyMember(id, effectiveMemberId));
+
+      const defaultIds = keptIds.filter((id) => !familyMemberOverrides.has(id) && defaultFamilyMemberId !== null);
+      if (defaultIds.length > 0) {
+        updatePromises.push(updateTransactionFamilyMembers(defaultIds, defaultFamilyMemberId));
+      }
+
+      for (const [id, memberId] of familyMemberOverrides.entries()) {
+        if (keptSet.has(id)) {
+          updatePromises.push(updateTransactionFamilyMember(id, memberId));
         }
-      });
+      }
+
       await Promise.all(updatePromises);
 
       onDone(selected.size);
@@ -216,7 +221,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       setError(e instanceof Error ? e.message : 'Failed to save changes');
       setSaving(false);
     }
-  }, [transactions, selected, categoryOverrides, familyMemberOverrides, onDone]);
+  }, [transactions, selected, categoryOverrides, familyMemberOverrides, defaultFamilyMemberId, onDone]);
 
   const handleCancel = useCallback(async () => {
     setSaving(true);
@@ -561,7 +566,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         <button
           onClick={handleCancel}
           disabled={saving}
-          className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40 transition-colors"
+          className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40"
         >
           {saving ? <><Loader2 className="w-4 h-4 animate-spin inline mr-1" />Cancelling…</> : 'Cancel Import'}
         </button>
@@ -623,3 +628,4 @@ function MatchList({ title, hint, matches, busyId, busyKey, renderActions, tone 
     </div>
   );
 }
+
