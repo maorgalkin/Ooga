@@ -6,9 +6,7 @@ import { useActiveBudget, useCurrentMonthBudget, useAutoApplyScheduledAdjustment
 import { budgetService } from '../services/budgetService';
 import { userAlertViewService } from '../services/userAlertViewService';
 import { BudgetPerformanceCard } from './BudgetPerformanceCard';
-import { TransactionDetailsModal } from './TransactionDetailsModal';
-import EditTransactionModal from './EditTransactionModal';
-import HouseholdSettingsModal from './HouseholdSettingsModal';
+import EditTransactionModal from './EditTransactionModal';import HouseholdSettingsModal from './HouseholdSettingsModal';
 import { BudgetManagement } from '../pages/BudgetManagement';
 import { InsightsPage } from '../pages/InsightsPage';
 import { generateDummyTransactions, countDummyTransactions, isDummyTransaction } from '../utils/dummyData';
@@ -68,13 +66,13 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'transactions' | 'budget' | 'insights'>(initialTab);
   
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [pendingEditTransaction, setPendingEditTransaction] = useState<Transaction | null>(null);
   const [isHouseholdSettingsModalOpen, setIsHouseholdSettingsModalOpen] = useState(false);
   const [selectedDesktopCategory, setSelectedDesktopCategory] = useState<string | null>(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isCustomDateRangeModalOpen, setIsCustomDateRangeModalOpen] = useState(false);
   const [showBreakdownInHeader, setShowBreakdownInHeader] = useState(false);
   const [viewedAlertIds, setViewedAlertIds] = useState<Set<string>>(new Set());
-  const [viewingTransactionDetails, setViewingTransactionDetails] = useState<Transaction | null>(null);
   // Production: tiled on desktop, wide (legacy) on phones. The picker only exists in development.
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
     try {
@@ -504,7 +502,7 @@ const Dashboard: React.FC = () => {
               transactions={dashboardMonthTransactions}
               personalBudget={personalBudget}
               formatCurrency={formatCurrency}
-              onViewTransaction={setViewingTransactionDetails}
+              onViewTransaction={setPendingEditTransaction}
             />
           ) : dashboardMonthTransactions.length === 0 ? (
             <DashboardEmptyState
@@ -586,7 +584,7 @@ const Dashboard: React.FC = () => {
                       personalBudget={personalBudget}
                       formatCurrency={formatCurrency}
                       selectedCategory={selectedDesktopCategory}
-                      onEditTransaction={setViewingTransactionDetails}
+                      onEditTransaction={setPendingEditTransaction}
                       onViewAllTransactions={(category) => {
                         setSelectedDesktopCategory(category);
                         setIsCategoryModalOpen(true);
@@ -625,7 +623,7 @@ const Dashboard: React.FC = () => {
                     personalBudget={personalBudget}
                     formatCurrency={formatCurrency}
                     onCategoryClick={handleCategoryClick}
-                    onEditTransaction={setViewingTransactionDetails}
+                    onEditTransaction={setPendingEditTransaction}
                     onViewAllTransactions={(category) => {
                       setSelectedDesktopCategory(category);
                       setIsCategoryModalOpen(true);
@@ -683,7 +681,7 @@ const Dashboard: React.FC = () => {
           setIsCategoryModalOpen(false);
           setSelectedDesktopCategory(null);
         }}
-        onEditTransaction={setViewingTransactionDetails}
+        onEditTransaction={setPendingEditTransaction}
         onCategoryChange={(category) => {
           setSelectedDesktopCategory(category);
         }}
@@ -701,14 +699,33 @@ const Dashboard: React.FC = () => {
         onClose={() => setIsCustomDateRangeModalOpen(false)}
       />
 
-      {/* Transaction Details Modal */}
-      <TransactionDetailsModal
-        transaction={viewingTransactionDetails}
-        isOpen={viewingTransactionDetails !== null}
-        onClose={() => setViewingTransactionDetails(null)}
-        formatCurrency={formatCurrency}
-        familyMembers={familyMembers}
-      />
+      {/* Edit Transaction Confirmation Dialog */}
+      {pendingEditTransaction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Edit Transaction?</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1 font-medium">{pendingEditTransaction.description}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">Do you want to edit this transaction?</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPendingEditTransaction(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setEditingTransaction(pendingEditTransaction);
+                  setPendingEditTransaction(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
       
       {/* Production: Show inline BuildInfo at bottom of page */}
