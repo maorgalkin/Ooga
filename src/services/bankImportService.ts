@@ -155,6 +155,17 @@ export async function updateTransactionCategory(
   if (error) throw new Error(error.message);
 }
 
+export async function updateTransactionFamilyMember(
+  id: string,
+  familyMemberId: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('transactions')
+    .update({ family_member_id: familyMemberId })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
 export async function deleteTransactions(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   const { error } = await supabase
