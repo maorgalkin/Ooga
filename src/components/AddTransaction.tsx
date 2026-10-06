@@ -19,7 +19,7 @@ const LAST_PAID_WITH_KEY = 'last-paid-with';
 
 const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { addTransaction, familyMembers, setTransactions } = useFinance();
+  const { addTransaction, familyMembers, setTransactions, refreshTransactions } = useFinance();
   const { data: personalBudget } = useActiveBudget();
   const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -526,6 +526,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
         <BankImportModal
           onClose={() => setShowImportModal(false)}
           selectedConnectionId={importConnectionId ?? undefined}
+          onImportComplete={refreshTransactions}
         />
       )}
     </>
