@@ -53,6 +53,7 @@ const createMockChain = (finalResult: any) => {
 
 describe('MonthlyBudgetService', () => {
   const mockUserId = 'test-user-123';
+  const mockHouseholdId = 'test-household-123';
   const mockPersonalBudget: PersonalBudget = {
     id: 'personal-budget-1',
     user_id: mockUserId,
@@ -118,16 +119,25 @@ describe('MonthlyBudgetService', () => {
         mockPersonalBudget
       );
 
-      let callCount = 0;
-      vi.mocked(supabase.from).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First call: check if monthly budget exists - returns null
-          return createMockChain({ data: null, error: null });
-        } else {
-          // Second call: insert new monthly budget
-          return createMockChain({ data: mockMonthlyBudget, error: null });
+      const mockHouseholdChain = createMockChain({
+        data: { household_id: mockHouseholdId },
+        error: null,
+      });
+      
+      let budgetCallCount = 0;
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'household_members') return mockHouseholdChain;
+        if (table === 'monthly_budgets') {
+          budgetCallCount++;
+          if (budgetCallCount === 1) {
+            // First call: check if monthly budget exists - returns null
+            return createMockChain({ data: null, error: null });
+          } else {
+            // Second call: insert new monthly budget
+            return createMockChain({ data: mockMonthlyBudget, error: null });
+          }
         }
+        return createMockChain({ data: null, error: null });
       });
 
       const result = await MonthlyBudgetService.getOrCreateMonthlyBudget(2025, 10);
@@ -137,12 +147,20 @@ describe('MonthlyBudgetService', () => {
     });
 
     it('should throw error if no personal budget exists', async () => {
-      const mockChain = createMockChain({
+      const mockHouseholdChain = createMockChain({
+        data: { household_id: mockHouseholdId },
+        error: null,
+      });
+      const mockBudgetChain = createMockChain({
         data: null,
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'household_members') return mockHouseholdChain;
+        if (table === 'monthly_budgets') return mockBudgetChain;
+        return mockBudgetChain;
+      });
       vi.mocked(PersonalBudgetService.getActiveBudget).mockResolvedValue(null);
 
       await expect(
@@ -280,12 +298,20 @@ describe('MonthlyBudgetService', () => {
     });
 
     it('should throw error if monthly budget not found', async () => {
-      const mockChain = createMockChain({
+      const mockHouseholdChain = createMockChain({
+        data: { household_id: mockHouseholdId },
+        error: null,
+      });
+      const mockBudgetChain = createMockChain({
         data: null,
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'household_members') return mockHouseholdChain;
+        if (table === 'monthly_budgets') return mockBudgetChain;
+        return mockBudgetChain;
+      });
 
       await expect(
         MonthlyBudgetService.compareToPersonalBudget(2025, 10)
