@@ -64,6 +64,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   const [activeConnection, setActiveConnection] = useState<BankConnection | null>(null);
   const [otpCode, setOtpCode] = useState('');
   const [otpSubmitting, setOtpSubmitting] = useState(false);
+  const [otpError, setOtpError] = useState('');
   const [serverStatus, setServerStatus] = useState<ServerImportStatus | null>(null);
   const [skippedCardBills, setSkippedCardBills] = useState<SkippedCardBill[]>([]);
 
@@ -109,6 +110,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   const handleOtpSubmit = async () => {
     if (!activeConnection || !calSessionToken || !otpCode.trim()) return;
     setOtpSubmitting(true);
+    setOtpError('');
     setStep('importing');
     const activePeriod: ImportPeriod =
       period.type === 'custom' ? { type: 'custom', startDate: customStart } : period;
@@ -124,8 +126,17 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       setStep(sid ? 'review' : 'complete');
       onImportComplete?.(imported);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Import failed');
-      setStep('error');
+      const msg = err instanceof Error ? err.message : 'Import failed';
+      // OTP-related errors: let the user correct and re-submit instead of going to the error screen
+      const isOtpError = /otp|code|invalid|incorrect|expired|verification/i.test(msg);
+      if (isOtpError) {
+        setOtpCode('');
+        setOtpError(msg);
+        setStep('awaiting_otp');
+      } else {
+        setErrorMsg(msg);
+        setStep('error');
+      }
     } finally {
       setOtpSubmitting(false);
     }
@@ -365,12 +376,15 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 pattern="[0-9]*"
                 maxLength={8}
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '')); setOtpError(''); }}
                 onKeyDown={(e) => e.key === 'Enter' && handleOtpSubmit()}
                 placeholder="Enter OTP code"
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm text-center tracking-widest"
                 autoFocus
               />
+              {otpError && (
+                <p className="text-sm text-red-600 dark:text-red-400 text-center">{otpError}</p>
+              )}
               <button
                 onClick={handleOtpSubmit}
                 disabled={!otpCode.trim() || otpSubmitting}
