@@ -166,6 +166,22 @@ export async function updateTransactionFamilyMember(
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Batch-update the family_member_id for multiple transactions in a single round-trip.
+ * All rows in `ids` are set to the same `familyMemberId`.
+ */
+export async function updateTransactionsFamilyMemberBatch(
+  ids: string[],
+  familyMemberId: string
+): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await supabase
+    .from('transactions')
+    .update({ family_member_id: familyMemberId })
+    .in('id', ids);
+  if (error) throw new Error(error.message);
+}
+
 export async function deleteTransactions(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   const { error } = await supabase
