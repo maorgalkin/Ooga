@@ -6,13 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && node -e \"require('fs').copyFileSync('dist/index.html','dist/404.html')\"",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "start": "npm run preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:integration:watch": "vitest --config vitest.integration.config.ts"
+    "test:integration:watch": "vitest --config vitest.integration.config.ts",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.0",
@@ -26,6 +27,7 @@
     "recharts": "^3.1.2"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.37.1",
     "@eslint/js": "^9.33.0",
     "@testing-library/jest-dom": "^6.7.0",
     "@testing-library/react": "^16.3.0",
@@ -46,6 +48,7 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wrangler": "^4.92.0"
   }
 }

@@ -3,6 +3,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { execSync } from 'child_process'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 function getGitInfo() {
   try {
     const commit = execSync('git rev-parse --short HEAD').toString().trim()
@@ -17,7 +19,7 @@ const gitInfo = getGitInfo()
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), cloudflare()],
   define: {
     'import.meta.env.VITE_GIT_COMMIT': JSON.stringify(gitInfo.commit),
     'import.meta.env.VITE_GIT_BRANCH': JSON.stringify(gitInfo.branch),
