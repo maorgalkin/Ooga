@@ -12,11 +12,16 @@ import { useCategories } from '../hooks/useCategories';
 import {
   fetchImportedTransactions,
   updateTransactionCategory,
+  updateTransactionFamilyMember,
+  updateTransactionsFamilyMemberBatch,
   deleteTransactions,
   type DuplicateSummary,
   type ReviewTransaction,
 } from '../services/bankImportService';
 import type { Category } from '../types/category';
+import { useFinance } from '../context/FinanceContext';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 interface Props {
   dbSessionId: string;
@@ -49,13 +54,39 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Per-transaction category overrides: txId → { id, name }
   const [categoryOverrides, setCategoryOverrides] = useState<Map<string, { id: string | null; name: string }>>(new Map());
+  // Per-transaction family member overrides: txId → familyMemberId | null
+  const [familyMemberOverrides, setFamilyMemberOverrides] = useState<Map<string, string | null>>(new Map());
   // Bulk category apply
   const [bulkCategoryId, setBulkCategoryId] = useState('');
 
   const { data: categories = [] } = useCategories(false);
   const expenseCategories = categories.filter((c: Category) => c.isActive);
 
-  // Bank rows merged into manual entries, and pairs that might be the same purchase
+  const { familyMembers } = useFinance();
+  const { user } = useAuth();
+  const [defaultFamilyMemberId, setDefaultFamilyMemberId] = useState<string | null>(null);
+
+  // Detect the current user's linked family member via their household_member record
+  useEffect(() => {
+    if (!user || familyMembers.length === 0) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('household_members')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.id) {
+          const match = familyMembers.find((m) => m.household_member_id === data.id);
+          if (match) setDefaultFamilyMemberId(match.id);
+        }
+      } catch {
+        // silently ignore — user can pick manually
+      }
+    })();
+  }, [user, familyMembers]);
+
+
   const [merged, setMerged] = useState<MatchedEntry[]>([]);
   const [suggestions, setSuggestions] = useState<MatchedEntry[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -139,6 +170,10 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
     setCategoryOverrides((prev) => new Map(prev).set(txId, { id: catId || null, name: catName }));
   }, []);
 
+  const setFamilyMemberForTx = useCallback((txId: string, memberId: string | null) => {
+    setFamilyMemberOverrides((prev) => new Map(prev).set(txId, memberId));
+  }, []);
+
   const applyBulkCategory = useCallback(() => {
     if (!bulkCategoryId) return;
     const cat = expenseCategories.find((c: Category) => c.id === bulkCategoryId);
@@ -161,9 +196,29 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       const toDelete = transactions.filter((t) => !selected.has(t.id)).map((t) => t.id);
       await deleteTransactions(toDelete);
 
-      const updatePromises = Array.from(categoryOverrides.entries()).map(([id, cat]) =>
+      const keptIds = transactions.filter((t) => selected.has(t.id)).map((t) => t.id);
+
+      const updatePromises: Promise<void>[] = Array.from(categoryOverrides.entries()).map(([id, cat]) =>
         updateTransactionCategory(id, cat.id, cat.name)
       );
+
+      // Separate rows with explicit per-row overrides from rows that should use the default
+      const explicitOverrideIds = keptIds.filter((id) => familyMemberOverrides.has(id));
+      const defaultIds = keptIds.filter((id) => !familyMemberOverrides.has(id));
+
+      // Batch-update all default rows in a single round-trip
+      if (defaultFamilyMemberId !== null && defaultIds.length > 0) {
+        updatePromises.push(updateTransactionsFamilyMemberBatch(defaultIds, defaultFamilyMemberId));
+      }
+
+      // Per-row calls only for explicit overrides
+      for (const id of explicitOverrideIds) {
+        const memberId = familyMemberOverrides.get(id)!;
+        if (memberId !== null) {
+          updatePromises.push(updateTransactionFamilyMember(id, memberId));
+        }
+      }
+
       await Promise.all(updatePromises);
 
       onDone(selected.size);
@@ -171,7 +226,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       setError(e instanceof Error ? e.message : 'Failed to save changes');
       setSaving(false);
     }
-  }, [transactions, selected, categoryOverrides, onDone]);
+  }, [transactions, selected, categoryOverrides, familyMemberOverrides, defaultFamilyMemberId, onDone]);
 
   const handleCancel = useCallback(async () => {
     setSaving(true);
@@ -194,7 +249,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
     return (
       <div className="flex flex-col items-center gap-3 py-8">
         <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <p className="text-sm text-gray-500 dark:text-gray-400">Loading transactions…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading transactions\u2026</p>
       </div>
     );
   }
@@ -225,12 +280,12 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         </span>
         {merged.length > 0 && (
           <span className="text-gray-500 dark:text-gray-400 text-xs">
-            · {merged.length} matched with your entries
+            \u00b7 {merged.length} matched with your entries
           </span>
         )}
         {result.skipped > 0 && (
           <span className="text-gray-500 dark:text-gray-400 text-xs">
-            · <DuplicatesBubble count={result.skipped} duplicates={result.duplicates} />
+            \u00b7 <DuplicatesBubble count={result.skipped} duplicates={result.duplicates} />
           </span>
         )}
       </div>
@@ -295,7 +350,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
               onChange={(e) => setBulkCategoryId(e.target.value)}
               className="flex-1 min-w-0 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2 py-1"
             >
-              <option value="">— pick category —</option>
+              <option value="">\u2014 pick category \u2014</option>
               {expenseCategories.map((c: Category) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -312,7 +367,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           {/* Transaction list */}
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             {/* Desktop table header */}
-            <div className="hidden sm:grid sm:grid-cols-[32px_70px_1fr_110px_150px] items-center gap-1 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <div className="hidden sm:grid sm:grid-cols-[32px_70px_1fr_110px_150px_120px] items-center gap-1 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400">
               <input
                 type="checkbox"
                 checked={allChecked}
@@ -324,6 +379,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
               <span>Description</span>
               <span className="text-right">Amount</span>
               <span>Category</span>
+              <span>Member</span>
             </div>
 
             {/* Mobile select-all row */}
@@ -343,6 +399,9 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
               {transactions.map((tx) => {
                 const override = categoryOverrides.get(tx.id);
                 const displayCategoryId = override?.id ?? tx.category_id ?? '';
+                const displayFamilyMemberId = familyMemberOverrides.has(tx.id)
+                  ? (familyMemberOverrides.get(tx.id) ?? '')
+                  : (defaultFamilyMemberId ?? '');
                 const isChecked = selected.has(tx.id);
 
                 return (
@@ -356,7 +415,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                     }`}
                   >
                     {/* Desktop row */}
-                    <div className="hidden sm:grid sm:grid-cols-[32px_70px_1fr_60px_110px_150px] items-center gap-1 text-sm">
+                    <div className="hidden sm:grid sm:grid-cols-[32px_70px_1fr_60px_110px_150px_120px] items-center gap-1 text-sm">
                       <input
                         type="checkbox"
                         checked={isChecked}
@@ -383,13 +442,13 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                       {/* Card badge */}
                       {tx.bank_card_last4 ? (
                         <span className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums text-center self-center">
-                          ···· {tx.bank_card_last4}
+                          \u00b7\u00b7\u00b7\u00b7 {tx.bank_card_last4}
                         </span>
                       ) : <span />}
                       <span className={`text-right text-xs tabular-nums font-medium ${
                         tx.type === 'expense' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
                       }`}>
-                        {formatAmount(tx, '₪')}
+                        {formatAmount(tx, '\u20aa')}
                       </span>
                       <select
                         value={displayCategoryId}
@@ -407,9 +466,23 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                           <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                       </select>
+                      {familyMembers.length > 0 && (
+                        <select
+                          value={displayFamilyMemberId}
+                          onChange={(e) => setFamilyMemberForTx(tx.id, e.target.value || null)}
+                          disabled={!isChecked}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-1 py-1 disabled:opacity-40"
+                        >
+                          <option value="">\u2014 none \u2014</option>
+                          {familyMembers.map((m) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
 
-                    {/* Mobile row — two-line card */}
+                    {/* Mobile row \u2014 two-line card */}
                     <div className="sm:hidden flex items-start gap-2">
                       <input
                         type="checkbox"
@@ -426,7 +499,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                           <span className={`flex-shrink-0 text-xs tabular-nums font-semibold ${
                             tx.type === 'expense' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
                           }`}>
-                            {formatAmount(tx, '₪')}
+                            {formatAmount(tx, '\u20aa')}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
@@ -435,7 +508,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                           </span>
                           {tx.bank_card_last4 && (
                             <span className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums flex-shrink-0">
-                              ···· {tx.bank_card_last4}
+                              \u00b7\u00b7\u00b7\u00b7 {tx.bank_card_last4}
                             </span>
                           )}
                           {tx.installment_number && tx.installment_total && (
@@ -447,22 +520,38 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                             <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
                           )}
                         </div>
-                        <select
-                          value={displayCategoryId}
-                          onChange={(e) => {
-                            const cat = expenseCategories.find((c: Category) => c.id === e.target.value);
-                            if (cat) setCategoryForTx(tx.id, cat.id, cat.name);
-                            else setCategoryForTx(tx.id, '', 'Uncategorized');
-                          }}
-                          disabled={!isChecked}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-1 w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-1 py-0.5 disabled:opacity-40"
-                        >
-                          <option value="">Uncategorized</option>
-                          {expenseCategories.map((c: Category) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
+                        <div className="flex gap-1 mt-1">
+                          <select
+                            value={displayCategoryId}
+                            onChange={(e) => {
+                              const cat = expenseCategories.find((c: Category) => c.id === e.target.value);
+                              if (cat) setCategoryForTx(tx.id, cat.id, cat.name);
+                              else setCategoryForTx(tx.id, '', 'Uncategorized');
+                            }}
+                            disabled={!isChecked}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-1 py-0.5 disabled:opacity-40"
+                          >
+                            <option value="">Uncategorized</option>
+                            {expenseCategories.map((c: Category) => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                          {familyMembers.length > 0 && (
+                            <select
+                              value={displayFamilyMemberId}
+                              onChange={(e) => setFamilyMemberForTx(tx.id, e.target.value || null)}
+                              disabled={!isChecked}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-1 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-1 py-0.5 disabled:opacity-40"
+                            >
+                              <option value="">\u2014 none \u2014</option>
+                              {familyMembers.map((m) => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -482,9 +571,9 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         <button
           onClick={handleCancel}
           disabled={saving}
-          className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40 transition-colors"
+          className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40"
         >
-          {saving ? <><Loader2 className="w-4 h-4 animate-spin inline mr-1" />Cancelling…</> : 'Cancel Import'}
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin inline mr-1" />Cancelling\u2026</> : 'Cancel Import'}
         </button>
         <button
           onClick={handleAccept}
@@ -492,7 +581,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           className="flex-1 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
         >
           {saving ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> Saving\u2026</>
           ) : (
             `Accept ${selected.size} transaction${selected.size !== 1 ? 's' : ''}`
           )}
@@ -514,7 +603,7 @@ interface MatchListProps {
 
 function MatchList({ title, hint, matches, busyId, busyKey, renderActions, tone = 'neutral' }: MatchListProps) {
   const money = (amount: number) =>
-    `₪${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `\u20aa${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return (
     <div className={`rounded-lg border px-3 py-2 ${tone === 'warning'
       ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
@@ -529,10 +618,10 @@ function MatchList({ title, hint, matches, busyId, busyKey, renderActions, tone 
           <li key={`${m.entry.id}:${m.bank.id}`} className="flex items-center gap-2 py-1.5 text-xs">
             <div className="flex-1 min-w-0">
               <p className="truncate text-gray-800 dark:text-gray-100" dir="auto">
-                <span className="text-gray-400">You:</span> {m.entry.description} · {formatDate(m.entry.date)} · {money(m.entry.amount)}
+                <span className="text-gray-400">You:</span> {m.entry.description} \u00b7 {formatDate(m.entry.date)} \u00b7 {money(m.entry.amount)}
               </p>
               <p className="truncate text-gray-500 dark:text-gray-400" dir="auto">
-                <span className="text-gray-400">Bank:</span> {m.bank.description} · {formatDate(m.bank.date)} · {money(m.bank.amount)}
+                <span className="text-gray-400">Bank:</span> {m.bank.description} \u00b7 {formatDate(m.bank.date)} \u00b7 {money(m.bank.amount)}
               </p>
             </div>
             <div className="flex-shrink-0 flex items-center gap-1">

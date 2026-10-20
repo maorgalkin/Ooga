@@ -6,6 +6,18 @@ import * as reconcile from '../../src/services/reconcileService';
 import * as bankImport from '../../src/services/bankImportService';
 
 vi.mock('../../src/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }) }));
+vi.mock('../../src/context/FinanceContext', () => ({
+  useFinance: () => ({ familyMembers: [] }),
+}));
+vi.mock('../../src/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+    }),
+  },
+}));
 vi.mock('../../src/services/reconcileService', () => ({
   reconcileImport: vi.fn(),
   mergeBankIntoEntry: vi.fn(async () => {}),
@@ -16,6 +28,8 @@ vi.mock('../../src/services/bankImportService', () => ({
   fetchImportedTransactions: vi.fn(),
   deleteTransactions: vi.fn(async () => {}),
   updateTransactionCategory: vi.fn(async () => {}),
+  updateTransactionFamilyMember: vi.fn(async () => {}),
+  updateTransactionsFamilyMemberBatch: vi.fn(async () => {}),
 }));
 
 const summary = (id: string, description: string, date: string, amount: number) =>
@@ -26,7 +40,7 @@ const reviewRow = (id: string, description: string) => ({
   bank_connection_id: 'conn-cal', bank_card_last4: '7466',
 });
 
-const merged = { entry: summary('e1', 'Weekly groceries', '2026-09-22', 250), bank: summary('b1', 'שופרסל דיל', '2026-09-23', 250) };
+const merged = { entry: summary('e1', 'Weekly groceries', '2026-09-22', 250), bank: summary('b1', '\u05e9\u05d5\u05e4\u05e8\u05e1\u05dc \u05d3\u05d9\u05dc', '2026-09-23', 250) };
 const suggestion = { entry: summary('e2', 'Lunch', '2026-09-24', 98), bank: summary('b2', 'CAFE LANDWER', '2026-09-24', 99.5) };
 
 describe('ImportReviewStep matching', () => {
@@ -44,7 +58,7 @@ describe('ImportReviewStep matching', () => {
     expect(await screen.findByText('Matched with your entries (1)')).toBeInTheDocument();
     expect(screen.getByText('Possible duplicates (1)')).toBeInTheDocument();
     expect(screen.getByText(/Weekly groceries/)).toBeInTheDocument();
-    expect(screen.getByText('· 1 matched with your entries')).toBeInTheDocument();
+    expect(screen.getByText('\u00b7 1 matched with your entries')).toBeInTheDocument();
   });
 
   it('undoes a merge and reloads the rows', async () => {
