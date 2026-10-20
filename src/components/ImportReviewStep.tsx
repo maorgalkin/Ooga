@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Loader2, AlertCircle, Link2 } from 'lucide-react';
 import DuplicatesBubble from './DuplicatesBubble';
 import {
@@ -13,6 +13,7 @@ import {
   fetchImportedTransactions,
   updateTransactionCategory,
   deleteTransactions,
+  clearTombstones,
   type DuplicateSummary,
   type ReviewTransaction,
 } from '../services/bankImportService';
@@ -44,6 +45,8 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [tombstoneNotice, setTombstoneNotice] = useState('');
+  const [clearedTombstones, setClearedTombstones] = useState<Set<string>>(new Set());
 
   // Which transaction IDs are checked (= will be kept)
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -173,6 +176,23 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
     }
   }, [transactions, selected, categoryOverrides, onDone]);
 
+  const deletedDuplicates = useMemo(
+    () => (result.duplicates ?? []).filter((d) => d.reason === 'deleted' && !clearedTombstones.has(d.dedupe_hash)),
+    [result.duplicates, clearedTombstones]
+  );
+
+  const handleAllowReimport = useCallback(async () => {
+    if (deletedDuplicates.length === 0) return;
+    try {
+      const hashes = deletedDuplicates.map((d) => d.dedupe_hash);
+      await clearTombstones(hashes);
+      setClearedTombstones((prev) => new Set([...prev, ...hashes]));
+      setTombstoneNotice('Done — start a new import to re-fetch these transactions.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to allow re-import. Please try again.');
+    }
+  }, [deletedDuplicates]);
+
   const handleCancel = useCallback(async () => {
     setSaving(true);
     try {
@@ -234,6 +254,21 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           </span>
         )}
       </div>
+
+      {deletedDuplicates.length > 0 && (
+        <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-200">
+          <span>
+            {deletedDuplicates.length} transaction{deletedDuplicates.length !== 1 ? 's' : ''} were skipped because you previously deleted them.
+          </span>
+          <button type="button" onClick={handleAllowReimport} className="font-medium underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100 whitespace-nowrap">Allow re-import</button>
+        </div>
+      )}
+
+      {tombstoneNotice && (
+        <div className="px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-sm text-emerald-700 dark:text-emerald-200">
+          {tombstoneNotice}
+        </div>
+      )}
 
       {/* Bank rows merged into manual entries paid with this account */}
       {merged.length > 0 && (

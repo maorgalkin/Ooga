@@ -16,6 +16,7 @@ vi.mock('../../src/services/bankImportService', () => ({
   fetchImportedTransactions: vi.fn(),
   deleteTransactions: vi.fn(async () => {}),
   updateTransactionCategory: vi.fn(async () => {}),
+  clearTombstones: vi.fn(async () => {}),
 }));
 
 const summary = (id: string, description: string, date: string, amount: number) =>
@@ -45,6 +46,27 @@ describe('ImportReviewStep matching', () => {
     expect(screen.getByText('Possible duplicates (1)')).toBeInTheDocument();
     expect(screen.getByText(/Weekly groceries/)).toBeInTheDocument();
     expect(screen.getByText('· 1 matched with your entries')).toBeInTheDocument();
+  });
+
+  it('shows a tombstone re-import banner and clears deleted duplicates', async () => {
+    render(
+      <ImportReviewStep
+        dbSessionId="s1"
+        result={{
+          imported: 0,
+          skipped: 1,
+          duplicates: [{ dedupe_hash: 'hash-deleted', date: '2026-09-20', description: 'Deleted cafe', amount: 18, type: 'expense', reason: 'deleted' }],
+        }}
+        onDone={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Allow re-import' })).toBeInTheDocument());
+    expect(screen.getByText(/were skipped because you previously deleted them/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Allow re-import' }));
+    await waitFor(() => expect(bankImport.clearTombstones).toHaveBeenCalledWith(['hash-deleted']));
+    expect(await screen.findByText('Done — start a new import to re-fetch these transactions.')).toBeInTheDocument();
   });
 
   it('undoes a merge and reloads the rows', async () => {
