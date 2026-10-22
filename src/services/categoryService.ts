@@ -8,8 +8,7 @@ import type {
   CategoryCreateInput, 
   CategoryUpdateInput,
   CategoryMergeResult,
-  CategoryMergeHistoryEntry,
-  CategoryMigrationResult
+  CategoryMergeHistoryEntry
 } from '../types/category';
 
 // ==================== HELPERS ====================
@@ -375,28 +374,6 @@ export const getMergeHistory = async (): Promise<CategoryMergeHistoryEntry[]> =>
 };
 
 // ==================== MIGRATION OPERATIONS ====================
-
-/**
- * Run the full category migration for the current user
- * This creates categories from existing string-based data
- */
-export const migrateUserCategories = async (): Promise<CategoryMigrationResult[]> => {
-  const userId = await getCurrentUserId();
-  
-  const { data, error } = await supabase
-    .rpc('migrate_user_categories', {
-      p_user_id: userId,
-    });
-  
-  if (error) {
-    throw new Error(`Failed to migrate categories: ${error.message}`);
-  }
-  
-  return (data || []).map((row: { step: string; result: unknown }) => ({
-    step: row.step,
-    result: row.result,
-  }));
-};
 
 /**
  * Check if the current user has migrated to the new category system
