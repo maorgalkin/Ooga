@@ -164,3 +164,29 @@ export async function deleteTransactions(ids: string[]): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+export async function clearTombstones(dedupeHashes: string[]): Promise<void> {
+  if (dedupeHashes.length === 0) return;
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error('Not authenticated');
+
+  const { data: membership, error: membershipError } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (membershipError) throw new Error(membershipError.message);
+  if (!membership?.household_id) throw new Error('User is not part of a household');
+
+  const { error } = await supabase
+    .from('import_tombstones')
+    .delete()
+    .eq('household_id', membership.household_id)
+    .eq('deleted_by', user.id)
+    .in('import_key', dedupeHashes);
+
+  if (error) throw new Error(error.message);
+}

@@ -489,6 +489,7 @@ export async function convertToBudgetCurrency(txns: NormalizedTx[], budgetCurren
 
 /** A fetched transaction that wasn't imported (shown in the import review) */
 export interface DuplicateSummary {
+  dedupe_hash: string;
   date: string;
   description: string;
   amount: number;
@@ -497,7 +498,7 @@ export interface DuplicateSummary {
 }
 
 const toDuplicateSummary = (tx: NormalizedTx, reason: 'exists' | 'deleted'): DuplicateSummary =>
-  ({ date: tx.date, description: tx.description, amount: tx.amount, type: tx.type, reason });
+  ({ dedupe_hash: tx.dedupe_hash, date: tx.date, description: tx.description, amount: tx.amount, type: tx.type, reason });
 
 export interface ExistingImportRow {
   id: string;

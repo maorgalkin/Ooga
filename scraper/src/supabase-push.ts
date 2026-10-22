@@ -84,7 +84,8 @@ export async function pushTransactions(
   const duplicates: DuplicateSummary[] = [];
   const isBank = !!provider && isBankProvider(provider);
 
-  const summarize = (tx: TransactionRow, reason: 'exists' | 'deleted'): DuplicateSummary => ({
+  const summarize = (tx: TransactionRow, reason: 'exists' | 'deleted', key: string): DuplicateSummary => ({
+    dedupe_hash: key,
     date: tx.date.slice(0, 10),
     description: tx.description,
     amount: Math.abs(tx.chargedAmount),
@@ -105,7 +106,7 @@ export async function pushTransactions(
 
     if (existing) {
       skipped++;
-      duplicates.push(summarize(tx, 'exists'));
+      duplicates.push(summarize(tx, 'exists', externalId));
       continue;
     }
 
@@ -119,7 +120,7 @@ export async function pushTransactions(
 
     if (tombstone) {
       skipped++;
-      duplicates.push(summarize(tx, 'deleted'));
+      duplicates.push(summarize(tx, 'deleted', externalId));
       continue;
     }
 
@@ -148,7 +149,7 @@ export async function pushTransactions(
     if (error?.code === '23505') {
       // Another member imported it moments ago
       skipped++;
-      duplicates.push(summarize(tx, 'exists'));
+      duplicates.push(summarize(tx, 'exists', externalId));
     } else if (error) {
       console.error('Failed to insert transaction:', error.message);
     } else {
