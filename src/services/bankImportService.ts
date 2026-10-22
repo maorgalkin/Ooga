@@ -185,6 +185,7 @@ export async function clearTombstones(dedupeHashes: string[]): Promise<void> {
     .from('import_tombstones')
     .delete()
     .eq('household_id', membership.household_id)
+    .eq('deleted_by', user.id)
     .in('import_key', dedupeHashes);
 
   if (error) throw new Error(error.message);

@@ -47,6 +47,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
   const [saving, setSaving] = useState(false);
   const [tombstoneNotice, setTombstoneNotice] = useState('');
   const [clearedTombstones, setClearedTombstones] = useState<Set<string>>(new Set());
+  const [clearing, setClearing] = useState(false);
 
   // Which transaction IDs are checked (= will be kept)
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -183,6 +184,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
 
   const handleAllowReimport = useCallback(async () => {
     if (deletedDuplicates.length === 0) return;
+    setClearing(true);
     try {
       const hashes = deletedDuplicates.map((d) => d.dedupe_hash);
       await clearTombstones(hashes);
@@ -190,6 +192,8 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       setTombstoneNotice('Done — start a new import to re-fetch these transactions.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to allow re-import. Please try again.');
+    } finally {
+      setClearing(false);
     }
   }, [deletedDuplicates]);
 
@@ -260,7 +264,14 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           <span>
             {deletedDuplicates.length} transaction{deletedDuplicates.length !== 1 ? 's' : ''} were skipped because you previously deleted them.
           </span>
-          <button type="button" onClick={handleAllowReimport} className="font-medium underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100 whitespace-nowrap">Allow re-import</button>
+          <button
+            type="button"
+            onClick={handleAllowReimport}
+            disabled={clearing}
+            className="font-medium underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {clearing ? 'Clearing…' : 'Allow re-import'}
+          </button>
         </div>
       )}
 
@@ -517,7 +528,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         <button
           onClick={handleCancel}
           disabled={saving}
-          className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40 transition-colors"
+          className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40"
         >
           {saving ? <><Loader2 className="w-4 h-4 animate-spin inline mr-1" />Cancelling…</> : 'Cancel Import'}
         </button>
