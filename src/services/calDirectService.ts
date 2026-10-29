@@ -742,7 +742,7 @@ export async function importCalTransactions(
   otpToken: string,
   period: ImportPeriod,
   onProgress?: (msg: string) => void
-): Promise<{ dbSessionId: string; imported: number; updated: number; skipped: number; duplicates: DuplicateSummary[] }> {
+): Promise<{ dbSessionId: string | null; imported: number; updated: number; skipped: number; duplicates: DuplicateSummary[] }> {
   const log = (msg: string) => {
     console.log(`[cal-direct] ${msg}`);
     onProgress?.(msg);

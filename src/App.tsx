@@ -9,7 +9,6 @@ import { BuildInfo } from './components/BuildInfo';
 import { BackToTop } from './components/BackToTop';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
-import { DevTools } from './pages/DevTools';
 import { Plus, LogOut, Loader2 } from 'lucide-react';
 import './App.css';
 
@@ -149,7 +148,6 @@ function AppContent() {
       <main>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/dev-tools" element={<DevTools />} />
         </Routes>
       </main>
       <AddTransaction

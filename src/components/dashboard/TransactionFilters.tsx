@@ -36,7 +36,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   familyMembers,
   categoryGroups,
   months,
-  activeMonthIndex,
   onTypeChange,
   onMemberChange,
   onMonthChange,

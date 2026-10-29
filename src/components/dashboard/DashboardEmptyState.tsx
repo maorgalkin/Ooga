@@ -140,7 +140,6 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
   allTransactions,
   personalBudget,
   formatCurrency,
-  householdName,
   isPastMonth = false,
 }) => {
   const navigate = useNavigate();

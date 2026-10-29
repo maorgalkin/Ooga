@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import AddTransaction from '../AddTransaction';
 import { FinanceProvider } from '../../context/FinanceContext';
 import * as SupabaseService from '../../services/supabaseDataService';
@@ -75,10 +76,13 @@ describe('AddTransaction Stress Tests', () => {
 
   const renderComponent = () => {
     const onClose = vi.fn();
+    // AddTransaction links to account settings, so it needs a router
     const result = render(
-      <FinanceProvider>
-        <AddTransaction isOpen={true} onClose={onClose} />
-      </FinanceProvider>
+      <MemoryRouter>
+        <FinanceProvider>
+          <AddTransaction isOpen={true} onClose={onClose} />
+        </FinanceProvider>
+      </MemoryRouter>
     );
     return { ...result, onClose };
   };
@@ -211,7 +215,7 @@ describe('AddTransaction Stress Tests', () => {
   describe('Concurrent Submission Prevention', () => {
     it('should handle programmatic concurrent calls gracefully', async () => {
       const user = userEvent.setup({ delay: null });
-      const { onClose } = renderComponent();
+      renderComponent();
 
       // Fill form
       const amountInput = screen.getByLabelText(/amount/i);

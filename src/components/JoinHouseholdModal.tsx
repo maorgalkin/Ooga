@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { X, AlertTriangle, Users, Loader2, CheckCircle } from 'lucide-react';
 import * as HouseholdService from '../services/householdService';
 
@@ -9,7 +8,6 @@ interface JoinHouseholdModalProps {
 }
 
 export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, onClose }) => {
-  const navigate = useNavigate();
   const [invitationCode, setInvitationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

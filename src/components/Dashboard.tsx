@@ -687,7 +687,7 @@ const Dashboard: React.FC = () => {
         onCategoryChange={(category) => {
           setSelectedDesktopCategory(category);
         }}
-        onViewInTransactions={(category) => {
+        onViewInTransactions={() => {
           // Navigate to Transactions tab
           // TODO: Support passing category filter to Transactions page via URL params
           setActiveTab('transactions');

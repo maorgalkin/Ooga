@@ -53,23 +53,32 @@ if (!supabaseUrl || !supabaseAnonKey) {
   process.exit(1);
 }
 
-// Warn if using production credentials
-if (!process.env.VITE_SUPABASE_TEST_URL) {
-  console.warn(`
+// Refuse to run against the app's own project (production, via .env.local) unless
+// someone explicitly opts in: these suites create and delete users and data.
+const usingAppProject =
+  !process.env.VITE_SUPABASE_TEST_URL ||
+  process.env.VITE_SUPABASE_TEST_URL === process.env.VITE_SUPABASE_URL;
+
+if (usingAppProject && process.env.ALLOW_PRODUCTION_INTEGRATION_TESTS !== '1') {
+  console.error(`
 ╔══════════════════════════════════════════════════════════════════╗
-║  ⚠️  WARNING: Using production Supabase credentials               ║
+║  ❌ REFUSING TO RUN AGAINST THE APP'S SUPABASE PROJECT            ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║                                                                   ║
-║  No test-specific credentials found.                             ║
-║  Tests will run against your production database!                ║
+║  No separate test project is configured, so these tests would    ║
+║  create and delete users and data in your production database.   ║
 ║                                                                   ║
-║  For safety, create a separate test project and set:             ║
+║  Create a separate test project and set, in .env.test.local:     ║
 ║    VITE_SUPABASE_TEST_URL                                        ║
 ║    VITE_SUPABASE_TEST_ANON_KEY                                   ║
 ║    VITE_SUPABASE_TEST_SERVICE_ROLE_KEY                           ║
 ║                                                                   ║
+║  To run against VITE_SUPABASE_URL anyway, on purpose:            ║
+║    ALLOW_PRODUCTION_INTEGRATION_TESTS=1 npm run test:integration ║
+║                                                                   ║
 ╚══════════════════════════════════════════════════════════════════╝
 `);
+  process.exit(1);
 }
 
 // Warn if service role key is missing

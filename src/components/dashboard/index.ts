@@ -6,7 +6,6 @@
  */
 
 export { DashboardTabNavigation } from './DashboardTabNavigation';
-export { MonthNavigator } from './MonthNavigator';
 export { ExpenseChart } from './ExpenseChart';
 export { DummyDataControls } from './DummyDataControls';
 export { FamilyMembersCard } from './FamilyMembersCard';

@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
-FROM node:20-slim
+# israeli-bank-scrapers 6.12+ requires Node >= 22.22.2. Keep CI (.github/workflows/ci.yml) on the same major.
+# Debian is pinned to bookworm: the package names below (libasound2, libappindicator3-1) differ on trixie.
+FROM node:22-bookworm-slim
 
 # Install Chromium and its dependencies for Puppeteer
 RUN apt-get update && apt-get install -y \
@@ -22,7 +24,9 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
-# Tell Puppeteer to use the system Chromium instead of downloading its own
+# Tell Puppeteer to use the system Chromium instead of downloading its own.
+# Puppeteer 19+ reads PUPPETEER_SKIP_DOWNLOAD; the older name is kept for older versions.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 

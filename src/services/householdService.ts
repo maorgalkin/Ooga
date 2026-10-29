@@ -175,15 +175,6 @@ export const updateHouseholdName = async (householdId: string, name: string): Pr
 };
 
 /**
- * Invite a member to the household (simplified - just adds them directly)
- * Note: This function is deprecated. Use invitation codes instead.
- */
-export const inviteMemberByEmail = async (email: string, role: 'participant' = 'participant'): Promise<void> => {
-  // This function is no longer used - kept for backwards compatibility
-  throw new Error('Email invitation deprecated. Use invitation codes instead.');
-};
-
-/**
  * Invite a member by their user ID (for testing/development)
  * Note: This function is deprecated. Use invitation codes instead.
  */
@@ -405,7 +396,7 @@ export const acceptInvitationAndJoin = async (
     }
 
     // Get user's current household membership
-    const { data: currentMember, error: memberError } = await supabase
+    const { data: currentMember } = await supabase
       .from('household_members')
       .select('household_id, role')
       .eq('user_id', userId)

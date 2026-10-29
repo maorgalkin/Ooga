@@ -28,12 +28,12 @@ export function formatCurrency(
 /**
  * Format currency using global budget settings
  * @param amount - The numeric amount to format
- * @param globalSettings - Global budget settings object
+ * @param globalSettings - Global budget settings (only `currency` and `showRoundedAmounts` are read)
  * @returns Formatted currency string
  */
 export function formatCurrencyFromSettings(
   amount: number,
-  globalSettings?: GlobalBudgetSettings
+  globalSettings?: Partial<Pick<GlobalBudgetSettings, 'currency' | 'showRoundedAmounts'>>
 ): string {
   const currency = globalSettings?.currency || 'USD';
   const showRounded = globalSettings?.showRoundedAmounts ?? true;

@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import type { Transaction } from '../../types';
 import type { DateRangeType } from '../../utils/dateRangeFilters';
 import { getDateRange } from '../../utils/dateRangeFilters';
 import { Users } from 'lucide-react';
