@@ -24,7 +24,7 @@ export interface TestHouseholdMember {
   id: string;
   household_id: string;
   user_id: string;
-  role: 'owner' | 'admin' | 'member';
+  role: 'owner' | 'participant';
 }
 
 // =============================================================================
@@ -125,7 +125,7 @@ export async function getHouseholdMembers(householdId: string): Promise<TestHous
 export async function addUserToHousehold(
   householdId: string, 
   userId: string, 
-  role: 'admin' | 'member' = 'member'
+  role: 'participant' = 'participant'
 ): Promise<void> {
   const client = getServiceClient();
 

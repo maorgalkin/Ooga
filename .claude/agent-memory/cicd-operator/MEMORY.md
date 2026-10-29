@@ -22,3 +22,4 @@
 - The `AddTransaction` stress tests let the component call `listConnections()`, which fails fast against the closed port; mock `bankImportService` there.
 - Integration tests don't run in CI: they need a separate Supabase test project and secrets, and must not run on fork PRs.
 - Which Node version Cloudflare's build uses is unknown; check its build log before adding `.nvmrc` or `engines`.
+- Integration suite 06 (installments) is excluded in `vitest.integration.config.ts`: it never ran (bad import path since Dec 2025) and calls the app's services, whose client reads production env and needs `window`. Rewrite it on the test clients from `tests/integration/setup.ts`, then remove the exclude.

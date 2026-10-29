@@ -30,12 +30,16 @@ import {
   deleteFutureInstallments,
   getInstallmentGroupTransactions,
   getTransactions,
-} from '../../src/services/supabaseDataService';
+} from '../../../src/services/supabaseDataService';
 
 // Initialize test clients and cleanup
 setupIntegrationTests();
 
-describe('Integration: Installments', () => {
+// Skipped: this suite has never run. It calls the app's services, whose client
+// (src/lib/supabase.ts) reads VITE_SUPABASE_URL from .env.local (production) and needs a
+// browser window, and it's never signed in. Rewrite it on the test clients from
+// ../setup (like suites 01-05) before re-enabling it.
+describe.skip('Integration: Installments', () => {
   let testUser: TestUser;
   let budget: TestPersonalBudget;
   let userId: string;
