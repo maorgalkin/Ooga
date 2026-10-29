@@ -305,7 +305,7 @@ export class MonthlyBudgetService {
 
       // Create missing budgets if any
       if (missingMonths.length > 0) {
-        const createdBudgets = await Promise.all(
+        await Promise.all(
           missingMonths.map(m => 
             this.getOrCreateMonthlyBudget(m.year, m.month)
           )

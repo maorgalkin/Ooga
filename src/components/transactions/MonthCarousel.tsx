@@ -142,7 +142,7 @@ export const MonthCarousel: React.FC<MonthCarouselProps> = ({
                       dragConstraints={{ left: 0, right: 0 }}
                       dragElastic={0.3}
                       dragMomentum={true}
-                      onDrag={(event, info) => {
+                      onDrag={(_event, info) => {
                         // Calculate which dot we're over based on drag position
                         const dotWidth = 8 + 8; // width (8px) + gap (8px)
                         const offset = info.offset.x;

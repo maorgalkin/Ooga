@@ -121,7 +121,7 @@ export async function importCalDirect(
   otpCode: string,
   period: import('./calDirectService').ImportPeriod,
   onProgress?: (msg: string) => void
-): Promise<{ dbSessionId: string; imported: number; updated: number; skipped: number; duplicates: DuplicateSummary[] }> {
+): Promise<{ dbSessionId: string | null; imported: number; updated: number; skipped: number; duplicates: DuplicateSummary[] }> {
   const nationalId = (connection.metadata?.id as string | undefined) ?? '';
   if (!nationalId) throw new Error('Connection is missing national ID in metadata. Please reconnect your account.');
 

@@ -54,7 +54,6 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
   const [isFused, setIsFused] = useState(false);
   // 'all' | 'over' — filter categories by budget status
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'over'>('all');
-  const [showEncouragement, setShowEncouragement] = useState(false);
 
   // Scroll fade indicator refs/state
   const catGridRef = useRef<HTMLDivElement>(null);

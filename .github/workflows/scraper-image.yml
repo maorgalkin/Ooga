@@ -1,0 +1,62 @@
+name: Scraper image
+
+# Builds and smoke-tests the production Docker image when the scraper changes,
+# on PRs and again on master (which /deploy-scraper checks before deploying).
+# Path-filtered, so don't mark it as a required check: it won't run on other PRs.
+on:
+  pull_request:
+    paths:
+      - 'scraper/**'
+      - 'docker-compose*.yml'
+      - '.github/workflows/scraper-image.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scraper/**'
+      - 'docker-compose*.yml'
+      - '.github/workflows/scraper-image.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scraper-image-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  image:
+    name: Build and smoke-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build --tag ooga-scraper:ci scraper
+
+      - name: Runtime versions
+        run: |
+          docker run --rm ooga-scraper:ci node --version
+          docker run --rm ooga-scraper:ci chromium --version
+
+      - name: No secrets or host files in the image
+        run: |
+          if docker run --rm ooga-scraper:ci sh -c 'ls -a /app' | grep -E '^\.env'; then
+            echo "::error::.env files were copied into the image; check scraper/.dockerignore"
+            exit 1
+          fi
+
+      - name: Start with throwaway config and check /health
+        run: |
+          docker run --detach --name scraper --publish 3001:3001 \
+            --env SUPABASE_URL=https://ci-smoke-test.supabase.co \
+            --env SUPABASE_SERVICE_ROLE_KEY=ci-smoke-test-key \
+            --env ENCRYPTION_KEY="$(openssl rand -hex 32)" \
+            ooga-scraper:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:3001/health; then exit 0; fi
+            sleep 1
+          done
+          docker logs scraper
+          exit 1

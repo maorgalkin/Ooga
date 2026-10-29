@@ -3,8 +3,7 @@
 
 import React, { useState } from 'react';
 import { X, AlertTriangle, Trash2, ArrowRight } from 'lucide-react';
-import { useDeleteCategory, useCategories, useUpdateCategory } from '../../hooks/useCategories';
-import { useFinance } from '../../context/FinanceContext';
+import { useDeleteCategory, useCategories } from '../../hooks/useCategories';
 import type { Category } from '../../types/category';
 
 interface DeleteCategoryModalProps {
@@ -22,8 +21,7 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
 }) => {
   const { data: allCategories } = useCategories();
   const deleteCategory = useDeleteCategory();
-  const updateCategory = useUpdateCategory();
-  
+
   const [reassignTo, setReassignTo] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');

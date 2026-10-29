@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { globalIgnores } from 'eslint/config'
 
 export default tseslint.config([
-  globalIgnores(['dist']),
+  // .claude/worktrees holds full copies of the repo (Claude Code worktrees)
+  globalIgnores(['dist', 'scraper/dist', '.claude']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

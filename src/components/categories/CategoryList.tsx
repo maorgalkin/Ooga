@@ -31,8 +31,7 @@ interface CategoryListProps {
   onInitialEditHandled?: () => void;
 }
 
-export const CategoryList: React.FC<CategoryListProps> = ({ 
-  onCategorySelect,
+export const CategoryList: React.FC<CategoryListProps> = ({
   initialEditCategory,
   onInitialEditHandled,
 }) => {

@@ -9,6 +9,9 @@ For comprehensive documentation, please refer to:
 - **[Complete Feature Summary](docs/COMPLETE_FEATURE_SUMMARY.md)** - Detailed overview of all Ooga features, technology stack, and capabilities
 - **[Supabase Setup Guide](docs/SUPABASE_BRINGUP.md)** - Step-by-step guide for setting up the Supabase backend
 - **[Test Documentation](docs/TEST_DOCUMENTATION.md)** - Complete testing guide, test suites, and best practices
+- **[Bank Import](docs/BANK_IMPORT.md)** - How Cal and Discount imports work, and the scraper service
+- **[Scraper Deployment](docs/SCRAPER_DEPLOY.md)** - The Vultr server behind `api.haooga.com`
+- **[Cloudflare Setup](docs/CLOUDFLARE_SETUP.md)** - Hosting for the web app (auto-deploys from `master`)
 
 ## 🌟 Features
 
@@ -25,8 +28,8 @@ For comprehensive documentation, please refer to:
 
 ### Prerequisites
 
-- Node.js (version 18 or higher)
-- npm or yarn
+- Node.js 22 (what CI and the scraper image use; Vite 7 needs at least 20.19)
+- npm
 
 ### Installation
 
@@ -42,12 +45,12 @@ For comprehensive documentation, please refer to:
    ```
 
 3. Set up environment variables:
-   - Copy `.env.example` to `.env`
+   - Copy `.env.example` to `.env.local`
    - Add your Supabase credentials:
      ```env
      VITE_SUPABASE_URL=your_supabase_url
      VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-     VITE_SITE_URL=http://localhost:5173  # Use production URL in Vercel
+     VITE_SITE_URL=http://localhost:5173  # production: https://haooga.com, set in Cloudflare's build settings
      ```
    - See [Supabase Setup Guide](docs/SUPABASE_BRINGUP.md) for detailed instructions
 
@@ -62,7 +65,7 @@ The application will be available at `http://localhost:5173`
 
 ### Building for Production
 
-Create a production build:
+Create a production build (type-checks first, like Cloudflare's build):
 ```bash
 npm run build
 ```
@@ -74,11 +77,18 @@ npm run preview
 
 ### Running Tests
 
-Run the test suite:
+Run the checks CI runs on every pull request:
 ```bash
-npm test          # Watch mode
-npm run test:run  # Run once
-npm run test:ui   # Interactive UI
+npm run typecheck         # tsc -b
+npm run test:run          # unit tests, once (never touch a real Supabase project)
+npm run lint              # ESLint (CI only fails if the error count goes up)
+```
+
+Other test commands:
+```bash
+npm test                  # unit tests in watch mode
+npm run test:ui           # interactive UI
+npm run test:integration  # integration suites against a test Supabase project (.env.test.local)
 ```
 
 For detailed testing information, see [Test Documentation](docs/TEST_DOCUMENTATION.md).
@@ -147,13 +157,15 @@ For setup instructions, see [Supabase Setup Guide](docs/SUPABASE_BRINGUP.md).
 
 - **Frontend Framework**: React 19.1.1 with TypeScript 5.8.3
 - **Build Tool**: Vite 7.1.2
-- **Styling**: Tailwind CSS 4.1.12
+- **Styling**: Tailwind CSS 3.4 (JS config; don't upgrade to v4)
 - **Charts**: Recharts 3.1.2
 - **Icons**: Lucide React 0.539.0
 - **Animation**: Framer Motion 12.23.24
 - **Backend**: Supabase 2.75.0 (PostgreSQL + Auth)
 - **Testing**: Vitest 3.2.4 + React Testing Library 16.3.0
 - **Routing**: React Router DOM 6.30.1
+- **Hosting**: Cloudflare (web app), Vultr in Tel Aviv (bank scraper at `api.haooga.com`), Supabase (database and auth)
+- **CI**: GitHub Actions (`.github/workflows/`)
 
 For complete technology details, see [Complete Feature Summary](docs/COMPLETE_FEATURE_SUMMARY.md).
 
@@ -163,23 +175,15 @@ For complete technology details, see [Complete Feature Summary](docs/COMPLETE_FE
 - [ ] Bill reminders with notifications
 - [ ] Receipt photo attachments
 - [ ] Advanced reporting and PDF export
-- [ ] Multi-currency support with exchange rates
 - [ ] Savings goals with progress tracking
 - [ ] CSV import/export
-- [ ] Bank account integration
 - [ ] Mobile app (React Native for iOS/Android)
 - [ ] AI-powered spending insights
 - [ ] Budget templates library
-- [ ] Collaborative family budgets
 
 ## 🧪 Testing
 
-Ooga includes a comprehensive test suite with 50+ tests covering:
-- Basic functionality and startup
-- Dashboard features and filtering
-- Transaction management (add, edit, delete)
-- Accessibility and keyboard navigation
-- Performance benchmarks
+Ooga has ~280 unit tests (Vitest + React Testing Library) under `tests/`, plus integration suites in `tests/integration/` that run against a real Supabase test project. CI runs the type-check, unit tests, lint ratchet, build and the scraper checks on every pull request.
 
 See [Test Documentation](docs/TEST_DOCUMENTATION.md) for complete testing information.
 

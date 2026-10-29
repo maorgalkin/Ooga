@@ -47,8 +47,31 @@ const createMockChain = (finalResult: any) => {
   // Make the chain itself thenable for direct awaiting
   chain.then = resultWithChain.then;
   chain.catch = resultWithChain.catch;
-  
+
   return chain;
+};
+
+const HOUSEHOLD_ID = 'household-1';
+
+/**
+ * Route supabase.from(table) to per-table chains. Every service call starts with the
+ * household_members lookup, which resolves to HOUSEHOLD_ID unless a test overrides it.
+ * Pass an array to hand out one chain per call (the last one repeats).
+ */
+const mockTables = (tables: Record<string, any>) => {
+  const calls: Record<string, number> = {};
+  vi.mocked(supabase.from).mockImplementation(((table: string) => {
+    const entry = tables[table];
+    if (Array.isArray(entry)) {
+      calls[table] = (calls[table] ?? -1) + 1;
+      return entry[Math.min(calls[table], entry.length - 1)];
+    }
+    if (entry) return entry;
+    if (table === 'household_members') {
+      return createMockChain({ data: { household_id: HOUSEHOLD_ID }, error: null });
+    }
+    return createMockChain({ data: [], error: null });
+  }) as never);
 };
 
 describe('MonthlyBudgetService', () => {
@@ -103,11 +126,12 @@ describe('MonthlyBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ monthly_budgets: mockChain });
 
       const result = await MonthlyBudgetService.getOrCreateMonthlyBudget(2025, 10);
 
       expect(result).toEqual(mockMonthlyBudget);
+      expect(mockChain.eq).toHaveBeenCalledWith('household_id', HOUSEHOLD_ID);
       expect(mockChain.eq).toHaveBeenCalledWith('year', 2025);
       expect(mockChain.eq).toHaveBeenCalledWith('month', 10);
     });
@@ -118,22 +142,26 @@ describe('MonthlyBudgetService', () => {
         mockPersonalBudget
       );
 
-      let callCount = 0;
-      vi.mocked(supabase.from).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First call: check if monthly budget exists - returns null
-          return createMockChain({ data: null, error: null });
-        } else {
-          // Second call: insert new monthly budget
-          return createMockChain({ data: mockMonthlyBudget, error: null });
-        }
+      // monthly_budgets calls in order: the lookup (no row yet), then the insert
+      const insertChain = createMockChain({ data: mockMonthlyBudget, error: null });
+      mockTables({
+        monthly_budgets: [createMockChain({ data: null, error: null }), insertChain],
       });
 
       const result = await MonthlyBudgetService.getOrCreateMonthlyBudget(2025, 10);
 
       expect(PersonalBudgetService.getActiveBudget).toHaveBeenCalled();
-      expect(result).toBeTruthy();
+      expect(insertChain.insert).toHaveBeenCalledWith([
+        expect.objectContaining({
+          household_id: HOUSEHOLD_ID,
+          personal_budget_id: 'personal-budget-1',
+          year: 2025,
+          month: 10,
+          categories: mockPersonalBudget.categories,
+          original_categories: mockPersonalBudget.categories,
+        }),
+      ]);
+      expect(result).toEqual(mockMonthlyBudget);
     });
 
     it('should throw error if no personal budget exists', async () => {
@@ -142,7 +170,7 @@ describe('MonthlyBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ monthly_budgets: mockChain });
       vi.mocked(PersonalBudgetService.getActiveBudget).mockResolvedValue(null);
 
       await expect(
@@ -161,7 +189,7 @@ describe('MonthlyBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ monthly_budgets: mockChain });
 
       const result = await MonthlyBudgetService.getCurrentMonthBudget();
 
@@ -184,16 +212,10 @@ describe('MonthlyBudgetService', () => {
         adjustment_count: 1,
       };
 
-      let callCount = 0;
-      vi.mocked(supabase.from).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First call: get current budget
-          return createMockChain({ data: mockMonthlyBudget, error: null });
-        } else {
-          // Second call: update budget
-          return createMockChain({ data: updatedBudget, error: null });
-        }
+      // monthly_budgets calls in order: read the current budget, then the update
+      const updateChain = createMockChain({ data: updatedBudget, error: null });
+      mockTables({
+        monthly_budgets: [createMockChain({ data: mockMonthlyBudget, error: null }), updateChain],
       });
 
       const result = await MonthlyBudgetService.updateCategoryLimit(
@@ -203,6 +225,10 @@ describe('MonthlyBudgetService', () => {
         'Increased for holidays'
       );
 
+      expect(updateChain.update).toHaveBeenCalledWith(
+        expect.objectContaining({ adjustment_count: 1, notes: 'Increased for holidays' })
+      );
+      expect(updateChain.eq).toHaveBeenCalledWith('household_id', HOUSEHOLD_ID);
       expect(result.adjustment_count).toBe(1);
       expect(result.categories['Groceries'].monthlyLimit).toBe(600);
     });
@@ -213,7 +239,7 @@ describe('MonthlyBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ monthly_budgets: mockChain });
 
       await expect(
         MonthlyBudgetService.updateCategoryLimit(
@@ -234,7 +260,7 @@ describe('MonthlyBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ monthly_budgets: mockChain });
 
       const result = await MonthlyBudgetService.lockMonthlyBudget(2025, 10);
 
@@ -258,7 +284,7 @@ describe('MonthlyBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ monthly_budgets: mockChain });
 
       // Mock get personal budget
       vi.mocked(PersonalBudgetService.getActiveBudget).mockResolvedValue(
@@ -285,7 +311,7 @@ describe('MonthlyBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ monthly_budgets: mockChain });
 
       await expect(
         MonthlyBudgetService.compareToPersonalBudget(2025, 10)

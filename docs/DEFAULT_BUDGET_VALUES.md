@@ -149,9 +149,8 @@ setCategories({
 
 ## Testing Reset Functionality
 
-**Dev Tools Page**: `src/pages/DevTools.tsx`
-- Includes "Clear Dummy Data" button (clears current year's dummy data)
-- New "Reset All Budgets" functionality available in Budget Management page
+- "Reset All Budgets" is available on the Budget Management page.
+- The Dev Tools page (`/dev-tools`) was removed in October 2026 because it deleted real transactions; see `docs/DEPRECATED_FEATURES.md`.
 
 ## Security & Safeguards
 

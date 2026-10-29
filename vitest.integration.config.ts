@@ -26,7 +26,14 @@ export default defineConfig({
     include: ['tests/integration/**/*.integration.test.ts'],
     
     // Exclude unit tests
-    exclude: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'node_modules'],
+    exclude: [
+      'src/**/*.test.ts',
+      'src/**/*.test.tsx',
+      'node_modules',
+      // Never run yet and unsafe as written (it would load the app's production client);
+      // see the note at the top of the file before re-enabling.
+      'tests/integration/suites/06-installments.integration.test.ts',
+    ],
     
     // Load test environment variables
     env: {

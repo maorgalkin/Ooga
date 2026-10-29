@@ -11,7 +11,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     'Required variables:\n' +
     '  - VITE_SUPABASE_URL\n' +
     '  - VITE_SUPABASE_ANON_KEY\n\n' +
-    'See SUPABASE_SETUP_GUIDE.md for setup instructions.'
+    'See docs/SUPABASE_BRINGUP.md for setup instructions.'
   );
 }
 

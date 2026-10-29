@@ -588,10 +588,6 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
     }
   };
 
-  // Index of the currently selected slice (for activeShape rendering)
-  const selectedIndex = selectedDesktopCategory
-    ? categoryData.findIndex(c => c.category === selectedDesktopCategory)
-    : -1;
 
   // Render the selected slice larger to make it stand out
   const renderActiveSlice = (props: any) => (
@@ -750,7 +746,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                   innerRadius={0}
                   fill="#8884d8"
                   dataKey="amount"
-                  activeIndex={selectedIndex >= 0 ? selectedIndex : undefined}
+                  // Recharts 3 has no activeIndex prop: activeShape follows the tooltip's hover index
                   activeShape={renderActiveSlice}
                 >
                   {categoryData.map((entry, index) => {
@@ -938,9 +934,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 innerRadius={0}
                 fill="#8884d8"
                 dataKey="amount"
-                activeIndex={focusedCategory
-                  ? categoryData.findIndex(c => c.category === focusedCategory.category)
-                  : undefined}
+                // Recharts 3 has no activeIndex prop: activeShape follows the tooltip's hover index
                 activeShape={renderActiveSlice}
               >
                 {categoryData.map((entry, index) => {

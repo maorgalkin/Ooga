@@ -114,7 +114,7 @@ describe('Suite 5: Multi-User Household', () => {
 
     it('should add second user to first user household', async () => {
       // Act
-      await addUserToHousehold(household.id, user2.id, 'member');
+      await addUserToHousehold(household.id, user2.id, 'participant');
 
       // Assert
       const memberCount = await countHouseholdMembers(household.id);

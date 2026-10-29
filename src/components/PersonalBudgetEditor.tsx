@@ -86,7 +86,10 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
   }, [autoEdit, loadingActive, activeBudget]); // Include loading state
 
   const formatCurrency = (amount: number): string => {
-    return formatCurrencyFromSettings(amount, { currency: currency || 'USD', showRoundedAmounts: showRoundedAmounts });
+    return formatCurrencyFromSettings(amount, {
+      currency: currency || 'USD',
+      showRoundedAmounts: activeBudget?.global_settings?.showRoundedAmounts ?? true,
+    });
   };
 
   const handleStartCreate = () => {

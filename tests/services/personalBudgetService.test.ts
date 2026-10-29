@@ -44,8 +44,32 @@ const createMockChain = (finalResult: any) => {
   // Make the chain itself thenable for direct awaiting
   chain.then = resultWithChain.then;
   chain.catch = resultWithChain.catch;
-  
+
   return chain;
+};
+
+const HOUSEHOLD_ID = 'household-1';
+
+/**
+ * Route supabase.from(table) to per-table chains. Every service call starts with the
+ * household_members lookup, which resolves to HOUSEHOLD_ID unless a test overrides it.
+ * Pass an array to hand out one chain per call (the last one repeats); tables not
+ * listed (e.g. the categories sync) resolve to an empty list.
+ */
+const mockTables = (tables: Record<string, any>) => {
+  const calls: Record<string, number> = {};
+  vi.mocked(supabase.from).mockImplementation(((table: string) => {
+    const entry = tables[table];
+    if (Array.isArray(entry)) {
+      calls[table] = (calls[table] ?? -1) + 1;
+      return entry[Math.min(calls[table], entry.length - 1)];
+    }
+    if (entry) return entry;
+    if (table === 'household_members') {
+      return createMockChain({ data: { household_id: HOUSEHOLD_ID }, error: null });
+    }
+    return createMockChain({ data: [], error: null });
+  }) as never);
 };
 
 describe('PersonalBudgetService', () => {
@@ -103,13 +127,13 @@ describe('PersonalBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       const result = await PersonalBudgetService.getActiveBudget();
 
       expect(supabase.from).toHaveBeenCalledWith('personal_budgets');
       expect(mockChain.select).toHaveBeenCalledWith('*');
-      expect(mockChain.eq).toHaveBeenCalledWith('user_id', mockUserId);
+      expect(mockChain.eq).toHaveBeenCalledWith('household_id', HOUSEHOLD_ID);
       expect(mockChain.eq).toHaveBeenCalledWith('is_active', true);
       expect(result).toEqual(mockPersonalBudget);
     });
@@ -120,7 +144,7 @@ describe('PersonalBudgetService', () => {
         error: { code: 'PGRST116', message: 'No rows returned' },
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       const result = await PersonalBudgetService.getActiveBudget();
 
@@ -133,7 +157,7 @@ describe('PersonalBudgetService', () => {
         error: { code: 'DATABASE_ERROR', message: 'Connection failed' },
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       await expect(PersonalBudgetService.getActiveBudget()).rejects.toThrow(
         'Connection failed'
@@ -154,7 +178,7 @@ describe('PersonalBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       const result = await PersonalBudgetService.getBudgetHistory();
 
@@ -173,7 +197,7 @@ describe('PersonalBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       const result = await PersonalBudgetService.createBudget({
         name: 'My First Budget',
@@ -191,7 +215,7 @@ describe('PersonalBudgetService', () => {
         error: { message: 'Insert failed' },
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       await expect(
         PersonalBudgetService.createBudget({
@@ -222,7 +246,7 @@ describe('PersonalBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       const result = await PersonalBudgetService.updateBudget(
         currentBudget.id,
@@ -242,7 +266,7 @@ describe('PersonalBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       const result = await PersonalBudgetService.setActiveBudget('budget-2');
 
@@ -260,37 +284,34 @@ describe('PersonalBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       await expect(
         PersonalBudgetService.deleteBudget('budget-1')
       ).resolves.not.toThrow();
     });
 
-    it('should throw error when trying to delete active budget', async () => {
+    it('should activate another version before deleting the active budget', async () => {
       const activeBudget = { ...mockPersonalBudget, is_active: true };
-      const allBudgets = [activeBudget, { ...mockPersonalBudget, id: 'budget-2', is_active: false }];
+      const otherBudget = { ...mockPersonalBudget, id: 'budget-2', is_active: false };
 
-      // Need to handle multiple calls: getBudgetHistory (returns array), getBudgetById (returns single), setActiveBudget, and delete
-      let callCount = 0;
-      vi.mocked(supabase.from).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First call: getBudgetHistory - returns array
-          return createMockChain({ data: allBudgets, error: null });
-        } else if (callCount === 2) {
-          // Second call: getBudgetById - returns single object
-          return createMockChain({ data: activeBudget, error: null });
-        } else {
-          // Subsequent calls: setActiveBudget operations and delete
-          return createMockChain({ error: null });
-        }
+      // personal_budgets calls in order: getBudgetHistory, getBudgetById, then the
+      // writes (deactivate all, activate budget-2, delete budget-1)
+      const writes = createMockChain({ data: { ...otherBudget, is_active: true }, error: null });
+      mockTables({
+        personal_budgets: [
+          createMockChain({ data: [activeBudget, otherBudget], error: null }),
+          createMockChain({ data: activeBudget, error: null }),
+          writes,
+        ],
       });
 
-      // Should throw because it's an active budget, but will activate another first
-      await expect(
-        PersonalBudgetService.deleteBudget('budget-1')
-      ).resolves.not.toThrow();  // Actually doesn't throw, it activates another budget first
+      await expect(PersonalBudgetService.deleteBudget('budget-1')).resolves.toBeUndefined();
+
+      expect(writes.update).toHaveBeenCalledWith({ is_active: true });
+      expect(writes.eq).toHaveBeenCalledWith('id', 'budget-2');
+      expect(writes.delete).toHaveBeenCalled();
+      expect(writes.eq).toHaveBeenCalledWith('id', 'budget-1');
     });
   });
 
@@ -303,7 +324,7 @@ describe('PersonalBudgetService', () => {
         error: null,
       });
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain);
+      mockTables({ personal_budgets: mockChain });
 
       const result = await PersonalBudgetService.migrateFromLegacyConfig(
         mockBudgetConfig

@@ -1,0 +1,8 @@
+# Keep secrets and host-built files out of the image: the Dockerfile's `COPY . .`
+# would otherwise bake .env.scraper (service role key, ENCRYPTION_KEY) into a layer
+# and overwrite the container's node_modules with the host's.
+.env*
+node_modules
+dist
+npm-debug.log*
+.DS_Store
