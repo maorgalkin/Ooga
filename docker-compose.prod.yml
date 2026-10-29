@@ -1,5 +1,5 @@
-# Production compose — for use on Hetzner (or any Linux VPS)
-# Usage: docker compose -f docker-compose.prod.yml up -d
+# Production compose — runs on the Vultr server (Tel Aviv) at /opt/ooga
+# Usage: docker compose -f docker-compose.prod.yml up -d --build   (or /deploy-scraper)
 #
 # Differences from docker-compose.yml (dev):
 #   - No SYS_ADMIN cap or seccomp:unconfined (not needed; Puppeteer uses --no-sandbox)

@@ -32,8 +32,6 @@ const API_KEY = process.env.SCRAPER_API_KEY;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) ?? [
   'https://haooga.com',
   'https://www.haooga.com',
-  'https://galfin.vercel.app',
-  'https://ooga.vercel.app',
   'http://localhost:5173',
 ];
 

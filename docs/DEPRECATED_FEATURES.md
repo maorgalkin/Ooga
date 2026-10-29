@@ -274,6 +274,7 @@ The app previously used a Vercel serverless function (`/api/connections`) to man
 - `api-src/` (TypeScript sources)
 - `build-api.mjs`
 - `vercel.json`
+- `lib/` (`supabase-admin.ts`, `crypto-utils.ts`, `bank-helpers.ts`: helpers only those handlers used), `.env.relay.example` and the `@vercel/node` dev dependency, removed in October 2026
 
 ### Environment Variables Removed
 - `SUPABASE_SERVICE_ROLE_KEY` (server-side)
@@ -289,3 +290,17 @@ The app previously used a Vercel serverless function (`/api/connections`) to man
 
 ---
 
+## Dev Tools Page and Dummy Data Seeder (Removed: October 2026)
+
+### Summary
+`/dev-tools` (`src/pages/DevTools.tsx`) had two buttons backed by `src/utils/dummyDataSeeder.ts`: one seeded a year of synthetic transactions and budgets for analytics testing, the other cleared them.
+
+### Why It Was Removed
+1. **It deleted real data.** Both actions deleted *all* of the signed-in user's transactions for the current year (filtered only by `user_id` and date), not just synthetic ones. Seeding ran without a confirmation.
+2. **It was reachable in production.** The route was registered for every signed-in user, unlinked but one URL away.
+3. **It no longer matched the schema.** It wrote `active` instead of `is_active`, a `'YYYY-MM'` month string instead of `year`/`month` integers, and no `household_id`, so seeding failed after the deletion had already run.
+
+### If It's Needed Again
+Seed a separate Supabase project, never production: the integration-test helpers in `tests/integration/helpers/` already create households, budgets and transactions against a test project. Synthetic rows should carry a marker (e.g. `source = 'seed'`) so clearing them can't touch real data. The dashboard's own sample-data controls (`DummyDataControls`) are unaffected.
+
+---

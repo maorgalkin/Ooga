@@ -93,10 +93,10 @@ Scraper will be available at `http://localhost:3001`.
 Add to `.env.local`:
 
 ```
-VITE_SCRAPER_SERVICE_URL=http://localhost:3001
+VITE_SCRAPER_URL=http://localhost:3001
 ```
 
-Access the app at `http://localhost:5173` (bank import requires local dev — see below).
+Without it, the app uses the production scraper at `https://api.haooga.com`. Access the app at `http://localhost:5173`.
 
 ### 6. Connect your accounts
 
@@ -120,7 +120,7 @@ All imported transactions are assigned **Uncategorized** and `source = 'bank_imp
 
 ## Production Deployment
 
-The scraper service is a standard Docker container deployable to Railway, Fly.io, Render, or a VPS.
+The scraper service runs as a Docker container on a Vultr server in Tel Aviv, behind nginx with HTTPS at `https://api.haooga.com`. The web app calls it there by default. See [SCRAPER_DEPLOY.md](SCRAPER_DEPLOY.md) for the server layout and the deploy routine (`/deploy-scraper` in Claude Code).
 
 ### Environment variables (production)
 
@@ -130,13 +130,12 @@ The scraper service is a standard Docker container deployable to Railway, Fly.io
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (bypasses RLS) |
 | `ENCRYPTION_KEY` | 64-character hex string — generate with `openssl rand -hex 32` |
 | `SCRAPER_API_KEY` | Optional bearer token to protect the scraper endpoints |
+| `ALLOWED_ORIGINS` | Optional CORS allow-list (comma-separated). Defaults to haooga.com, www.haooga.com and localhost:5173 |
 | `PORT` | Default: `3001` |
 
-### Why bank import requires local dev (for now)
+### Pointing the web app at a scraper
 
-The app is deployed on Vercel (HTTPS). Calling an HTTP Docker service from an HTTPS page is blocked by browser mixed-content rules. Solutions:
-- **Local**: Access via `http://localhost:5173` with `VITE_SCRAPER_SERVICE_URL=http://localhost:3001`
-- **Production**: Deploy the Docker service with HTTPS (Railway/Fly.io provide this automatically) and set `VITE_SCRAPER_SERVICE_URL` on Vercel
+The web app reads `VITE_SCRAPER_URL` and defaults to `https://api.haooga.com`. For local development, run the scraper with `docker compose up --build` and set `VITE_SCRAPER_URL=http://localhost:3001` in `.env.local`.
 
 ---
 
