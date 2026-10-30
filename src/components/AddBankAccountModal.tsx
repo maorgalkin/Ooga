@@ -18,6 +18,8 @@ type Provider = {
   label: string;
   icon: 'bank' | 'card';
   fields: CredentialField[];
+  /** Imports work end to end. The rest stay listed as "Coming soon" so people can see what's planned. */
+  available?: boolean;
 };
 
 type CredentialField = {
@@ -34,6 +36,7 @@ const PROVIDERS: Provider[] = [
     id: 'discount',
     label: 'Discount Bank',
     icon: 'bank',
+    available: true,
     fields: [
       { key: 'id', label: 'National ID (ת.ז.)', placeholder: '123456789', type: 'text', inputMode: 'numeric' },
       { key: 'password', label: 'Password', placeholder: '••••••••', type: 'password' },
@@ -53,6 +56,7 @@ const PROVIDERS: Provider[] = [
     id: 'visaCalFast',
     label: 'Visa Cal (SMS code)',
     icon: 'card',
+    available: true,
     fields: [
       { key: 'id', label: 'National ID (ת.ז.)', placeholder: '123456789', type: 'text', inputMode: 'numeric' },
       { key: 'last4Digits', label: 'Last 4 digits of card', placeholder: '1234', type: 'text', inputMode: 'numeric', hint: 'Signing in needs an SMS code. Your phone gets one during import.' },
@@ -168,13 +172,19 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                 <button
                   key={p.id}
                   onClick={() => handleSelectProvider(p)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
+                  disabled={!p.available}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 enabled:hover:border-blue-400 enabled:hover:bg-blue-50 dark:enabled:hover:bg-blue-900/20 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-left"
                 >
                   {p.icon === 'bank'
                     ? <Building2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
                     : <CreditCard className="w-5 h-5 text-purple-600 flex-shrink-0" />
                   }
                   <span className="text-sm font-medium text-gray-900 dark:text-white">{p.label}</span>
+                  {!p.available && (
+                    <span className="ml-auto text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
+                      Coming soon
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

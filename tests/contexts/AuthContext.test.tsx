@@ -13,6 +13,7 @@ import { supabase } from '../../src/lib/supabase';
 vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     auth: {
+      initialize: vi.fn(async () => ({ error: null })),
       getSession: vi.fn(),
       onAuthStateChange: vi.fn(),
       signUp: vi.fn(),

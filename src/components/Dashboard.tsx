@@ -467,7 +467,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <p className={getSubheadingColor('purple')}>
-                    {household?.name ? `${household.name}'s budget at a glance` : 'Your monthly budget at a glance'}
+                    {household?.name ? `Budget at a glance · ${household.name}` : 'Your monthly budget at a glance'}
                   </p>
                   <button
                     onClick={() => setIsHouseholdSettingsModalOpen(true)}

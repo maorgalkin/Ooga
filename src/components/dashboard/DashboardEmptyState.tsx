@@ -1,7 +1,7 @@
 // DashboardEmptyState — shown when no transactions exist for the current month.
 // Features day-of-month aware messaging and previous month performance summary.
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Plus, TrendingUp, TrendingDown, CheckCircle, AlertTriangle, Target, Sparkles, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Transaction } from '../../types';
@@ -9,6 +9,8 @@ import type { PersonalBudget } from '../../types/budget';
 import type { BudgetConfiguration } from '../../types';
 import { budgetService } from '../../services/budgetService';
 import { getUserLocale } from '../../utils/locale';
+import { useFinance } from '../../context/FinanceContext';
+import BankImportModal from '../BankImportModal';
 
 interface DashboardEmptyStateProps {
   monthDate: Date;
@@ -143,6 +145,8 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
   isPastMonth = false,
 }) => {
   const navigate = useNavigate();
+  const { refreshTransactions } = useFinance();
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const day = monthDate.getDate();
   const monthName = monthDate.toLocaleDateString(getUserLocale(), { month: 'long' });
@@ -204,7 +208,7 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
               Add transaction
             </button>
             <button
-              onClick={() => navigate('/?tab=transactions')}
+              onClick={() => setShowImportModal(true)}
               className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors font-medium"
             >
               <Upload className="h-4 w-4" />
@@ -321,15 +325,23 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
             <li>
               Use{' '}
               <button
-                onClick={() => navigate('/?tab=transactions')}
+                onClick={() => setShowImportModal(true)}
                 className="underline hover:text-purple-900 dark:hover:text-purple-100"
               >
                 Import
               </button>{' '}
-              to bulk-load from a bank export
+              to bring in transactions from a connected account
             </li>
           </ul>
         </div>
+      )}
+
+      {showImportModal && (
+        <BankImportModal
+          onClose={() => setShowImportModal(false)}
+          onAddAccount={() => navigate('/?tab=budget&subtab=settings')}
+          onImportComplete={() => { void refreshTransactions(); }}
+        />
       )}
     </div>
   );

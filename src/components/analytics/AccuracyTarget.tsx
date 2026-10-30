@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import type { CategoryAccuracy } from '../../types/analytics';
 import { ACCURACY_ZONE_STYLES } from '../../types/analytics';
 import { categoryAccuracyService } from '../../services/categoryAccuracyService';
+import { formatCurrencyFromSettings, type CurrencySettings } from '../../utils/formatCurrency';
 
 interface AccuracyTargetProps {
   accuracy: CategoryAccuracy;
   size?: number; // Size in pixels
-  currency?: string;
+  globalSettings?: CurrencySettings;
 }
 
 /**
@@ -16,7 +17,7 @@ interface AccuracyTargetProps {
 export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
   accuracy,
   size = 180,
-  currency = '$',
+  globalSettings,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   
@@ -56,10 +57,7 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
   const zoneStyle = ACCURACY_ZONE_STYLES[accuracy.accuracyZone];
   const performanceLabel = categoryAccuracyService.getPerformanceLabel(accuracy.accuracyZone);
 
-  // Format currency values
-  const formatCurrency = (value: number) => {
-    return `${currency}${value.toFixed(0)}`;
-  };
+  const formatCurrency = (value: number) => formatCurrencyFromSettings(value, globalSettings);
 
   return (
     <div 

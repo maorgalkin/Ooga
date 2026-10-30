@@ -720,6 +720,39 @@ export class PersonalBudgetService {
       throw error;
     }
   }
+
+  /**
+   * Add a newly created expense category to the active personal budget.
+   * The transaction forms list categories from the active budget, so a category that only
+   * exists in the categories table can't be picked there. Does nothing when there is no
+   * active budget or the budget already lists the category.
+   */
+  static async addCategoryToActiveBudget(categoryName: string, config: CategoryConfig): Promise<void> {
+    const budget = await PersonalBudgetService.getActiveBudget();
+    if (!budget) return;
+
+    const active = budget.global_settings?.activeExpenseCategories ?? [];
+    // Own keys only: a category named "constructor" must not match Object.prototype
+    const existing = Object.hasOwn(budget.categories ?? {}, categoryName) ? budget.categories[categoryName] : undefined;
+    if (existing && active.includes(categoryName)) return;
+
+    const { error } = await supabase
+      .from('personal_budgets')
+      .update({
+        categories: { ...budget.categories, [categoryName]: existing ?? config },
+        global_settings: {
+          ...budget.global_settings,
+          activeExpenseCategories: active.includes(categoryName) ? active : [...active, categoryName],
+        },
+      })
+      .eq('id', budget.id)
+      .eq('household_id', budget.household_id);
+
+    if (error) {
+      console.error('Error adding category to the active budget:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

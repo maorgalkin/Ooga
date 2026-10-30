@@ -9,6 +9,8 @@ import { BuildInfo } from './components/BuildInfo';
 import { BackToTop } from './components/BackToTop';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import { BrandBackdrop, BrandLogo } from './components/info/BrandBar';
 import AboutPage from './pages/info/AboutPage';
 import GuidePage from './pages/info/GuidePage';
@@ -131,6 +133,9 @@ function App() {
               {/* Public routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              {/* Public: the reset email's link signs the person in on arrival */}
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/guide" element={<GuidePage />} />
               <Route path="/guide/:chapter" element={<GuidePage />} />

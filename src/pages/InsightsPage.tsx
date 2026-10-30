@@ -138,7 +138,6 @@ export const InsightsPage: React.FC = () => {
             <CategoryAccuracyChart
               transactions={transactions}
               personalBudget={activeBudget}
-              currency={activeBudget?.global_settings?.currency || '$'}
               selectedRange={dateRange}
               onScrollToDateRange={() => {
                 dateRangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -174,7 +173,7 @@ export const InsightsPage: React.FC = () => {
           <div className="p-4 sm:p-6">
             <HouseholdMemberExpenses
               selectedRange={dateRange}
-              currency={activeBudget?.global_settings?.currency || '₪'}
+              globalSettings={activeBudget?.global_settings}
             />
           </div>
         </div>

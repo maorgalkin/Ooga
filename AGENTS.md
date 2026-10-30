@@ -52,6 +52,8 @@ App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → Bank
 ├── /login — landing page: hero, sign-in card, feature cards, "How it works" clips
 │            (components/info/LandingSections)
 ├── /register
+├── /forgot-password → pages/auth/ForgotPassword (sends the reset email)
+├── /reset-password → pages/auth/ResetPassword (the email's link lands here, signed in)
 └── Public, signed in or out:
     ├── /about → pages/info/AboutPage
     └── /guide, /guide/:chapter → pages/info/GuidePage (household, budget, transactions,

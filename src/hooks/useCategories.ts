@@ -59,9 +59,28 @@ export function useCreateCategory() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (input: CategoryCreateInput) => categoryService.createCategory(input),
+    mutationFn: async (input: CategoryCreateInput) => {
+      const created = await categoryService.createCategory(input);
+      // The transaction forms read categories from the active budget, not the categories table
+      // The category already exists at this point, so a failed sync must not report the create
+      // as failed: a retry would only hit the duplicate-name check
+      if (created.type === 'expense' && created.isActive) {
+        try {
+          await PersonalBudgetService.addCategoryToActiveBudget(created.name, {
+            monthlyLimit: created.monthlyLimit,
+            warningThreshold: created.warningThreshold,
+            isActive: true,
+            color: created.color,
+          });
+        } catch (error) {
+          console.error('Category created but not added to the active budget:', error);
+        }
+      }
+      return created;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: categoryKeys.list() });
+      queryClient.invalidateQueries({ queryKey: ['personalBudget'] });
     },
   });
 }
