@@ -33,6 +33,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { EditLimitModal } from '../categories/EditLimitModal';
 import { formatCurrencyFromSettings } from '../../utils/formatCurrency';
 import { getUserLocale } from '../../utils/locale';
+import { useT } from '../../hooks/useT';
 import {
   getHeaderGradient,
   getTextColor,
@@ -69,6 +70,7 @@ const BudgetHistoryCard: React.FC<BudgetHistoryCardProps> = ({
   isSettingActive,
   isDeleting,
 }) => {
+  const t = useT();
   const activeEntries = Object.values(budget.categories).filter(
     (c: CategoryConfig) => c.isActive
   );
@@ -95,13 +97,13 @@ const BudgetHistoryCard: React.FC<BudgetHistoryCardProps> = ({
             {archived && (
               <span className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded">
                 <Archive className="h-3 w-3" />
-                Archived
+                {t('budget.overview.archived')}
               </span>
             )}
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {activeEntries.length} {activeEntries.length === 1 ? 'category' : 'categories'} •{' '}
-            {formatCurrency(totalBudget)} total
+            {t('budget.overview.categoryCount', { count: activeEntries.length })} •{' '}
+            {t('budget.overview.total', { amount: formatCurrency(totalBudget) })}
           </p>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1">
             <Clock className="h-3 w-3" />
@@ -117,7 +119,7 @@ const BudgetHistoryCard: React.FC<BudgetHistoryCardProps> = ({
             onClick={onSetActive}
             disabled={isSettingActive}
             className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded transition-colors"
-            title="Restore this version as active"
+            title={t('budget.overview.restore')}
           >
             {isSettingActive ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -129,7 +131,7 @@ const BudgetHistoryCard: React.FC<BudgetHistoryCardProps> = ({
             onClick={onDelete}
             disabled={isDeleting}
             className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-            title="Delete this version"
+            title={t('budget.overview.deleteVersion')}
           >
             {isDeleting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -146,6 +148,7 @@ const BudgetHistoryCard: React.FC<BudgetHistoryCardProps> = ({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export const BudgetOverviewTab: React.FC = () => {
+  const t = useT();
   const { data: activeBudget, isLoading } = useActiveBudget();
   const { data: currentMonthBudget } = useCurrentMonthBudget();
   const { data: budgetHistory = [] } = usePersonalBudgetHistory();
@@ -346,13 +349,12 @@ export const BudgetOverviewTab: React.FC = () => {
                 v{activeBudget.version}
               </span>
               <span className={`text-sm opacity-80 ${getTextColor(THEME)}`}>
-                {activeCategories.length}{' '}
-                {activeCategories.length === 1 ? 'category' : 'categories'}
+                {t('budget.overview.categoryCount', { count: activeCategories.length })}
               </span>
             </div>
           </div>
           <div className="text-end flex-shrink-0">
-            <p className={`text-xs opacity-60 ${getTextColor(THEME)}`}>Last updated</p>
+            <p className={`text-xs opacity-60 ${getTextColor(THEME)}`}>{t('budget.overview.lastUpdated')}</p>
             <p className="text-sm font-medium">
               {new Date(activeBudget.updated_at).toLocaleDateString(getUserLocale(), {
                 day: 'numeric',
@@ -369,16 +371,16 @@ export const BudgetOverviewTab: React.FC = () => {
         {(
           [
             {
-              label: 'Monthly budget',
+              label: t('budget.overview.monthlyBudget'),
               value: formatCurrency(totalBudget),
-              sub: `${activeCategories.length} categories`,
+              sub: t('budget.overview.categories', { count: activeCategories.length }),
               icon: DollarSign,
               color: 'text-gray-900 dark:text-gray-100',
             },
             {
-              label: 'Month spent',
+              label: t('budget.overview.monthSpent'),
               value: formatCurrency(totalSpent),
-              sub: `${Math.round(usagePct)}% used`,
+              sub: t('budget.overview.percentUsed', { percent: Math.round(usagePct) }),
               icon: TrendingDown,
               color:
                 usagePct >= 90
@@ -388,9 +390,9 @@ export const BudgetOverviewTab: React.FC = () => {
                   : 'text-green-600 dark:text-green-400',
             },
             {
-              label: 'Remaining',
+              label: t('budget.overview.remaining'),
               value: formatCurrency(Math.abs(remaining)),
-              sub: remaining >= 0 ? 'under budget' : 'over budget',
+              sub: remaining >= 0 ? t('dashboard.tiles.underBudget') : t('dashboard.tiles.overBudget'),
               icon: remaining >= 0 ? TrendingUp : TrendingDown,
               color:
                 remaining >= 0
@@ -414,7 +416,7 @@ export const BudgetOverviewTab: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 px-5 py-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Overall usage
+            {t('budget.overview.overallUsage')}
           </span>
           <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
             {Math.round(usagePct)}%
@@ -427,8 +429,8 @@ export const BudgetOverviewTab: React.FC = () => {
           />
         </div>
         <div className="flex justify-between mt-1.5">
-          <span className="text-xs text-gray-400">{formatCurrency(totalSpent)} spent</span>
-          <span className="text-xs text-gray-400">{formatCurrency(totalBudget)} budget</span>
+          <span className="text-xs text-gray-400">{t('budget.overview.spent', { amount: formatCurrency(totalSpent) })}</span>
+          <span className="text-xs text-gray-400">{t('budget.overview.budgetAmount', { amount: formatCurrency(totalBudget) })}</span>
         </div>
       </div>
 
@@ -440,7 +442,7 @@ export const BudgetOverviewTab: React.FC = () => {
             <BarChart2 className={`h-4 w-4 ${getIconColor(THEME)} flex-shrink-0`} />
             <div className="flex-1 min-w-0">
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Category
+                {t('budget.overview.category')}
               </label>
               <div className="relative">
                 <select
@@ -466,7 +468,7 @@ export const BudgetOverviewTab: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors flex-shrink-0"
               >
                 <Pencil className="h-3 w-3" />
-                Edit
+                {t('common.edit')}
               </button>
             )}
           </div>
@@ -490,7 +492,7 @@ export const BudgetOverviewTab: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  of {formatCurrency(selectedCategoryDetail.limit)} limit
+                  {t('budget.overview.ofLimit', { amount: formatCurrency(selectedCategoryDetail.limit) })}
                 </span>
               </div>
               <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -503,13 +505,10 @@ export const BudgetOverviewTab: React.FC = () => {
               </div>
               <div className="flex justify-between mt-1.5">
                 <span className="text-xs text-gray-400">
-                  {Math.round(selectedCategoryDetail.pct)}% used
+                  {t('budget.overview.percentUsed', { percent: Math.round(selectedCategoryDetail.pct) })}
                 </span>
                 <span className="text-xs text-gray-400">
-                  {formatCurrency(
-                    Math.max(0, selectedCategoryDetail.limit - selectedCategoryDetail.spent)
-                  )}{' '}
-                  remaining
+                  {t('budget.overview.amountRemaining', { amount: formatCurrency(Math.max(0, selectedCategoryDetail.limit - selectedCategoryDetail.spent)) })}
                 </span>
               </div>
             </div>
@@ -525,13 +524,13 @@ export const BudgetOverviewTab: React.FC = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingDown className={`h-4 w-4 ${getIconColor(THEME)}`} />
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Biggest expense
+                    {t('budget.overview.biggestExpense')}
                   </span>
                 </div>
                 {selectedCategoryDetail.biggestExpense ? (
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">
-                      {selectedCategoryDetail.biggestExpense.description || 'Unnamed'}
+                      {selectedCategoryDetail.biggestExpense.description || t('budget.overview.unnamed')}
                     </p>
                     <p className={`text-2xl font-bold mt-0.5 ${getIconColor(THEME)}`}>
                       {formatCurrency(selectedCategoryDetail.biggestExpense.amount)}
@@ -546,7 +545,7 @@ export const BudgetOverviewTab: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-400 italic">No expenses this month</p>
+                  <p className="text-sm text-gray-400 italic">{t('budget.overview.noExpenses')}</p>
                 )}
               </div>
 
@@ -559,7 +558,7 @@ export const BudgetOverviewTab: React.FC = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle className={`h-4 w-4 ${getIconColor(THEME)}`} />
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Limit met
+                    {t('budget.overview.limitMet')}
                   </span>
                 </div>
                 {selectedCategoryDetail.limitHistory.some((m) => m.spent > 0) ? (
@@ -587,7 +586,7 @@ export const BudgetOverviewTab: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-400 italic">No history yet</p>
+                  <p className="text-sm text-gray-400 italic">{t('budget.overview.noHistory')}</p>
                 )}
               </div>
             </div>
@@ -598,7 +597,7 @@ export const BudgetOverviewTab: React.FC = () => {
                 <div className="flex items-center gap-2 mb-2.5">
                   <Repeat className={`h-4 w-4 ${getIconColor(THEME)}`} />
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Recurring (last 3 months)
+                    {t('budget.overview.recurring')}
                   </span>
                 </div>
                 <div className="space-y-1.5">
@@ -613,7 +612,7 @@ export const BudgetOverviewTab: React.FC = () => {
                         </span>
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-gray-400">
-                            {monthCount}/3 mo
+                            {t('budget.overview.monthsOf3', { count: monthCount })}
                           </span>
                           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                             ~{formatCurrency(avgAmount)}
@@ -628,7 +627,7 @@ export const BudgetOverviewTab: React.FC = () => {
           </div>
         ) : (
           <div className="p-8 text-center text-gray-400 italic">
-            No active categories configured
+            {t('budget.overview.noCategories')}
           </div>
         )}
       </div>
@@ -642,7 +641,7 @@ export const BudgetOverviewTab: React.FC = () => {
             )} mb-3 flex items-center gap-2`}
           >
             <Clock className="h-4 w-4" />
-            Previous versions
+            {t('budget.overview.previousVersions')}
           </h3>
           <div className="space-y-2">
             {recentHistory.map((b) => (
@@ -652,11 +651,11 @@ export const BudgetOverviewTab: React.FC = () => {
                 archived={isArchived(b)}
                 formatCurrency={formatCurrency}
                 onSetActive={() =>
-                  setActive.mutateAsync(b.id).catch(() => alert('Failed to set active'))
+                  setActive.mutateAsync(b.id).catch(() => alert(t('budget.overview.setActiveFailed')))
                 }
                 onDelete={() => {
-                  if (confirm('Delete this budget version?')) {
-                    deleteBudget.mutateAsync(b.id).catch(() => alert('Failed to delete'));
+                  if (confirm(t('budget.overview.confirmDeleteVersion'))) {
+                    deleteBudget.mutateAsync(b.id).catch(() => alert(t('budget.overview.deleteFailed')));
                   }
                 }}
                 isSettingActive={setActive.isPending}
@@ -682,8 +681,7 @@ export const BudgetOverviewTab: React.FC = () => {
               <ChevronDown className="h-4 w-4" />
             )}
             <span>
-              {showOlderHistory ? 'Hide' : 'Show'} {olderHistory.length} older version
-              {olderHistory.length !== 1 ? 's' : ''}
+              {t(showOlderHistory ? 'budget.overview.hideOlder' : 'budget.overview.showOlder', { count: olderHistory.length })}
             </span>
           </button>
           {showOlderHistory && (
@@ -695,11 +693,11 @@ export const BudgetOverviewTab: React.FC = () => {
                   archived={isArchived(b)}
                   formatCurrency={formatCurrency}
                   onSetActive={() =>
-                    setActive.mutateAsync(b.id).catch(() => alert('Failed to set active'))
+                    setActive.mutateAsync(b.id).catch(() => alert(t('budget.overview.setActiveFailed')))
                   }
                   onDelete={() => {
-                    if (confirm('Delete this budget version?')) {
-                      deleteBudget.mutateAsync(b.id).catch(() => alert('Failed to delete'));
+                    if (confirm(t('budget.overview.confirmDeleteVersion'))) {
+                      deleteBudget.mutateAsync(b.id).catch(() => alert(t('budget.overview.deleteFailed')));
                     }
                   }}
                   isSettingActive={setActive.isPending}

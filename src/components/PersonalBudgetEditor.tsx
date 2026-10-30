@@ -9,6 +9,7 @@ import {
   useResetAllBudgets,
 } from '../hooks/useBudgets';
 import { getUserLocale } from '../utils/locale';
+import { useT } from '../hooks/useT';
 import { useFinance } from '../context/FinanceContext';
 import { 
   Plus, 
@@ -42,6 +43,7 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
   onSaveComplete,
   onCancelEdit,
 }) => {
+  const t = useT();
   const [isCreating, setIsCreating] = useState(false);
   const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
   const [budgetName, setBudgetName] = useState('');
@@ -95,7 +97,7 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
   const handleStartCreate = () => {
     setIsCreating(true);
     setEditingBudgetId(null);
-    setBudgetName('My Budget');
+    setBudgetName(t('budget.editor.defaultName'));
     setNotes('');
     
     // Initialize global settings and categories from active budget or defaults
@@ -110,12 +112,13 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
       setCurrency('ILS');
       setWarningNotifications(true);
       setEmailAlerts(false);
+      // Named in the language the budget is created in; existing budgets keep their names
       setCategories({
-        'Groceries': { monthlyLimit: 1500, warningThreshold: 80,  isActive: true },
-        'Transportation': { monthlyLimit: 600, warningThreshold: 80, isActive: true },
-        'Entertainment': { monthlyLimit: 400, warningThreshold: 80, isActive: true },
-        'Bills & Utilities': { monthlyLimit: 1000, warningThreshold: 80, isActive: true },
-        'Home & Garden': { monthlyLimit: 300, warningThreshold: 80, isActive: true },
+        [t('budget.editor.defaults.groceries')]: { monthlyLimit: 1500, warningThreshold: 80,  isActive: true },
+        [t('budget.editor.defaults.transportation')]: { monthlyLimit: 600, warningThreshold: 80, isActive: true },
+        [t('budget.editor.defaults.entertainment')]: { monthlyLimit: 400, warningThreshold: 80, isActive: true },
+        [t('budget.editor.defaults.bills')]: { monthlyLimit: 1000, warningThreshold: 80, isActive: true },
+        [t('budget.editor.defaults.home')]: { monthlyLimit: 300, warningThreshold: 80, isActive: true },
       });
     }
   };
@@ -150,12 +153,12 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
 
   const handleSave = async () => {
     if (!budgetName.trim()) {
-      alert('Please enter a budget name');
+      alert(t('budget.editor.enterName'));
       return;
     }
 
     if (Object.keys(categories).length === 0) {
-      alert('Please add at least one category');
+      alert(t('budget.editor.addOneCategory'));
       return;
     }
 
@@ -217,7 +220,7 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
       }
     } catch (error) {
       console.error('Error saving budget:', error);
-      alert('Failed to save budget');
+      alert(t('budget.editor.saveFailed'));
     }
   };
 
@@ -252,7 +255,7 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
       await setActive.mutateAsync(budgetId);
     } catch (error) {
       console.error('Error setting active budget:', error);
-      alert('Failed to set active budget');
+      alert(t('budget.editor.setActiveFailed'));
     }
   };
 
@@ -261,11 +264,11 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
     
     let message: string;
     if (isOnlyBudget) {
-      message = '⚠️ DELETE YOUR ONLY BUDGET ⚠️\n\nThis will return you to the initial setup state with no budget configured.\n\nYou will need to create a new budget to continue using the app.\n\nThis action cannot be undone.\n\nAre you sure?';
+      message = t('budget.editor.deleteOnly');
     } else if (isActive) {
-      message = 'Are you sure you want to delete the ACTIVE budget?\n\nThis will permanently remove this budget and all its settings. Another budget will be automatically activated.\n\nThis action cannot be undone.';
+      message = t('budget.editor.deleteActiveConfirm');
     } else {
-      message = 'Are you sure you want to delete this budget?\n\nThis action cannot be undone.';
+      message = t('budget.editor.deleteOtherConfirm');
     }
     
     if (!confirm(message)) return;
@@ -274,40 +277,20 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
       await deleteBudget.mutateAsync(budgetId);
     } catch (error) {
       console.error('Error deleting budget:', error);
-      alert('Failed to delete budget');
+      alert(t('budget.editor.deleteFailed'));
     }
   };
 
   const handleResetConfiguration = async () => {
-    const message = `⚠️ RESET BUDGET CONFIGURATION ⚠️
-
-This will PERMANENTLY DELETE:
-• All your personal budgets (${history.length} budget${history.length !== 1 ? 's' : ''})
-• All budget configurations and settings
-
-You will also be asked about:
-• Monthly budgets (historical budget snapshots)
-• Transaction data (all your transactions)
-
-This will bring you back to the default state, as if you just created your account.
-
-Are you absolutely sure you want to continue?`;
+    const message = t('budget.editor.resetConfirm', { budgets: t('budget.editor.budgetCount', { count: history.length }) });
     
     if (!confirm(message)) return;
 
     // Ask about monthly budgets
-    const deleteMonthly = confirm(
-      'Do you also want to delete ALL monthly budgets?\n\n' +
-      'Monthly budgets are historical snapshots of your budgets for each month.\n\n' +
-      'Click OK to delete them, or Cancel to keep them.'
-    );
+    const deleteMonthly = confirm(t('budget.editor.deleteMonthlyQuestion'));
 
     // Ask about transactions
-    const deleteTransactions = confirm(
-      '⚠️ FINAL QUESTION: Do you want to delete ALL transactions?\n\n' +
-      'This will permanently remove all your transaction history.\n\n' +
-      'Click OK to delete ALL data, or Cancel to keep your transactions.'
-    );
+    const deleteTransactions = confirm(t('budget.editor.deleteTransactionsQuestion'));
 
     try {
       const result = await resetAllBudgets.mutateAsync({
@@ -315,18 +298,17 @@ Are you absolutely sure you want to continue?`;
         includeTransactions: deleteTransactions,
       });
 
-      let successMessage = `✅ Configuration reset complete!\n\n` +
-        `• ${result.budgetsDeleted} personal budget${result.budgetsDeleted !== 1 ? 's' : ''} deleted`;
+      let successMessage = t('budget.editor.resetDone', { budgets: t('budget.editor.personalBudgets', { count: result.budgetsDeleted }) });
       
       if (result.monthlyBudgetsDeleted !== undefined) {
-        successMessage += `\n• ${result.monthlyBudgetsDeleted} monthly budget${result.monthlyBudgetsDeleted !== 1 ? 's' : ''} deleted`;
+        successMessage += t('budget.editor.monthlyDeleted', { count: result.monthlyBudgetsDeleted });
       }
       
       if (result.transactionsDeleted !== undefined) {
-        successMessage += `\n• ${result.transactionsDeleted} transaction${result.transactionsDeleted !== 1 ? 's' : ''} deleted`;
+        successMessage += t('budget.editor.transactionsDeleted', { count: result.transactionsDeleted });
       }
 
-      successMessage += '\n\nYou can now create a fresh budget!';
+      successMessage += t('budget.editor.resetTail');
 
       alert(successMessage);
       
@@ -335,7 +317,7 @@ Are you absolutely sure you want to continue?`;
       setEditingBudgetId(null);
     } catch (error) {
       console.error('Error resetting configuration:', error);
-      alert('Failed to reset configuration: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      alert(t('budget.editor.resetFailed', { error: error instanceof Error ? error.message : t('budget.editor.unknownError') }));
     }
   };
 
@@ -348,7 +330,7 @@ Are you absolutely sure you want to continue?`;
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          <span className="ms-3 text-gray-600 dark:text-gray-300">Loading budgets...</span>
+          <span className="ms-3 text-gray-600 dark:text-gray-300">{t('budget.editor.loading')}</span>
         </div>
       </div>
     );
@@ -361,10 +343,10 @@ Are you absolutely sure you want to continue?`;
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Personalize your budget
+              {t('budget.editor.title')}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Configure your budget categories and monthly limits
+              {t('budget.editor.subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -374,17 +356,17 @@ Are you absolutely sure you want to continue?`;
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
               >
                 <Plus className="h-4 w-4 me-2" />
-                Create budget
+                {t('budget.editor.create')}
               </button>
             )}
             {!isCreating && !editingBudgetId && history.length > 0 && (
               <button
                 onClick={handleResetConfiguration}
                 className="flex items-center px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
-                title="Reset all budget configuration - delete everything"
+                title={t('budget.editor.resetTitle')}
               >
                 <RotateCcw className="h-4 w-4 me-2" />
-                Reset all
+                {t('budget.editor.resetAll')}
               </button>
             )}
           </div>
@@ -398,13 +380,13 @@ Are you absolutely sure you want to continue?`;
             {/* Budget Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Budget name
+                {t('budget.editor.name')}
               </label>
               <input
                 type="text"
                 value={budgetName}
                 onChange={(e) => setBudgetName(e.target.value)}
-                placeholder="e.g., Summer 2025 Budget"
+                placeholder={t('budget.editor.namePlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
@@ -412,7 +394,7 @@ Are you absolutely sure you want to continue?`;
             {/* Categories Grid */}
             <div className="pt-4 border-t border-gray-300 dark:border-gray-600">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Budget categories
+                {t('budget.editor.categories')}
               </label>
               
               {/* Categories Grid - v3.0 CUSTOM CSS */}
@@ -439,13 +421,13 @@ Are you absolutely sure you want to continue?`;
                         </h4>
                       </div>
                       {!config.isActive && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">Inactive</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{t('budget.editor.inactive')}</span>
                       )}
                     </div>
                     
                     <div className="space-y-1">
                       <div className="flex justify-between items-baseline">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Limit</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{t('budget.editor.limit')}</span>
                         <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
                           {formatCurrency(config.monthlyLimit)}
                         </span>
@@ -453,7 +435,7 @@ Are you absolutely sure you want to continue?`;
                       
                       {config.warningThreshold && (
                         <div className="flex justify-between items-baseline">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Warning</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{t('budget.editor.warning')}</span>
                           <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400">
                             {config.warningThreshold}%
                           </span>
@@ -469,7 +451,7 @@ Are you absolutely sure you want to continue?`;
                     
                     <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
                       <span className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
-                        Click to edit →
+                        {t('budget.editor.clickToEdit')}
                       </span>
                     </div>
                   </div>
@@ -482,10 +464,10 @@ Are you absolutely sure you want to continue?`;
                 >
                   <Plus className="h-8 w-8 text-green-600 dark:text-green-400 mb-2" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Add category
+                    {t('budget.editor.addCategory')}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Click to create new
+                    {t('budget.editor.clickToCreate')}
                   </span>
                 </button>
               </div>
@@ -494,7 +476,7 @@ Are you absolutely sure you want to continue?`;
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Total monthly budget:
+                    {t('budget.editor.total')}
                   </span>
                   <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
                     {formatCurrency(totalBudget)}
@@ -506,12 +488,12 @@ Are you absolutely sure you want to continue?`;
             {/* Notes */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Notes (Optional)
+                {t('budget.editor.notes')}
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add notes about your budget configuration..."
+                placeholder={t('budget.editor.notesPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 rows={3}
               />
@@ -527,12 +509,12 @@ Are you absolutely sure you want to continue?`;
                 {createBudget.isPending || updateBudget.isPending ? (
                   <>
                     <Loader2 className="inline h-4 w-4 me-2 animate-spin" />
-                    Saving...
+                    {t('budget.editor.saving')}
                   </>
                 ) : (
                   <>
                     <Save className="inline h-4 w-4 me-2" />
-                    Save budget
+                    {t('budget.editor.save')}
                   </>
                 )}
               </button>
@@ -541,7 +523,7 @@ Are you absolutely sure you want to continue?`;
                 className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
               >
                 <X className="inline h-4 w-4 me-2" />
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -553,9 +535,9 @@ Are you absolutely sure you want to continue?`;
         {history.length === 0 ? (
           <div className="text-center py-12">
             <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600 dark:text-gray-400">No budget configured yet</p>
+            <p className="text-gray-600 dark:text-gray-400">{t('budget.editor.empty')}</p>
             <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-              Click "Create budget" to set up your first budget
+              {t('budget.editor.emptyHint')}
             </p>
           </div>
         ) : (
@@ -578,7 +560,7 @@ Are you absolutely sure you want to continue?`;
                         {budget.is_active && (
                           <span className="flex items-center text-xs bg-blue-600 text-white px-2 py-1 rounded">
                             <CheckCircle className="h-3 w-3 me-1" />
-                            Active
+                            {t('budget.editor.active')}
                           </span>
                         )}
                         <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -586,9 +568,7 @@ Are you absolutely sure you want to continue?`;
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {Object.keys(budget.categories).length} categories • {formatCurrency(
-                          Object.values(budget.categories).filter(cat => cat.isActive).reduce((sum, cat) => sum + cat.monthlyLimit, 0)
-                        )} total
+                        {t('budget.editor.summary', { count: Object.keys(budget.categories).length, amount: formatCurrency(Object.values(budget.categories).filter(cat => cat.isActive).reduce((sum, cat) => sum + cat.monthlyLimit, 0)) })}
                       </p>
                       {budget.notes && (
                         <p className="text-xs text-gray-500 dark:text-gray-500 mt-2 italic">
@@ -597,7 +577,7 @@ Are you absolutely sure you want to continue?`;
                       )}
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                         <Clock className="inline h-3 w-3 me-1" />
-                        Updated {new Date(budget.updated_at).toLocaleDateString(getUserLocale())}
+                        {t('budget.editor.updated', { date: new Date(budget.updated_at).toLocaleDateString(getUserLocale()) })}
                       </p>
                     </div>
 
@@ -608,7 +588,7 @@ Are you absolutely sure you want to continue?`;
                           onClick={() => handleSetActive(budget.id)}
                           disabled={setActive.isPending}
                           className="p-2 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-md transition-colors"
-                          title="Set as active"
+                          title={t('budget.editor.setActive')}
                         >
                           <Star className="h-4 w-4" />
                         </button>
@@ -616,7 +596,7 @@ Are you absolutely sure you want to continue?`;
                       <button
                         onClick={() => handleStartEdit(budget)}
                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-                        title="Edit"
+                        title={t('common.edit')}
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
@@ -624,7 +604,7 @@ Are you absolutely sure you want to continue?`;
                         onClick={() => handleDelete(budget.id, budget.is_active)}
                         disabled={deleteBudget.isPending}
                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                        title={budget.is_active ? "Delete active budget" : "Delete budget"}
+                        title={budget.is_active ? t('budget.editor.deleteActive') : t('budget.editor.deleteBudget')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -655,7 +635,7 @@ Are you absolutely sure you want to continue?`;
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-800">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {isAddingCategory ? 'Add category' : `Edit ${editingCategory}`}
+                {isAddingCategory ? t('budget.editor.addCategory') : t('budget.editor.editCategoryTitle', { name: editingCategory })}
               </h3>
               <button
                 onClick={() => {
@@ -679,13 +659,13 @@ Are you absolutely sure you want to continue?`;
                   {/* Category Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Category name *
+                      {t('budget.editor.categoryName')}
                     </label>
                     <input
                       type="text"
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
-                      placeholder="e.g., Groceries"
+                      placeholder={t('budget.editor.categoryNamePlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       autoFocus
                     />
@@ -694,7 +674,7 @@ Are you absolutely sure you want to continue?`;
                   {/* Monthly Limit */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Monthly limit ($) *
+                      {t('budget.editor.monthlyLimitRequired')}
                     </label>
                     <input
                       type="number"
@@ -710,7 +690,7 @@ Are you absolutely sure you want to continue?`;
                   {/* Color */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Color <span className="text-xs text-gray-500">(auto-selected for distinction)</span>
+                      {t('budget.editor.color')} <span className="text-xs text-gray-500">{t('budget.editor.colorAuto')}</span>
                     </label>
                     <div className="flex items-center gap-3 mb-3">
                       <input
@@ -724,7 +704,7 @@ Are you absolutely sure you want to continue?`;
                           className="h-12 rounded-md border border-gray-300 dark:border-gray-600 flex items-center justify-center text-sm font-medium shadow-sm"
                           style={{ backgroundColor: newCategoryColor, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
                         >
-                          Preview
+                          {t('budget.editor.preview')}
                         </div>
                       </div>
                     </div>
@@ -750,7 +730,7 @@ Are you absolutely sure you want to continue?`;
                                   : 'border-gray-300 dark:border-gray-600 hover:scale-110 hover:shadow-md cursor-pointer'
                             }`}
                             style={{ backgroundColor: color }}
-                            title={isUsed ? 'Color already in use' : 'Select this color'}
+                            title={isUsed ? t('budget.editor.colorUsed') : t('budget.editor.selectColor')}
                           />
                         );
                       })}
@@ -762,16 +742,16 @@ Are you absolutely sure you want to continue?`;
                     <button
                       onClick={() => {
                         if (!newCategoryName.trim()) {
-                          alert('Please enter a category name');
+                          alert(t('budget.editor.enterCategoryName'));
                           return;
                         }
                         const limit = parseFloat(newCategoryLimit);
                         if (isNaN(limit) || limit < 0) {
-                          alert('Please enter a valid limit');
+                          alert(t('budget.editor.validLimit'));
                           return;
                         }
                         if (categories[newCategoryName]) {
-                          alert('Category already exists');
+                          alert(t('budget.editor.categoryExists'));
                           return;
                         }
                         
@@ -792,7 +772,7 @@ Are you absolutely sure you want to continue?`;
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                     >
                       <Plus className="inline h-4 w-4 me-2" />
-                      Add category
+                      {t('budget.editor.addCategory')}
                     </button>
                     <button
                       onClick={() => {
@@ -803,7 +783,7 @@ Are you absolutely sure you want to continue?`;
                       }}
                       className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </>
@@ -815,7 +795,7 @@ Are you absolutely sure you want to continue?`;
                     {/* Color Picker */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Color
+                        {t('budget.editor.color')}
                       </label>
                       <input
                         type="color"
@@ -828,7 +808,7 @@ Are you absolutely sure you want to continue?`;
                     {/* Monthly Limit */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Monthly limit ({currency === 'USD' ? '$' : currency === 'ILS' ? '₪' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '¥'})
+                        {t('budget.editor.monthlyLimit', { symbol: currency === 'USD' ? '$' : currency === 'ILS' ? '₪' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '¥' })}
                       </label>
                       <input
                         type="number"
@@ -846,7 +826,7 @@ Are you absolutely sure you want to continue?`;
                   {/* Warning Threshold */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Warning threshold (%)
+                      {t('budget.editor.threshold')}
                     </label>
                     <div className="flex items-center gap-3">
                       <input
@@ -869,12 +849,12 @@ Are you absolutely sure you want to continue?`;
                   {/* Description */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Description (Optional)
+                      {t('budget.editor.descriptionOptional')}
                     </label>
                     <textarea
                       value={categories[editingCategory]?.description || ''}
                       onChange={(e) => handleUpdateCategory(editingCategory, 'description', e.target.value)}
-                      placeholder="e.g., Groceries, household items, and food"
+                      placeholder={t('budget.editor.descriptionPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                       rows={3}
                     />
@@ -884,7 +864,7 @@ Are you absolutely sure you want to continue?`;
                   <div className="space-y-2">
                     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Active category
+                        {t('budget.editor.activeCategory')}
                       </span>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -918,7 +898,7 @@ Are you absolutely sure you want to continue?`;
                       <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 px-3">
                         <AlertCircle className="h-3 w-3" />
                         <span>
-                          Cannot deactivate: This category has {transactions.filter(t => t.category === editingCategory).length} transaction{transactions.filter(t => t.category === editingCategory).length !== 1 ? 's' : ''}
+                          {t('budget.editor.cannotDeactivate', { count: transactions.filter(tx => tx.category === editingCategory).length })}
                         </span>
                       </div>
                     )}
@@ -931,17 +911,17 @@ Are you absolutely sure you want to continue?`;
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                     >
                       <Save className="inline h-4 w-4 me-2" />
-                      Save changes
+                      {t('transactions.edit.saveChanges')}
                     </button>
                     <button
                       onClick={() => {
-                        if (confirm(`Are you sure you want to delete "${editingCategory}"?`)) {
+                        if (confirm(t('budget.editor.confirmDeleteCategory', { name: editingCategory }))) {
                           handleRemoveCategory(editingCategory);
                           setEditingCategory(null);
                         }
                       }}
                       className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                      title="Delete category"
+                      title={t('budget.editor.deleteCategory')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
