@@ -11,6 +11,9 @@ export type AddressAs = 'female' | 'male';
 
 const STORAGE_KEY = 'ooga.language';
 
+/** Each language named in its own script, so anyone can find theirs whatever is showing now. */
+export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', he: 'עברית' };
+
 export const isLanguage = (value: unknown): value is Language => LANGUAGES.includes(value as Language);
 
 /**

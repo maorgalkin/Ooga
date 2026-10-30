@@ -14,5 +14,108 @@
       "male": "Male",
       "saveError": "Couldn't save this choice. Check your connection and try again."
     }
+  },
+  "common": {
+    "loading": "Loading…",
+    "saving": "Saving…"
+  },
+  "nav": {
+    "help": "Help",
+    "addTransaction": "Add transaction",
+    "signOut": "Sign out",
+    "about": "About",
+    "guide": "Guide",
+    "openOoga": "Open Ooga",
+    "signIn": "Sign in",
+    "footer": "Footer"
+  },
+  "tabs": {
+    "dashboard": "Dashboard",
+    "transactions": "Transactions",
+    "budget": "Budget",
+    "insights": "Insights"
+  },
+  "auth": {
+    "fields": {
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password"
+    },
+    "errors": {
+      "invalidCredentials": "The email or password isn't right. Check them and try again.",
+      "emailNotConfirmed": "Confirm your email first: open the link we sent you, then sign in.",
+      "userExists": "There's already an account with this email. Sign in instead.",
+      "weakPassword": "Choose a stronger password.",
+      "rateLimited": "Too many tries. Wait a minute and try again.",
+      "signInFailed": "Couldn't sign you in. Check your connection and try again.",
+      "signUpFailed": "Couldn't create your account. Check your connection and try again."
+    },
+    "signIn": {
+      "heroTitle": "Your family's money, <highlight>finally clear</highlight>",
+      "heroBody": "Ooga brings everyone's spending into one budget, so you know where the money goes and stay in control of the bottom line every month.",
+      "title": "Welcome back",
+      "subtitle": "Sign in to your Ooga account",
+      "forgot": "Forgot your password?",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create account"
+    },
+    "register": {
+      "heroTitle": "Start your family's <highlight>budget</highlight>",
+      "heroBody": "Create your account, then set up a household and invite everyone who shares the money.",
+      "title": "Create account",
+      "subtitle": "It takes about a minute",
+      "firstName": "First name",
+      "firstNamePlaceholder": "e.g., Dana",
+      "lastName": "Last name",
+      "lastNamePlaceholder": "e.g., Levi",
+      "passwordHelp": "At least {{count}} characters.",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "errors": {
+        "firstName": "Enter your first name.",
+        "lastName": "Enter your last name.",
+        "passwordLength": "Use a password of at least {{count}} characters.",
+        "mismatch": "The passwords don't match. Type the same password in both fields."
+      },
+      "checkEmail": {
+        "title": "Check your email",
+        "body": "We sent a verification link to <strong>{{email}}</strong>",
+        "hint": "Open the link to activate your account, then sign in.",
+        "signIn": "Sign in"
+      }
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "body": "Enter your account's email and we'll send you a link to choose a new password.",
+      "email": "Email address",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "sent": "Check your email. If <strong>{{email}}</strong> has an Ooga account, a reset link is on its way.",
+      "error": "Couldn't send the reset email. Check the address and try again in a minute.",
+      "back": "Back to sign in"
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "expired": "This reset link has expired or was already used. Request a new one to continue.",
+      "requestNew": "Request a new link",
+      "newPassword": "New password",
+      "help": "At least {{count}} characters",
+      "confirm": "Confirm new password",
+      "submit": "Save new password",
+      "errors": {
+        "tooShort": "Use at least {{count}} characters.",
+        "mismatch": "The passwords don't match.",
+        "saveFailed": "Couldn't save your new password. Try again, or request a new reset link."
+      }
+    }
+  },
+  "brand": {
+    "tagline": "Take the Cake"
   }
 }

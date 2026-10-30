@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Languages } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { applyLanguage, isLanguage, type AddressAs, type Language } from '../../i18n';
+import { LANGUAGE_NAMES, applyLanguage, isLanguage, type AddressAs, type Language } from '../../i18n';
 import { readPreferences, savePreferences } from '../../services/preferencesService';
 
-// Each language is named in its own script, so anyone can find theirs whatever is showing now
-const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', he: 'עברית' };
 const ADDRESS_OPTIONS = ['neutral', 'female', 'male'] as const;
 
 /** A person's own language and Hebrew form of address, saved to their account. */
