@@ -1,0 +1,18 @@
+{
+  "language": {
+    "change": "Change language",
+    "settings": {
+      "title": "Language",
+      "description": "Ooga uses this language on every device you sign in on.",
+      "saveError": "Couldn't save your language. Check your connection and try again."
+    },
+    "addressAs": {
+      "title": "How Hebrew addresses you",
+      "description": "Hebrew wording can change with gender. This only affects Hebrew text, and neutral works for everyone.",
+      "neutral": "Neutral",
+      "female": "Female",
+      "male": "Male",
+      "saveError": "Couldn't save this choice. Check your connection and try again."
+    }
+  }
+}

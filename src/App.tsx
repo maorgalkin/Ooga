@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FinanceProvider } from './context/FinanceContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LanguageSync } from './i18n/LanguageSync';
 import Dashboard from './components/Dashboard';
 import AddTransaction from './components/AddTransaction';
 import { BuildInfo } from './components/BuildInfo';
@@ -129,6 +130,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <LanguageSync />
         <BrowserRouter>
           <FinanceProvider>
             <Routes>
