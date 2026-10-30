@@ -34,7 +34,7 @@ const Login: React.FC = () => {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden">
+      <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800" />
         <FloatingShapes />
         <div className="max-w-6xl mx-auto px-4 py-12 sm:py-16 grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:items-center">

@@ -90,7 +90,7 @@ export function LandingSections() {
       )}
 
       <section className="max-w-4xl mx-auto px-4 py-16">
-        <motion.div {...rise()} className="relative overflow-hidden rounded-3xl p-8 sm:p-10 text-center text-white shadow-xl">
+        <motion.div {...rise()} className="relative isolate overflow-hidden rounded-3xl p-8 sm:p-10 text-center text-white shadow-xl">
           <div className="absolute inset-0 -z-10 bg-gradient-to-r from-purple-600 via-blue-600 to-green-600" />
           <h2 className="text-2xl sm:text-3xl font-bold">New to Ooga?</h2>
           <p className="mt-3 text-white/90">Create your account in a minute; your household comes with it. The guide shows you every step.</p>
