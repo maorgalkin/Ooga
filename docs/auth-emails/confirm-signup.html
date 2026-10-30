@@ -1,0 +1,22 @@
+<!-- Supabase → Authentication → Emails → Confirm signup. Hebrew for accounts that signed up in Hebrew. See docs/AUTH_EMAILS.md. -->
+{{ if and .Data.language (eq .Data.language "he") }}
+<div dir="rtl" lang="he" style="font-family: Arial, Helvetica, sans-serif; color: #111827; max-width: 480px; margin: 0 auto; text-align: right;">
+  <h2 style="color: #6d28d9;">אישור החשבון ב־Ooga</h2>
+  <p>שלום,</p>
+  <p>נשאר רק לאשר את כתובת האימייל, ואז אפשר להתחבר ולהקים את משק הבית.</p>
+  <p style="margin: 24px 0;">
+    <a href="{{ .ConfirmationURL }}" style="background: #2563eb; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">אישור האימייל</a>
+  </p>
+  <p style="color: #6b7280; font-size: 13px;">לא ביקשת חשבון ב־Ooga? אפשר פשוט להתעלם מההודעה הזו.</p>
+</div>
+{{ else }}
+<div style="font-family: Arial, Helvetica, sans-serif; color: #111827; max-width: 480px; margin: 0 auto;">
+  <h2 style="color: #6d28d9;">Confirm your Ooga account</h2>
+  <p>Hi,</p>
+  <p>One step left: confirm your email, then sign in and set up your household.</p>
+  <p style="margin: 24px 0;">
+    <a href="{{ .ConfirmationURL }}" style="background: #2563eb; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">Confirm email</a>
+  </p>
+  <p style="color: #6b7280; font-size: 13px;">Didn't sign up for Ooga? You can ignore this email.</p>
+</div>
+{{ end }}

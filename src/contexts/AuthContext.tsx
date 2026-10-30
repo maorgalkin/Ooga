@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import i18n from '../i18n';
 
 interface AuthContextType {
   user: User | null;
@@ -103,6 +104,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             first_name: firstName,
             last_name: lastName,
             full_name: `${firstName} ${lastName}`,
+            // Names the household and picks the confirmation email's language (migration 040,
+            // docs/AUTH_EMAILS.md). English is the default, so only Hebrew is saved, as LanguageSync does.
+            ...(i18n.language === 'he' ? { language: 'he' } : {}),
           },
         },
       });
