@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useT } from '../hooks/useT';
 import { useSearchParams } from 'react-router-dom';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -43,6 +44,7 @@ import { getProjectedBankInstallments, getLastCommittedMonth } from '../utils/pr
 
 
 const Dashboard: React.FC = () => {
+  const t = useT();
   const { transactions, familyMembers, addTransaction, deleteTransaction } = useFinance();
   const { data: personalBudget } = useActiveBudget();
   const { data: monthlyBudget } = useCurrentMonthBudget();
@@ -435,25 +437,29 @@ const Dashboard: React.FC = () => {
                   <button
                     onClick={() => shiftDashboardMonth(-1)}
                     disabled={!canGoToPrevMonth}
-                    aria-label="Previous month"
+                    aria-label={t('dashboard.previousMonth')}
                     className="p-1 rounded-full text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   >
                     <ChevronLeft className="h-6 w-6 rtl:-scale-x-100" />
                   </button>
                   <h1 className={`text-3xl font-bold ${getHeadingColor('purple')}`}>
-                    {dashboardMonthDate.toLocaleDateString(getUserLocale(), { month: 'long' })} '{String(dashboardMonthDate.getFullYear()).slice(2)} Dashboard
+                    {t('dashboard.title', {
+                      month: dashboardMonthDate.toLocaleDateString(getUserLocale(), { month: 'long' }),
+                      shortYear: String(dashboardMonthDate.getFullYear()).slice(2),
+                      year: dashboardMonthDate.getFullYear(),
+                    })}
                   </h1>
                   <button
                     onClick={() => shiftDashboardMonth(1)}
                     disabled={!canGoToNextMonth}
-                    aria-label="Next month"
+                    aria-label={t('dashboard.nextMonth')}
                     className="p-1 rounded-full text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   >
                     <ChevronRight className="h-6 w-6 rtl:-scale-x-100" />
                   </button>
                   {isProjectedMonth && (
                     <span className="ms-1 px-2 py-0.5 text-xs font-medium rounded-full border border-dashed border-purple-400 text-purple-700 dark:text-purple-300">
-                      Projected
+                      {t('dashboard.projected')}
                     </span>
                   )}
                   {!isViewingCurrentMonth && (
@@ -461,19 +467,19 @@ const Dashboard: React.FC = () => {
                       onClick={() => setDashboardMonth(currentMonthStart)}
                       className="ms-2 px-2.5 py-0.5 text-xs font-medium rounded-full bg-purple-600 text-white hover:bg-purple-700 transition-colors"
                     >
-                      Today
+                      {t('dashboard.today')}
                     </button>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
                   <p className={getSubheadingColor('purple')}>
-                    {household?.name ? `Budget at a glance · ${household.name}` : 'Your monthly budget at a glance'}
+                    {household?.name ? t('dashboard.subtitleWithHousehold', { household: household.name }) : t('dashboard.subtitle')}
                   </p>
                   <button
                     onClick={() => setIsHouseholdSettingsModalOpen(true)}
                     className="text-xs text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 underline transition-colors"
                   >
-                    {household?.name ? 'Manage household →' : 'Set up household →'}
+                    {household?.name ? t('dashboard.manageHousehold') : t('dashboard.setUpHousehold')}
                   </button>
                 </div>
               </div>
@@ -559,7 +565,7 @@ const Dashboard: React.FC = () => {
                   {/* Mobile Sticky Header */}
                   <div className="md:hidden sticky top-0 z-10 bg-purple-100 dark:bg-purple-950/30 -mx-3 px-3 py-3 mb-4 border-b-2 border-purple-300 dark:border-purple-700">
                     <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">
-                      Budget performance{showBreakdownInHeader && ' | Breakdown'}
+                      {t('dashboard.budgetPerformance')}{showBreakdownInHeader && t('dashboard.breakdownSuffix')}
                     </h2>
                   </div>
 
@@ -578,7 +584,7 @@ const Dashboard: React.FC = () => {
                   {/* Budget Category Breakdown */}
                   <div ref={expenseChartRef} className="mb-8">
                     <div className="md:hidden sticky top-0 z-10 bg-purple-100 dark:bg-purple-950/30 -mx-3 px-3 py-3 mb-4 border-b-2 border-purple-300 dark:border-purple-700">
-                      <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Expenses by category</h2>
+                      <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">{t('dashboard.expensesByCategory')}</h2>
                     </div>
                     <ExpenseChart
                       categoryData={dashboardCategoryData}

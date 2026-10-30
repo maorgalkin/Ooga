@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { X, User, ChevronDown, ExternalLink } from 'lucide-react';
 import type { Transaction } from '../../types';
 import { getUserLocale } from '../../utils/locale';
+import { useT } from '../../hooks/useT';
 
 interface CategoryTransactionsModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
   onCategoryChange,
   onViewInTransactions,
 }) => {
+  const t = useT();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -52,6 +54,9 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
   const categoryTotal = transactions.reduce((sum, t) => sum + t.amount, 0);
   const categoryAverage = transactions.length > 0 ? categoryTotal / transactions.length : 0;
 
+  // The dropdown sits inside the title; each language words around it its own way (Hebrew: all before it)
+  const titleAfter = t('dashboard.categoryModal.after');
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <motion.div
@@ -65,7 +70,7 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
           <div className="flex justify-between items-center">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold">Category</span>
+                <span className="text-2xl font-bold">{t('dashboard.categoryModal.before')}</span>
                 {/* Category Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                   <button
@@ -97,12 +102,13 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
                     </div>
                   )}
                 </div>
-                <span className="text-2xl font-bold">Expenses</span>
+                {titleAfter && <span className="text-2xl font-bold">{titleAfter}</span>}
               </div>
-              <p className="text-blue-100 dark:text-blue-200 mt-1">All transactions in this category</p>
+              <p className="text-blue-100 dark:text-blue-200 mt-1">{t('dashboard.categoryModal.subtitle')}</p>
             </div>
             <button
               onClick={onClose}
+              aria-label={t('common.close')}
               className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
             >
               <X className="w-6 h-6" />
@@ -115,15 +121,15 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
           {/* Summary Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total transactions</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.categoryModal.totalTransactions')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{transactions.length}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total amount</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.categoryModal.totalAmount')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(categoryTotal)}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Average</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.categoryModal.average')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(categoryAverage)}</p>
             </div>
           </div>
@@ -131,7 +137,7 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
           {/* Transactions List */}
           {transactions.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No transactions found</p>
+              <p className="text-gray-500 text-lg">{t('dashboard.categoryModal.none')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -148,7 +154,7 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100">{transaction.description}</h4>
+                      <h4 dir="auto" className="font-semibold text-gray-900 dark:text-gray-100">{transaction.description}</h4>
                       <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
                         <span>{new Date(transaction.date).toLocaleDateString(getUserLocale())}</span>
                         {transaction.familyMember && (
@@ -184,7 +190,7 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
             className="w-full flex items-center justify-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium"
           >
             <ExternalLink className="w-4 h-4" />
-            View in Transactions page
+            {t('dashboard.categoryModal.viewInTransactions')}
           </button>
         </div>
       </motion.div>

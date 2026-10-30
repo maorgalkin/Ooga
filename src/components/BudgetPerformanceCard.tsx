@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useT } from '../hooks/useT';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget, useMonthlyBudget, useNextMonthAdjustments } from '../hooks/useBudgets';
 import { budgetService } from '../services/budgetService';
@@ -38,6 +39,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
   onCategoryClick
 }) => {
   const navigate = useNavigate();
+  const t = useT();
   const { transactions } = useFinance();
   const { data: personalBudget, isLoading: loadingActive } = useActiveBudget();
   
@@ -224,7 +226,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <span className="ms-2 text-gray-600 dark:text-gray-300">Loading budget...</span>
+          <span className="ms-2 text-gray-600 dark:text-gray-300">{t('dashboard.performance.loading')}</span>
         </div>
       </div>
     );
@@ -235,7 +237,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <div className={`px-6 py-4 ${getHeaderGradient(themeColor)}`}>
-          <h3 className="text-lg font-semibold text-white">Budget performance</h3>
+          <h3 className="text-lg font-semibold text-white">{t('dashboard.budgetPerformance')}</h3>
           <p className={`text-sm ${getTextColor(themeColor)} mt-1`}>
             {displayMonthName} {year}
           </p>
@@ -245,20 +247,20 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
           <div className="flex flex-col items-center justify-center text-center">
             <Sparkles className="h-16 w-16 text-blue-500 mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Welcome to budget management! 🎉
+              {t('dashboard.performance.welcomeTitle')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
-              Get started by creating your first budget. Add your spending categories and set monthly limits to track your financial performance.
+              {t('dashboard.performance.welcomeBody')}
             </p>
             <button
               onClick={() => navigate('/?tab=budget')}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md hover:shadow-lg flex items-center gap-2"
             >
               <Sparkles className="h-5 w-5" />
-              Create your first budget
+              {t('dashboard.performance.createFirst')}
             </button>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-              💡 Tip: Start with categories like Groceries, Utilities, and Entertainment
+              {t('dashboard.performance.tip')}
             </p>
           </div>
         </div>
@@ -272,7 +274,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
       <div className={`max-md:hidden px-6 py-4 ${getHeaderGradient(themeColor)}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-white">Budget performance</h3>
+            <h3 className="text-lg font-semibold text-white">{t('dashboard.budgetPerformance')}</h3>
             <p className={`text-sm ${getTextColor(themeColor)} mt-1`}>
               {displayMonthName} {year}
             </p>
@@ -291,19 +293,19 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
         <div ref={summaryRef} className={`grid ${isCompact ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-3'} gap-4 mb-4`}>
           {/* Income */}
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Income</p>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.income')}</p>
             <p className="text-lg font-bold text-green-900 dark:text-green-400">{formatCurrency(monthIncome)}</p>
           </div>
 
           {/* Expense */}
           <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Expense</p>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('dashboard.performance.expense')}</p>
             <p className="text-lg font-bold text-red-900 dark:text-red-400">{formatCurrency(monthExpense)}</p>
           </div>
 
           {/* Balance */}
           <div className={`rounded-lg p-4 ${balance >= 0 ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-orange-50 dark:bg-orange-900/20'}`}>
-            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Balance</p>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('common.balance')}</p>
             <p className={`text-lg font-bold ${balance >= 0 ? 'text-blue-900 dark:text-blue-400' : 'text-orange-900 dark:text-orange-400'}`}>
               {formatCurrency(balance)}
             </p>
@@ -313,12 +315,12 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
             <div className="flex items-center text-xs text-gray-600 dark:text-gray-400 mb-1">
               <Calendar className="h-3 w-3 me-1" />
-              Budgeted
+              {t('dashboard.tiles.budgeted')}
             </div>
             <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCurrency(budgetAnalysis.totalBudgeted)}</p>
             {monthlyBudget?.is_locked && (
               <span className="inline-block text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded mt-1">
-                Locked
+                {t('dashboard.performance.locked')}
               </span>
             )}
           </div>
@@ -329,29 +331,26 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
             budgetUtilization <= 100 ? 'bg-yellow-50 dark:bg-yellow-900/20' : 
             'bg-red-50 dark:bg-red-900/20'
           }`}>
-            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status</p>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('dashboard.performance.status')}</p>
             <p className={`text-sm font-bold ${
               budgetUtilization <= averageWarningThreshold ? 'text-green-900 dark:text-green-400' : 
               budgetUtilization <= 100 ? 'text-yellow-900 dark:text-yellow-400' : 
               'text-red-900 dark:text-red-400'
             }`}>
-              {categoriesOverBudget === 0 
-                ? `On track` 
-                : `${categoriesOverBudget} over`
-              }
+              {categoriesOverBudget === 0 ? t('dashboard.performance.onTrack') : t('dashboard.performance.over', { count: categoriesOverBudget })}
             </p>
             <p className={`text-xs font-medium mt-0.5 ${
               budgetUtilization <= averageWarningThreshold ? 'text-green-700 dark:text-green-500' : 
               budgetUtilization <= 100 ? 'text-yellow-700 dark:text-yellow-500' : 
               'text-red-700 dark:text-red-500'
             }`}>
-              {budgetUtilization.toFixed(1)}% used
+              {t('dashboard.performance.percentUsed', { percent: budgetUtilization.toFixed(1) })}
             </p>
           </div>
 
           {/* Variance */}
           <div className={`rounded-lg p-4 ${budgetAnalysis.totalVariance >= 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
-            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Variance</p>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('dashboard.tiles.variance')}</p>
             <p className={`text-lg font-bold ${budgetAnalysis.totalVariance >= 0 ? 'text-red-900 dark:text-red-400' : 'text-green-900 dark:text-green-400'}`}>
               {budgetAnalysis.totalVariance >= 0 ? '+' : ''}{formatCurrency(budgetAnalysis.totalVariance)}
             </p>
@@ -361,7 +360,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
         {/* Progress Bar */}
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Progress</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('dashboard.performance.progress')}</span>
             <span className="text-sm text-gray-600 dark:text-gray-400">{budgetUtilization.toFixed(1)}%</span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -382,7 +381,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
               <div className="flex items-center">
                 <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 me-2" />
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {budgetAnalysis.alerts.length} budget alert{budgetAnalysis.alerts.length !== 1 ? 's' : ''}
+                  {t('dashboard.performance.alerts', { count: budgetAnalysis.alerts.length })}
                 </span>
               </div>
               <button
@@ -392,7 +391,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
                 }}
                 className="text-sm text-orange-700 dark:text-orange-300 hover:text-orange-800 dark:hover:text-orange-200 font-medium"
               >
-                View
+                {t('dashboard.performance.view')}
               </button>
             </div>
           </div>
@@ -405,11 +404,11 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
               <div className="flex items-center">
                 <Settings className="h-5 w-5 text-purple-600 dark:text-purple-400 me-2" />
                 <span className="text-sm text-gray-900 dark:text-gray-100">
-                  {adjustments.adjustmentCount} pending adjustment{adjustments.adjustmentCount !== 1 ? 's' : ''}
+                  {t('dashboard.performance.pending', { count: adjustments.adjustmentCount })}
                 </span>
               </div>
               <span className="text-xs text-purple-700 dark:text-purple-300">
-                Next month
+                {t('dashboard.performance.nextMonth')}
               </span>
             </div>
           </div>
@@ -420,14 +419,14 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
           <div ref={categoryBreakdownRef} className="mb-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {viewingAlerts ? 'Alert categories' : 'Category breakdown'}
+                {viewingAlerts ? t('dashboard.performance.alertCategories') : t('dashboard.tiles.categoryBreakdown')}
               </h4>
               {viewingAlerts && (
                 <button
                   onClick={() => setViewingAlerts(false)}
                   className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 >
-                  Show all
+                  {t('dashboard.tiles.showAll')}
                 </button>
               )}
             </div>
@@ -451,7 +450,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
                       key={comparison.category}
                       role="button"
                       tabIndex={0}
-                      aria-label={`View details for ${comparison.category}`}
+                      aria-label={t('dashboard.performance.viewDetails', { category: comparison.category })}
                       className="block w-full border border-gray-200 dark:border-gray-700 rounded-lg p-3 cursor-pointer active:bg-gray-100 dark:active:bg-gray-700/50 transition-colors"
                       onClick={() => {
                         onCategoryClick?.(comparison.category);
@@ -488,7 +487,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
                         <span className="text-xs text-gray-500 dark:text-gray-400">{utilization.toFixed(1)}%</span>
                         {utilization > 100 && (
                           <span className="text-xs text-red-600 dark:text-red-400 font-medium">
-                            Over by {formatCurrency(comparison.variance)}
+                            {t('dashboard.performance.overBy', { amount: formatCurrency(comparison.variance) })}
                           </span>
                         )}
                       </div>
@@ -510,12 +509,12 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
               {showDetails ? (
                 <>
                   <ChevronUp className="h-4 w-4 me-1" />
-                  Show less
+                  {t('dashboard.performance.showLess')}
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-4 w-4 me-1" />
-                  Show details
+                  {t('dashboard.performance.showDetails')}
                 </>
               )}
             </button>
@@ -524,7 +523,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
             onClick={() => navigate('/?tab=budget')}
             className={`flex-1 flex items-center justify-center px-4 py-2 text-white rounded-md transition-colors text-sm font-medium ${getPrimaryButtonBg(themeColor)} ${getPrimaryButtonHoverBg(themeColor)}`}
           >
-            Manage budget
+            {t('dashboard.performance.manage')}
             <ArrowRight className="h-4 w-4 ms-1 rtl:-scale-x-100" />
           </button>
         </div>

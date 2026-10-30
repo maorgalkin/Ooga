@@ -3,6 +3,8 @@
 // The budget is built in memory; nothing here reads or creates a monthly budget row.
 
 import React, { useMemo } from 'react';
+import { Trans } from 'react-i18next';
+import { useT } from '../../hooks/useT';
 import { CalendarClock, Lock, PiggyBank, Wallet } from 'lucide-react';
 import { usePendingAdjustmentsThrough } from '../../hooks/useBudgets';
 import { buildProjectedBudgetLimits } from '../../utils/projections';
@@ -56,13 +58,14 @@ export const ProjectedMonthView: React.FC<ProjectedMonthViewProps> = ({
   );
 
   const monthName = monthDate.toLocaleDateString(getUserLocale(), { month: 'long' });
+  const t = useT();
 
   const tiles = [
-    { label: 'Committed', value: formatCurrency(committed), sub: `${expenses.length} charge${expenses.length === 1 ? '' : 's'}`, Icon: Lock,
+    { label: t('dashboard.projection.committed'), value: formatCurrency(committed), sub: t('dashboard.projection.charges', { count: expenses.length }), Icon: Lock,
       color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20' },
-    { label: 'Budget', value: formatCurrency(budgeted), sub: `${Object.keys(limits).length} categories`, Icon: Wallet,
+    { label: t('dashboard.projection.budget'), value: formatCurrency(budgeted), sub: t('dashboard.projection.categories', { count: Object.keys(limits).length }), Icon: Wallet,
       color: 'text-gray-700 dark:text-gray-300', bg: 'bg-gray-50 dark:bg-gray-700/40' },
-    { label: 'Free to spend', value: formatCurrency(Math.abs(freeToSpend)), sub: freeToSpend >= 0 ? 'after committed charges' : 'over budget already',
+    { label: t('dashboard.projection.freeToSpend'), value: formatCurrency(Math.abs(freeToSpend)), sub: freeToSpend >= 0 ? t('dashboard.projection.afterCommitted') : t('dashboard.projection.overAlready'),
       Icon: PiggyBank,
       color: freeToSpend >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400',
       bg: freeToSpend >= 0 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20' },
@@ -74,9 +77,18 @@ export const ProjectedMonthView: React.FC<ProjectedMonthViewProps> = ({
       <div className="flex items-start gap-3 rounded-xl border-2 border-dashed border-purple-300 dark:border-purple-700 bg-white/60 dark:bg-gray-800/60 px-4 py-3">
         <CalendarClock className="h-5 w-5 text-purple-500 flex-shrink-0 mt-0.5" />
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          <span className="font-semibold text-purple-700 dark:text-purple-300">Projection.</span>{' '}
-          Only charges already committed for {monthName} (installment payments) are shown. Day-to-day spending will add to this.
-          {committedIncome > 0 && <> Committed income: <span className="font-medium">{formatCurrency(committedIncome)}</span>.</>}
+          <Trans
+            i18nKey="dashboard.projection.intro"
+            values={{ month: monthName }}
+            components={{ b: <span className="font-semibold text-purple-700 dark:text-purple-300" /> }}
+          />
+          {committedIncome > 0 && (
+            <Trans
+              i18nKey="dashboard.projection.committedIncome"
+              values={{ amount: formatCurrency(committedIncome) }}
+              components={{ b: <span className="font-medium" /> }}
+            />
+          )}
         </p>
       </div>
 
@@ -98,10 +110,10 @@ export const ProjectedMonthView: React.FC<ProjectedMonthViewProps> = ({
         {/* Committed per category, against that month's budget */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200">
-            Already committed by category
+            {t('dashboard.projection.byCategory')}
           </h3>
           {categories.length === 0 ? (
-            <p className="p-6 text-center text-sm text-gray-400">No committed charges in {monthName}.</p>
+            <p className="p-6 text-center text-sm text-gray-400">{t('dashboard.projection.noneInMonth', { month: monthName })}</p>
           ) : (
             <ul className="divide-y divide-gray-100 dark:divide-gray-700">
               {categories.map(({ category, amount, limit }) => {
@@ -116,7 +128,7 @@ export const ProjectedMonthView: React.FC<ProjectedMonthViewProps> = ({
                       </span>
                       <span className={over ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-600 dark:text-gray-300'}>
                         {formatCurrency(amount)}
-                        <span className="text-gray-400"> / {limit > 0 ? formatCurrency(limit) : 'not budgeted'}</span>
+                        <span className="text-gray-400"> / {limit > 0 ? formatCurrency(limit) : t('dashboard.projection.notBudgeted')}</span>
                       </span>
                     </div>
                     <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
@@ -135,38 +147,38 @@ export const ProjectedMonthView: React.FC<ProjectedMonthViewProps> = ({
         {/* The charges themselves */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200">
-            Committed charges
+            {t('dashboard.projection.chargesTitle')}
           </h3>
           {charges.length === 0 ? (
-            <p className="p-6 text-center text-sm text-gray-400">Nothing scheduled yet.</p>
+            <p className="p-6 text-center text-sm text-gray-400">{t('dashboard.projection.nothingScheduled')}</p>
           ) : (
             <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-              {charges.map(t => {
-                const hasInstallment = !!t.installment_number && !!t.installment_total;
-                const Tag = t.projected ? 'div' : 'button';
+              {charges.map(tx => {
+                const hasInstallment = !!tx.installment_number && !!tx.installment_total;
+                const Tag = tx.projected ? 'div' : 'button';
                 return (
-                  <li key={t.id}>
+                  <li key={tx.id}>
                     <Tag
-                      {...(t.projected ? {} : { type: 'button' as const, onClick: () => onViewTransaction(t) })}
-                      className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 text-start ${t.projected ? '' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                      {...(tx.projected ? {} : { type: 'button' as const, onClick: () => onViewTransaction(tx) })}
+                      className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 text-start ${tx.projected ? '' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{t.description}</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description}</p>
                         <p className="text-xs text-gray-400 flex items-center gap-2">
-                          {new Date(t.date + 'T00:00:00').toLocaleDateString(getUserLocale(), { day: 'numeric', month: 'short' })}
-                          <span>· {t.category}</span>
+                          {new Date(tx.date + 'T00:00:00').toLocaleDateString(getUserLocale(), { day: 'numeric', month: 'short' })}
+                          <span>· {tx.category}</span>
                           {hasInstallment && (
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${t.projected
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${tx.projected
                               ? 'border border-dashed border-purple-400 text-purple-600 dark:text-purple-300'
                               : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'}`}
                             >
-                              {t.projected ? 'Expected' : 'Installment'} {t.installment_number}/{t.installment_total}
+                              {t(tx.projected ? 'dashboard.projection.expected' : 'dashboard.projection.installment', { number: tx.installment_number, total: tx.installment_total })}
                             </span>
                           )}
                         </p>
                       </div>
-                      <span className={`text-sm font-semibold flex-shrink-0 ${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-gray-800 dark:text-gray-100'}`}>
-                        {t.type === 'income' ? '+' : ''}{formatCurrency(t.amount)}
+                      <span className={`text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-gray-800 dark:text-gray-100'}`}>
+                        {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.amount)}
                       </span>
                     </Tag>
                   </li>

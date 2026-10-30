@@ -17,7 +17,12 @@
   },
   "common": {
     "loading": "Loading…",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "income": "Income",
+    "expenses": "Expenses",
+    "balance": "Balance",
+    "close": "Close",
+    "backToTop": "Back to top"
   },
   "nav": {
     "help": "Help",
@@ -172,6 +177,152 @@
       "fuel": "Paz fuel",
       "pizza": "Pizza night",
       "swimming": "Swimming lessons"
+    }
+  },
+  "dashboard": {
+    "title": "{{month}} '{{shortYear}} Dashboard",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "projected": "Projected",
+    "today": "Today",
+    "subtitle": "Your monthly budget at a glance",
+    "subtitleWithHousehold": "Budget at a glance · {{household}}",
+    "manageHousehold": "Manage household →",
+    "setUpHousehold": "Set up household →",
+    "budgetPerformance": "Budget performance",
+    "breakdownSuffix": " | Breakdown",
+    "expensesByCategory": "Expenses by category",
+    "empty": {
+      "freshStart": {
+        "title": "Fresh start to {{month}}!",
+        "subtitle": "Set the tone early — log your first transaction of the month."
+      },
+      "week1": {
+        "title": "Week 1 of {{month}}",
+        "subtitle": "A great time to capture this week's spending before it slips away."
+      },
+      "twoWeeks": {
+        "title": "Two weeks into {{month}}",
+        "subtitle": "You're halfway through the first half. Start tracking now for the full picture."
+      },
+      "halfway": {
+        "title": "Halfway through {{month}}",
+        "subtitle": "Plenty of month left — catching up now still gives you a great view."
+      },
+      "homeStretch": {
+        "title": "Home stretch — {{month}} is winding down",
+        "subtitle": "Don't let the last stretch go untracked."
+      },
+      "almostOver": {
+        "title": "{{month}} is almost over",
+        "subtitle": "Final days — lock in your records before the month closes."
+      },
+      "pastMonth": {
+        "title": "No transactions in {{month}}",
+        "subtitle": "Nothing was logged for this month. Add or import transactions to fill it in."
+      },
+      "importTransactions": "Import transactions",
+      "setUpBudget": "Set up budget",
+      "lastMonth": "Last month — {{month}}",
+      "overBudget_one": "{{count}} category over budget",
+      "overBudget_other": "{{count}} categories over budget",
+      "best": "Best: {{category}}",
+      "watch": "Watch: {{category}}",
+      "tips": {
+        "title": "💡 Getting started",
+        "income": "Start with your main income source for the month",
+        "fixed": "Add your regular fixed expenses (rent, subscriptions, utilities)",
+        "budget": "Create a budget to compare your spending against monthly targets",
+        "import": "Use <import>Import</import> to bring in transactions from a connected account"
+      }
+    },
+    "projection": {
+      "committed": "Committed",
+      "charges_one": "{{count}} charge",
+      "charges_other": "{{count}} charges",
+      "budget": "Budget",
+      "categories": "{{count}} categories",
+      "freeToSpend": "Free to spend",
+      "afterCommitted": "after committed charges",
+      "overAlready": "over budget already",
+      "intro": "<b>Projection.</b> Only charges already committed for {{month}} (installment payments) are shown. Day-to-day spending will add to this.",
+      "committedIncome": " Committed income: <b>{{amount}}</b>.",
+      "byCategory": "Already committed by category",
+      "noneInMonth": "No committed charges in {{month}}.",
+      "notBudgeted": "not budgeted",
+      "chargesTitle": "Committed charges",
+      "nothingScheduled": "Nothing scheduled yet.",
+      "installment": "Installment {{number}}/{{total}}",
+      "expected": "Expected {{number}}/{{total}}"
+    },
+    "categoryModal": {
+      "before": "Category",
+      "after": "Expenses",
+      "subtitle": "All transactions in this category",
+      "totalTransactions": "Total transactions",
+      "totalAmount": "Total amount",
+      "average": "Average",
+      "none": "No transactions found",
+      "viewInTransactions": "View in Transactions page"
+    },
+    "tiles": {
+      "surplus": "↑ surplus",
+      "deficit": "↓ deficit",
+      "budgeted": "Budgeted",
+      "categories": "{{count}} categories",
+      "used": "Used",
+      "ofBudget": "of budget",
+      "variance": "Variance",
+      "underBudget": "under budget",
+      "overBudget": "over budget",
+      "overBudgetTitle": "Over budget",
+      "categoryWord_one": "category",
+      "categoryWord_other": "categories",
+      "adjustments": "Adjustments",
+      "nextMonth": "next month",
+      "categoryBreakdown": "Category breakdown",
+      "overBudgetSuffix": "· over budget",
+      "showAll": "Show all",
+      "lookingGreat": "Looking great!",
+      "noneOver": "No categories over budget this month.",
+      "noCategories": "No budget categories configured"
+    },
+    "chart": {
+      "noData": "No expense data available",
+      "share": "{{percent}}% of expenses • {{amount}}",
+      "hint": "Tap on a category above to see all transactions. Hold to activate the magnifier lens.",
+      "ofBudget": "of {{amount}}",
+      "percentUsed": "{{percent}}% used",
+      "remaining": "{{amount}} remaining",
+      "seeAll": "See all {{category}} expenses ({{count}})",
+      "noneInCategory": "No transactions in this category",
+      "closeHint": "Tap another category or click here to close"
+    },
+    "performance": {
+      "loading": "Loading budget...",
+      "welcomeTitle": "Welcome to budget management! 🎉",
+      "welcomeBody": "Get started by creating your first budget. Add your spending categories and set monthly limits to track your financial performance.",
+      "createFirst": "Create your first budget",
+      "tip": "💡 Tip: Start with categories like Groceries, Utilities, and Entertainment",
+      "expense": "Expense",
+      "locked": "Locked",
+      "status": "Status",
+      "onTrack": "On track",
+      "over": "{{count}} over",
+      "percentUsed": "{{percent}}% used",
+      "progress": "Progress",
+      "alerts_one": "{{count}} budget alert",
+      "alerts_other": "{{count}} budget alerts",
+      "view": "View",
+      "pending_one": "{{count}} pending adjustment",
+      "pending_other": "{{count}} pending adjustments",
+      "nextMonth": "Next month",
+      "alertCategories": "Alert categories",
+      "viewDetails": "View details for {{category}}",
+      "showLess": "Show less",
+      "showDetails": "Show details",
+      "manage": "Manage budget",
+      "overBy": "Over by {{amount}}"
     }
   }
 }

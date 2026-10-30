@@ -17,7 +17,12 @@
   },
   "common": {
     "loading": "טוענים…",
-    "saving": "שומרים…"
+    "saving": "שומרים…",
+    "income": "הכנסות",
+    "expenses": "הוצאות",
+    "balance": "יתרה",
+    "close": "סגירה",
+    "backToTop": "חזרה למעלה"
   },
   "nav": {
     "help": "עזרה",
@@ -172,6 +177,163 @@
       "fuel": "דלק פז",
       "pizza": "ערב פיצה",
       "swimming": "חוג שחייה"
+    }
+  },
+  "dashboard": {
+    "title": "תמונת מצב · {{month}} {{year}}",
+    "previousMonth": "החודש הקודם",
+    "nextMonth": "החודש הבא",
+    "projected": "תחזית",
+    "today": "היום",
+    "subtitle": "התקציב החודשי במבט אחד",
+    "subtitleWithHousehold": "התקציב במבט אחד · {{household}}",
+    "manageHousehold": "ניהול משק הבית ←",
+    "setUpHousehold": "הקמת משק בית ←",
+    "budgetPerformance": "ביצועי התקציב",
+    "breakdownSuffix": " | פירוט",
+    "expensesByCategory": "הוצאות לפי קטגוריה",
+    "empty": {
+      "freshStart": {
+        "title": "התחלה חדשה: {{month}}!",
+        "subtitle": "כדאי לקבוע את הקצב מוקדם ולרשום את התנועה הראשונה של החודש."
+      },
+      "week1": {
+        "title": "השבוע הראשון של {{month}}",
+        "subtitle": "זה זמן טוב לרשום את ההוצאות של השבוע, לפני שהן נשכחות."
+      },
+      "twoWeeks": {
+        "title": "שבועיים לתוך {{month}}",
+        "subtitle": "חצי מהחצי הראשון כבר מאחור. מתחילים לעקוב עכשיו ומקבלים את התמונה המלאה."
+      },
+      "halfway": {
+        "title": "אמצע {{month}}",
+        "subtitle": "נשאר עוד הרבה חודש, ולהשלים עכשיו עדיין נותן תמונה טובה."
+      },
+      "homeStretch": {
+        "title": "הישורת האחרונה: {{month}} מתקרב לסופו",
+        "subtitle": "כדאי לא להשאיר את הימים האחרונים בלי מעקב."
+      },
+      "almostOver": {
+        "title": "{{month}} כמעט נגמר",
+        "subtitle": "הימים האחרונים: זה הזמן להשלים את הרישומים לפני שהחודש נסגר."
+      },
+      "pastMonth": {
+        "title": "אין תנועות בחודש {{month}}",
+        "subtitle": "לא נרשם כלום בחודש הזה. אפשר להוסיף או לייבא תנועות כדי להשלים אותו."
+      },
+      "importTransactions": "ייבוא תנועות",
+      "setUpBudget": "הגדרת תקציב",
+      "lastMonth": "החודש הקודם · {{month}}",
+      "overBudget_one": "קטגוריה אחת חרגה מהתקציב",
+      "overBudget_two": "{{count}} קטגוריות חרגו מהתקציב",
+      "overBudget_other": "{{count}} קטגוריות חרגו מהתקציב",
+      "best": "הכי טובה: {{category}}",
+      "watch": "לשים לב: {{category}}",
+      "tips": {
+        "title": "💡 איך מתחילים",
+        "income": "מתחילים ממקור ההכנסה העיקרי של החודש",
+        "fixed": "מוסיפים את ההוצאות הקבועות (שכירות, מנויים, חשבונות)",
+        "budget": "יוצרים תקציב כדי להשוות את ההוצאות ליעדים החודשיים",
+        "import": "בעזרת <import>ייבוא</import> מביאים תנועות מחשבון מקושר"
+      }
+    },
+    "projection": {
+      "committed": "מחויב",
+      "charges_one": "חיוב אחד",
+      "charges_two": "{{count}} חיובים",
+      "charges_other": "{{count}} חיובים",
+      "budget": "תקציב",
+      "categories_one": "קטגוריה אחת",
+      "categories_two": "{{count}} קטגוריות",
+      "categories_other": "{{count}} קטגוריות",
+      "categories": "{{count}} קטגוריות",
+      "freeToSpend": "פנוי להוצאה",
+      "afterCommitted": "אחרי החיובים המחויבים",
+      "overAlready": "כבר בחריגה מהתקציב",
+      "intro": "<b>תחזית.</b> מוצגים רק חיובים שכבר מחויבים לחודש {{month}} (תשלומים). ההוצאות השוטפות יתווספו לזה.",
+      "committedIncome": " הכנסה מחויבת: <b>{{amount}}</b>.",
+      "byCategory": "מה שכבר מחויב, לפי קטגוריה",
+      "noneInMonth": "אין חיובים מחויבים בחודש {{month}}.",
+      "notBudgeted": "לא בתקציב",
+      "chargesTitle": "חיובים מחויבים",
+      "nothingScheduled": "עדיין אין חיובים מתוכננים.",
+      "installment": "תשלום {{number}} מתוך {{total}}",
+      "expected": "צפוי: תשלום {{number}} מתוך {{total}}"
+    },
+    "categoryModal": {
+      "before": "הוצאות בקטגוריה",
+      "after": "",
+      "subtitle": "כל התנועות בקטגוריה הזו",
+      "totalTransactions": "מספר תנועות",
+      "totalAmount": "סכום כולל",
+      "average": "ממוצע",
+      "none": "לא נמצאו תנועות",
+      "viewInTransactions": "הצגה בלשונית התנועות"
+    },
+    "tiles": {
+      "surplus": "↑ עודף",
+      "deficit": "↓ גירעון",
+      "budgeted": "מתוקצב",
+      "categories_one": "קטגוריה אחת",
+      "categories_two": "{{count}} קטגוריות",
+      "categories_other": "{{count}} קטגוריות",
+      "categories": "{{count}} קטגוריות",
+      "used": "נוצל",
+      "ofBudget": "מהתקציב",
+      "variance": "פער",
+      "underBudget": "מתחת לתקציב",
+      "overBudget": "מעל התקציב",
+      "overBudgetTitle": "חריגה מהתקציב",
+      "categoryWord_one": "קטגוריה",
+      "categoryWord_two": "קטגוריות",
+      "categoryWord_other": "קטגוריות",
+      "adjustments": "התאמות",
+      "nextMonth": "לחודש הבא",
+      "categoryBreakdown": "פירוט לפי קטגוריה",
+      "overBudgetSuffix": "· חריגה מהתקציב",
+      "showAll": "הצגת הכול",
+      "lookingGreat": "נראה מצוין!",
+      "noneOver": "אף קטגוריה לא חרגה מהתקציב החודש.",
+      "noCategories": "עדיין לא הוגדרו קטגוריות בתקציב"
+    },
+    "chart": {
+      "noData": "אין עדיין נתוני הוצאות",
+      "share": "{{percent}}% מההוצאות • {{amount}}",
+      "hint": "הקשה על קטגוריה למעלה מציגה את כל התנועות שלה. לחיצה ארוכה מפעילה את זכוכית המגדלת.",
+      "ofBudget": "מתוך {{amount}}",
+      "percentUsed": "נוצלו {{percent}}%",
+      "remaining": "נשארו {{amount}}",
+      "seeAll": "כל ההוצאות על {{category}} ({{count}})",
+      "noneInCategory": "אין תנועות בקטגוריה הזו",
+      "closeHint": "אפשר להקיש על קטגוריה אחרת, או כאן כדי לסגור"
+    },
+    "performance": {
+      "loading": "טוענים את התקציב…",
+      "welcomeTitle": "מתחילים לנהל את התקציב! 🎉",
+      "welcomeBody": "יוצרים את התקציב הראשון: מוסיפים קטגוריות הוצאה וקובעים לכל אחת תקרה חודשית, כדי לעקוב אחרי המצב.",
+      "createFirst": "יצירת התקציב הראשון",
+      "tip": "💡 טיפ: כדאי להתחיל עם קטגוריות כמו מכולת, חשבונות ובילויים",
+      "expense": "הוצאות",
+      "locked": "נעול",
+      "status": "מצב",
+      "onTrack": "במסלול",
+      "over": "{{count}} בחריגה",
+      "percentUsed": "נוצלו {{percent}}%",
+      "progress": "התקדמות",
+      "alerts_one": "התראת תקציב אחת",
+      "alerts_two": "{{count}} התראות תקציב",
+      "alerts_other": "{{count}} התראות תקציב",
+      "view": "הצגה",
+      "pending_one": "התאמה אחת ממתינה",
+      "pending_two": "{{count}} התאמות ממתינות",
+      "pending_other": "{{count}} התאמות ממתינות",
+      "nextMonth": "בחודש הבא",
+      "alertCategories": "קטגוריות עם התראות",
+      "viewDetails": "פרטים על {{category}}",
+      "showLess": "פחות פרטים",
+      "showDetails": "פרטים נוספים",
+      "manage": "ניהול התקציב",
+      "overBy": "חריגה של {{amount}}"
     }
   }
 }

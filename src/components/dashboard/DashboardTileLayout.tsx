@@ -6,6 +6,7 @@
 // Fuse: desktop category click (with transactions) collapses category grid,
 //       expands pie. Block-level X + click-away restore.
 
+import { useT } from '../../hooks/useT';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle, AlertTriangle, TrendingUp, TrendingDown,
@@ -41,6 +42,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
   formatCurrency, onCategoryClick, onEditTransaction, onViewAllTransactions, selectedCategory,
 }) => {
   const navigate = useNavigate();
+  const t = useT();
 
   const { data: monthlyBudget } = useMonthlyBudget(
     monthDate.getFullYear(), monthDate.getMonth() + 1
@@ -165,35 +167,35 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
 
   const chips: Chip[] = [
     {
-      label: 'Income', value: formatCurrency(monthIncome),
+      label: t('common.income'), value: formatCurrency(monthIncome),
       color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', Icon: TrendingUp,
       action: () => navigate('/?tab=transactions'),
     },
     {
-      label: 'Expenses', value: formatCurrency(analysis.totalSpent),
+      label: t('common.expenses'), value: formatCurrency(analysis.totalSpent),
       color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', Icon: TrendingDown,
       action: () => navigate('/?tab=transactions'),
     },
     {
-      label: 'Balance', value: formatCurrency(Math.abs(balance)), sub: balance >= 0 ? '↑ surplus' : '↓ deficit',
+      label: t('common.balance'), value: formatCurrency(Math.abs(balance)), sub: balance >= 0 ? t('dashboard.tiles.surplus') : t('dashboard.tiles.deficit'),
       color: balance >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400',
       bg:    balance >= 0 ? 'bg-blue-50 dark:bg-blue-900/20'   : 'bg-orange-50 dark:bg-orange-900/20',
       Icon: balance >= 0 ? CheckCircle : AlertTriangle,
     },
     {
-      label: 'Budgeted', value: formatCurrency(analysis.totalBudgeted),
-      sub: `${analysis.categoryComparisons.filter(c => c.budgeted > 0).length} categories`,
+      label: t('dashboard.tiles.budgeted'), value: formatCurrency(analysis.totalBudgeted),
+      sub: t('dashboard.tiles.categories', { count: analysis.categoryComparisons.filter(c => c.budgeted > 0).length }),
       color: 'text-gray-700 dark:text-gray-300', bg: 'bg-gray-50 dark:bg-gray-700/40', Icon: DollarSign,
       action: () => navigate('/?tab=budget'),
     },
     {
-      label: 'Used', value: `${Math.round(usagePct)}%`, sub: 'of budget',
+      label: t('dashboard.tiles.used'), value: `${Math.round(usagePct)}%`, sub: t('dashboard.tiles.ofBudget'),
       color: usagePct >= 100 ? 'text-red-600 dark:text-red-400' : usagePct >= 75 ? 'text-yellow-600 dark:text-yellow-400' : 'text-purple-700 dark:text-purple-400',
       bg:    usagePct >= 100 ? 'bg-red-50 dark:bg-red-900/20'   : usagePct >= 75 ? 'bg-yellow-50 dark:bg-yellow-900/20'   : 'bg-purple-50 dark:bg-purple-900/20',
       Icon: Gauge,
     },
     {
-      label: 'Variance', value: formatCurrency(Math.abs(variance)), sub: variance >= 0 ? 'under budget' : 'over budget',
+      label: t('dashboard.tiles.variance'), value: formatCurrency(Math.abs(variance)), sub: variance >= 0 ? t('dashboard.tiles.underBudget') : t('dashboard.tiles.overBudget'),
       color: variance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400',
       bg:    variance >= 0 ? 'bg-green-50 dark:bg-green-900/20'  : 'bg-red-50 dark:bg-red-900/20',
       Icon: ArrowDownUp,
@@ -201,14 +203,14 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
   ];
 
   if (overBudgetCount > 0) chips.push({
-    label: 'Over budget', value: String(overBudgetCount), sub: `categor${overBudgetCount === 1 ? 'y' : 'ies'}`,
+    label: t('dashboard.tiles.overBudgetTitle'), value: String(overBudgetCount), sub: t('dashboard.tiles.categoryWord', { count: overBudgetCount }),
     color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', Icon: AlertTriangle,
     isActive: categoryFilter === 'over',
     action: () => setCategoryFilter(f => f === 'over' ? 'all' : 'over'),
   });
 
   if (monthlyBudget?.adjustment_count && monthlyBudget.adjustment_count > 0) chips.push({
-    label: 'Adjustments', value: String(monthlyBudget.adjustment_count), sub: 'next month',
+    label: t('dashboard.tiles.adjustments'), value: String(monthlyBudget.adjustment_count), sub: t('dashboard.tiles.nextMonth'),
     color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', Icon: Calendar,
     action: () => navigate('/?tab=budget'),
   });
@@ -264,9 +266,9 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
       {/* Heading */}
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-          Category breakdown
+          {t('dashboard.tiles.categoryBreakdown')}
           {categoryFilter === 'over' && (
-            <span className="ms-2 text-xs font-normal text-red-500 dark:text-red-400">· over budget</span>
+            <span className="ms-2 text-xs font-normal text-red-500 dark:text-red-400">{t('dashboard.tiles.overBudgetSuffix')}</span>
           )}
         </h3>
         {categoryFilter !== 'all' && (
@@ -274,7 +276,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
             onClick={() => setCategoryFilter('all')}
             className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           >
-            Show all
+            {t('dashboard.tiles.showAll')}
           </button>
         )}
       </div>
@@ -283,12 +285,12 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
       {categoryFilter === 'over' && displayedCategories.length === 0 ? (
         <div className="p-6 text-center">
           <Sparkles className="h-8 w-8 text-green-500 mx-auto mb-2" />
-          <p className="text-sm font-medium text-green-700 dark:text-green-400">Looking great!</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">No categories over budget this month.</p>
+          <p className="text-sm font-medium text-green-700 dark:text-green-400">{t('dashboard.tiles.lookingGreat')}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('dashboard.tiles.noneOver')}</p>
         </div>
       ) : displayedCategories.length === 0 ? (
         <div className="p-6 text-center text-gray-400 text-sm">
-          <p>No budget categories configured</p>
+          <p>{t('dashboard.tiles.noCategories')}</p>
         </div>
       ) : (
         <div className="relative">
@@ -388,7 +390,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
                   onClick={handleDeselect}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm transition-colors"
                 >
-                  <X className="h-4 w-4" />Close
+                  <X className="h-4 w-4" />{t('common.close')}
                 </button>
               </motion.div>
             )}

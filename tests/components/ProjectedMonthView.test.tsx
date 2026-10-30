@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ProjectedMonthView } from '../../src/components/dashboard/ProjectedMonthView';
 import type { Transaction } from '../../src/types';
+import { applyLanguage } from '../../src/i18n';
 import type { PersonalBudget } from '../../src/types/budget';
 
 vi.mock('../../src/hooks/useBudgets', () => ({
@@ -65,5 +66,27 @@ describe('ProjectedMonthView', () => {
     expect(onView).toHaveBeenCalledWith(charges[0]);
     fireEvent.click(screen.getByText('Electronics store'));
     expect(onView).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ProjectedMonthView in Hebrew', () => {
+  it('labels installments the Hebrew way and leaves only the data in English', () => {
+    applyLanguage('he');
+    const { container } = render(
+      <ProjectedMonthView
+        monthDate={new Date(2026, 9, 1)}
+        transactions={charges}
+        personalBudget={personalBudget}
+        formatCurrency={formatCurrency}
+        onViewTransaction={() => {}}
+      />
+    );
+    expect(screen.getByText('תשלום 2 מתוך 10')).toBeInTheDocument();
+    expect(screen.getByText('צפוי: תשלום 3 מתוך 3')).toBeInTheDocument();
+    expect(screen.getByText('אחרי החיובים המחויבים')).toBeInTheDocument();
+    // The fixture's descriptions and categories are English data, not UI text
+    const data = new Set(['Laptop', 'Electronics', 'store', 'Insurance', 'Shopping']);
+    expect((container.textContent?.match(/[A-Za-z]{2,}/g) ?? []).filter((w) => !data.has(w))).toEqual([]);
+    applyLanguage('en');
   });
 });
