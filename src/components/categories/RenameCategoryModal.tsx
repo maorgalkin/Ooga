@@ -2,6 +2,7 @@
 // Part of Category Management Restructure (Phase 4)
 
 import React, { useState, useEffect } from 'react';
+import { errorMessage } from '../../i18n/errors';
 import { useT } from '../../hooks/useT';
 import { X, AlertCircle, Check } from 'lucide-react';
 import { useRenameCategory, useCategories } from '../../hooks/useCategories';
@@ -71,7 +72,7 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
       await refreshTransactions();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('categories.rename.failed'));
+      setError(errorMessage(err, t, 'categories.rename.failed'));
     }
   };
 

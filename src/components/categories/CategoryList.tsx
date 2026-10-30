@@ -3,6 +3,7 @@
 // Updated to use unified CategoryEditModal with adjustments
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { errorMessage } from '../../i18n/errors';
 import { useT } from '../../hooks/useT';
 import { 
   Plus, 
@@ -172,11 +173,14 @@ export const CategoryList: React.FC<CategoryListProps> = ({
   }
 
   if (error) {
+    // Once per render: errorMessage also logs
+    const cause = errorMessage(error, t, 'categories.list.loadFailed');
     return (
       <div className="text-center py-12">
         <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
         <p className="text-red-500">{t('categories.list.loadFailed')}</p>
-        <p className="text-sm text-gray-500 mt-2">{error.message}</p>
+        {/* A known cause gets its own sentence; anything else is already said by the line above */}
+        {cause !== t('categories.list.loadFailed') && <p className="text-sm text-gray-500 mt-2">{cause}</p>}
       </div>
     );
   }

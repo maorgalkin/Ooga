@@ -3,6 +3,7 @@
 // Updated: Fixed size modal, compact color picker
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { errorMessage } from '../../i18n/errors';
 import { Trans } from 'react-i18next';
 import { useT } from '../../hooks/useT';
 import { 
@@ -235,7 +236,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('categories.edit.errors.updateFailed'));
+      setError(errorMessage(err, t, 'categories.edit.errors.updateFailed'));
     }
   };
 
@@ -253,7 +254,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       await refreshTransactions();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('categories.edit.errors.mergeFailed'));
+      setError(errorMessage(err, t, 'categories.edit.errors.mergeFailed'));
     }
   };
 
@@ -272,7 +273,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       try {
         await cancelAdjustment.mutateAsync(categoryAdjustment.id);
       } catch (err) {
-        setError(err instanceof Error ? err.message : t('categories.edit.errors.adjustmentUpdateFailed'));
+        setError(errorMessage(err, t, 'categories.edit.errors.adjustmentUpdateFailed'));
         return;
       }
     }
@@ -295,7 +296,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('categories.edit.errors.scheduleFailed'));
+      setError(errorMessage(err, t, 'categories.edit.errors.scheduleFailed'));
     }
   };
 
@@ -309,7 +310,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       const currentLimitValue = currentMonthBudget?.categories?.[category?.name || '']?.monthlyLimit ?? category?.monthlyLimit;
       setNextMonthLimit(currentLimitValue?.toString() || '');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('categories.edit.errors.cancelFailed'));
+      setError(errorMessage(err, t, 'categories.edit.errors.cancelFailed'));
     }
   };
 
@@ -324,7 +325,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('categories.edit.errors.deleteFailed'));
+      setError(errorMessage(err, t, 'categories.edit.errors.deleteFailed'));
     }
   };
 

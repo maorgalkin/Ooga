@@ -3,6 +3,7 @@
 // Updated: Single form with schedule toggle
 
 import React, { useState, useEffect } from 'react';
+import { errorMessage } from '../../i18n/errors';
 import { useT } from '../../hooks/useT';
 import { X, AlertCircle, HelpCircle } from 'lucide-react';
 import { useCreateCategory, useCategories } from '../../hooks/useCategories';
@@ -96,7 +97,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
       }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('categories.add.errors.createFailed'));
+      setError(errorMessage(err, t, 'categories.add.errors.createFailed'));
     }
   };
 

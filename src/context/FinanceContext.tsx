@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
+import { errorMessage } from '../i18n/errors';
 import type { Transaction, Budget, FamilyMember } from '../types/index';
 import { useAuth } from '../contexts/AuthContext';
 import * as SupabaseService from '../services/supabaseDataService';
@@ -97,7 +99,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     } catch (error) {
       console.error('Error adding transaction:', error);
-      alert(`Failed to add transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(errorMessage(error, i18n.t, 'transactions.form.addFailed'));
       throw error;
     }
   };

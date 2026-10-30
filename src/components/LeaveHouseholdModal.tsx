@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { errorMessage } from '../i18n/errors';
 import { X, AlertTriangle, Home, Loader2, CheckCircle } from 'lucide-react';
 import * as HouseholdService from '../services/householdService';
 import { Trans } from 'react-i18next';
@@ -60,7 +61,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
         window.location.reload(); // Reload to refresh all household data
       }, 2000);
     } catch (err: any) {
-      setError(err.message || t('household.leave.failed'));
+      setError(errorMessage(err, t, 'household.leave.failed'));
       setLoading(false);
     }
   };

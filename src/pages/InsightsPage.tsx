@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { errorMessage } from '../i18n/errors';
 import { useFinance } from '../context/FinanceContext';
 import { useT } from '../hooks/useT';
 import { useActiveBudget } from '../hooks/useBudgets';
@@ -47,7 +48,7 @@ export const InsightsPage: React.FC = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-500">{t('insights.loadError', { message: error.message })}</p>
+        <p className="text-red-500">{errorMessage(error, t, 'insights.loadErrorPlain')}</p>
       </div>
     );
   }

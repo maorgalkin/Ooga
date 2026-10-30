@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { errorMessage } from '../i18n/errors';
 import { createPortal } from 'react-dom';
 import { X, Home, Users, UserPlus, Crown, User as UserIcon, Trash2, Copy, Check, LogOut, UserCheck, Plus, Edit2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -182,7 +183,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
       alert(t('household.transferred', { name: memberName }));
     } catch (error: any) {
       console.error('Error transferring ownership:', error);
-      alert(error.message || t('household.transferFailed'));
+      alert(errorMessage(error, t, 'household.transferFailed'));
     }
   };
 

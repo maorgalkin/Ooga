@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { errorMessage } from '../i18n/errors';
 import { Trans } from 'react-i18next';
 import { useT } from '../hooks/useT';
 import { getUserLocale } from '../utils/locale';
@@ -98,7 +99,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       setCalSessionToken(token);
       setStep('awaiting_otp');
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : t('import.otpRequestFailed'));
+      setErrorMsg(errorMessage(err, t, 'import.otpRequestFailed'));
       setStep('error');
     }
   };
@@ -128,7 +129,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       setStep(sid ? 'review' : 'complete');
       onImportComplete?.(imported);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : t('import.failed'));
+      setErrorMsg(errorMessage(err, t, 'import.failed'));
       setStep('error');
     } finally {
       setOtpSubmitting(false);
@@ -154,7 +155,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       setStep(state.dbSessionId ? 'review' : 'complete');
       onImportComplete?.(state.result.imported);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : t('import.failed'));
+      setErrorMsg(errorMessage(err, t, 'import.failed'));
       setStep('error');
     }
   };

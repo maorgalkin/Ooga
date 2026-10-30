@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { errorMessage } from '../i18n/errors';
 import {
   useActiveBudget,
   usePersonalBudgetHistory,
@@ -317,7 +318,7 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
       setEditingBudgetId(null);
     } catch (error) {
       console.error('Error resetting configuration:', error);
-      alert(t('budget.editor.resetFailed', { error: error instanceof Error ? error.message : t('budget.editor.unknownError') }));
+      alert(errorMessage(error, t, 'budget.editor.resetFailedPlain'));
     }
   };
 
