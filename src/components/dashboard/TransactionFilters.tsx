@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useT } from '../../hooks/useT';
 import { ChevronDown } from 'lucide-react';
 import type { FamilyMember } from '../../types';
 import type { CategoryGroup } from '../../utils/transactionFilters';
@@ -42,6 +43,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   onCategoryChange,
   onMoreClick,
 }) => {
+  const t = useT();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -96,15 +98,15 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   };
 
   const getTypeLabel = () => {
-    if (typeFilter === 'income') return 'Income';
-    if (typeFilter === 'expense') return 'Expenses';
-    return 'All types';
+    if (typeFilter === 'income') return t('common.income');
+    if (typeFilter === 'expense') return t('common.expenses');
+    return t('transactions.filters.allTypes');
   };
 
   const getMemberLabel = () => {
-    if (memberFilter === 'all') return 'All members';
+    if (memberFilter === 'all') return t('transactions.filters.allMembers');
     const member = familyMembers.find(m => m.id === memberFilter);
-    return member?.name || 'Unknown';
+    return member?.name || t('transactions.filters.unknownMember');
   };
 
   const getMonthLabel = () => {
@@ -112,12 +114,12 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
     if (monthFilter.startsWith('carousel-')) {
       const index = parseInt(monthFilter.split('-')[1]);
       const month = months[index];
-      return month ? `${month.monthName} ${month.year}` : 'Select month';
+      return month ? `${month.monthName} ${month.year}` : t('transactions.filters.selectMonth');
     }
     
     // Check other options
     const option = monthOptions.find(m => m.value === monthFilter);
-    return option?.label || 'Select month';
+    return option?.label || t('transactions.filters.selectMonth');
   };
 
   const getButtonClasses = (isActive: boolean) => {
@@ -158,7 +160,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className={typeFilter === 'all' ? activeOptionClasses : optionClasses}
             >
-              All types
+              {t('transactions.filters.allTypes')}
             </div>
             <div
               onClick={() => {
@@ -167,7 +169,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className={typeFilter === 'income' ? activeOptionClasses : optionClasses}
             >
-              Income
+              {t('common.income')}
             </div>
             <div
               onClick={() => {
@@ -176,7 +178,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className={typeFilter === 'expense' ? activeOptionClasses : optionClasses}
             >
-              Expenses
+              {t('common.expenses')}
             </div>
           </div>
         )}
@@ -206,7 +208,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className={memberFilter === 'all' ? activeOptionClasses : optionClasses}
             >
-              All members
+              {t('transactions.filters.allMembers')}
             </div>
             {familyMembers.map(member => (
               <div
@@ -234,7 +236,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           className={getButtonClasses(categoryFilter !== 'all')}
         >
           <span className="flex items-center gap-1">
-            {categoryFilter === 'all' ? 'All categories' : categoryFilter}
+            {categoryFilter === 'all' ? t('transactions.filters.allCategories') : categoryFilter}
             <ChevronDown className="h-4 w-4" />
           </span>
         </button>
@@ -248,13 +250,13 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className={categoryFilter === 'all' ? activeOptionClasses : optionClasses}
             >
-              All categories
+              {t('transactions.filters.allCategories')}
             </div>
             {categoryGroups.map(group => (
               <div key={group.type}>
                 {categoryGroups.length > 1 && (
                   <div className="px-4 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                    {group.label}
+                    {t(group.type === 'income' ? 'common.income' : 'common.expenses')}
                   </div>
                 )}
                 {group.categories.map(category => (
@@ -323,7 +325,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           className={getButtonClasses(false)}
         >
           <span className="flex items-center gap-1">
-            More
+            {t('transactions.filters.more')}
             <ChevronDown className="h-4 w-4" />
           </span>
         </button>
@@ -337,7 +339,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className="px-4 py-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
             >
-              Coming soon…
+              {t('transactions.filters.comingSoon')}
             </div>
           </div>
         )}

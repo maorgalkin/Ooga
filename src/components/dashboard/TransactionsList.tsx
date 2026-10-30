@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useT } from '../../hooks/useT';
 import { Edit2, Trash2, CheckSquare } from 'lucide-react';
 import { getCategoryColor } from '../../utils/categoryColors';
 import type { Transaction, FamilyMember } from '../../types';
@@ -27,6 +28,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   onDeleteTransactions,
   emptyMessage = 'No transactions available',
 }) => {
+  const t = useT();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -87,16 +89,16 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           {selectionMode ? (
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setSelectedIds(allSelected ? new Set() : new Set(transactions.map(t => t.id)))}
+                onClick={() => setSelectedIds(allSelected ? new Set() : new Set(transactions.map(tx => tx.id)))}
                 className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
               >
-                {allSelected ? 'Deselect all' : 'Select all'}
+                {allSelected ? t('transactions.list.deselectAll') : t('transactions.list.selectAll')}
               </button>
               <button
                 onClick={exitSelectionMode}
                 className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           ) : (
@@ -105,21 +107,21 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               <CheckSquare className="w-5 h-5" />
-              Select
+              {t('transactions.list.select')}
             </button>
           )}
         </div>
       )}
 
       <div className="grid gap-4">
-        {transactions.map(t => {
-          const categoryColors = getCategoryColor(t.category, t.type, personalBudget);
-          const isSelected = selectedIds.has(t.id);
+        {transactions.map(tx => {
+          const categoryColors = getCategoryColor(tx.category, tx.type, personalBudget);
+          const isSelected = selectedIds.has(tx.id);
 
           return (
             <div
-              key={t.id}
-              onClick={selectionMode ? () => toggleSelect(t.id) : undefined}
+              key={tx.id}
+              onClick={selectionMode ? () => toggleSelect(tx.id) : undefined}
               onPointerDown={e => {
                 if (selectionMode) return;
                 // Don't trigger long-press from the edit button
@@ -129,7 +131,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                 pressTimerRef.current = setTimeout(() => {
                   pressTimerRef.current = null;
                   setSelectionMode(true);
-                  setSelectedIds(new Set([t.id]));
+                  setSelectedIds(new Set([tx.id]));
                 }, 500);
               }}
               onPointerMove={() => {
@@ -163,7 +165,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => toggleSelect(t.id)}
+                      onChange={() => toggleSelect(tx.id)}
                       onClick={e => e.stopPropagation()}
                       className="w-4 h-4 cursor-pointer accent-blue-600"
                     />
@@ -180,40 +182,40 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                         color: categoryColors.text,
                       }}
                     >
-                      {t.category}
+                      {tx.category}
                     </span>
                   </div>
-                  {t.description && (
-                    <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">{t.description}</div>
+                  {tx.description && (
+                    <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">{tx.description}</div>
                   )}
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(t.date).toLocaleDateString(getUserLocale())}
-                    {t.familyMember && ` • ${familyMembers.find(m => m.id === t.familyMember)?.name || 'Unknown'}`}
-                    {t.source === 'manual' && t.paidWith && (
+                    {new Date(tx.date).toLocaleDateString(getUserLocale())}
+                    {tx.familyMember && ` • ${familyMembers.find(m => m.id === tx.familyMember)?.name || t('transactions.filters.unknownMember')}`}
+                    {tx.source === 'manual' && tx.paidWith && (
                       <span
                         className="ms-2 px-1.5 py-0.5 rounded text-[10px] font-medium border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
-                        title="Added by hand and paid with a connected account: the next import will match the bank's charge to it"
+                        title={t('transactions.list.awaitingBankHint')}
                       >
-                        awaiting bank
+                        {t('transactions.list.awaitingBank')}
                       </span>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 flex-shrink-0">
-                  <div className={`font-bold text-lg ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                  <div className={`font-bold text-lg ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </div>
                   {!selectionMode && (
                     <button
                       data-edit-btn
                       onClick={(e) => {
                         e.stopPropagation();
-                        onEditTransaction(t);
+                        onEditTransaction(tx);
                       }}
                       className="text-gray-400 hover:text-blue-600 transition-colors p-1"
-                      title="Edit transaction"
-                      aria-label="Edit transaction"
+                      title={t('transactions.list.edit')}
+                      aria-label={t('transactions.list.edit')}
                     >
                       <Edit2 className="h-5 w-5" />
                     </button>
@@ -231,7 +233,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           {confirmDelete ? (
             <>
               <p className="text-sm font-medium text-gray-800 dark:text-gray-200 flex-1">
-                Delete {selectedIds.size} transaction{selectedIds.size !== 1 ? 's' : ''}? This can't be undone.
+                {t('transactions.list.confirmDelete', { count: selectedIds.size })}
               </p>
               <div className="flex gap-2">
                 <button
@@ -239,30 +241,28 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                   disabled={deleting}
                   className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
                   className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white transition-colors flex items-center gap-1.5"
                 >
-                  {deleting ? 'Deleting…' : <><Trash2 className="w-3.5 h-3.5" /> Delete</>}
+                  {deleting ? t('common.deleting') : <><Trash2 className="w-3.5 h-3.5" /> {t('common.delete')}</>}
                 </button>
               </div>
             </>
           ) : (
             <>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {selectedIds.size > 0
-                  ? `${selectedIds.size} selected`
-                  : 'Tap rows to select'}
+                {selectedIds.size > 0 ? t('transactions.list.selected', { count: selectedIds.size }) : t('transactions.list.tapToSelect')}
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={exitSelectionMode}
                   className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(true)}
@@ -270,7 +270,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                   className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  Delete selected
+                  {t('transactions.list.deleteSelected')}
                 </button>
               </div>
             </>

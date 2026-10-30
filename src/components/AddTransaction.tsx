@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { useT } from '../hooks/useT';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget } from '../hooks/useBudgets';
 import { X, HelpCircle, Calendar, Download, Plus } from 'lucide-react';
@@ -19,6 +20,7 @@ const LAST_PAID_WITH_KEY = 'last-paid-with';
 
 const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const t = useT();
   const { addTransaction, familyMembers, setTransactions, refreshTransactions } = useFinance();
   const { data: personalBudget } = useActiveBudget();
   const [showCategorySelector, setShowCategorySelector] = useState(false);
@@ -101,23 +103,23 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
     const missingFields = [];
     
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      missingFields.push('Amount');
+      missingFields.push(t('transactions.details.amount'));
     }
     
     if (!formData.category) {
-      missingFields.push('Category');
+      missingFields.push(t('transactions.details.category'));
     }
     
     if (!formData.date) {
-      missingFields.push('Date');
+      missingFields.push(t('transactions.details.date'));
     }
     
     if (isInstallment && (!numberOfInstallments || parseInt(numberOfInstallments) < 2)) {
-      missingFields.push('Number of installments (minimum 2)');
+      missingFields.push(t('transactions.form.installmentsField'));
     }
     
     if (missingFields.length > 0) {
-      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+      alert(t('transactions.form.missingFields', { fields: missingFields.join(', ') }));
       return;
     }
 
@@ -168,7 +170,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
       onClose();
     } catch (error) {
       console.error('Error adding transaction:', error);
-      alert('Failed to add transaction. Please try again.');
+      alert(t('transactions.form.addFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -240,10 +242,11 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Add {formData.type === 'income' ? '💰 income' : '💸 expense'}
+                {t(formData.type === 'income' ? 'transactions.form.titleIncome' : 'transactions.form.titleExpense')}
               </h2>
               <button
                 onClick={onClose}
+                aria-label={t('common.close')}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="h-6 w-6" />
@@ -255,7 +258,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
           <div className="pb-1">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
               <Download className="w-3.5 h-3.5" />
-              Import transactions
+              {t('transactions.form.importTransactions')}
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {connections.map(conn => (
@@ -274,11 +277,11 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={() => { onClose(); navigate('/?tab=budget&subtab=settings'); }}
-                title="Add a bank account in Settings"
+                title={t('transactions.form.addAccountHint')}
                 className="flex-shrink-0 w-24 h-16 flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer gap-1"
               >
                 <Plus className="w-4 h-4 text-gray-400" />
-                <span className="text-xs text-gray-400">Add account</span>
+                <span className="text-xs text-gray-400">{t('transactions.form.addAccount')}</span>
               </button>
             </div>
           </div>
@@ -299,7 +302,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                💸 Expense
+                {t('transactions.form.expenseToggle')}
               </button>
               
               {/* Income Option */}
@@ -316,14 +319,14 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                💰 Income
+                {t('transactions.form.incomeToggle')}
               </button>
             </div>
           </div>
 
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-              {formData.type === 'income' ? 'Income' : 'Expense'} Categories
+              {t(formData.type === 'income' ? 'transactions.form.categoriesIncome' : 'transactions.form.categoriesExpense')}
             </label>
             <div className="relative">
               <input
@@ -331,7 +334,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                 type="text"
                 value={formData.category}
                 readOnly
-                placeholder={formData.type === 'income' ? 'Select income source' : 'Select expense category'}
+                placeholder={t(formData.type === 'income' ? 'transactions.categoryPicker.titleIncome' : 'transactions.categoryPicker.titleExpense')}
                 className="w-full px-3 py-2 pe-24 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 onClick={() => setShowCategorySelector(true)}
                 required
@@ -341,7 +344,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                 onClick={() => setShowCategorySelector(true)}
                 className="absolute end-2 top-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
               >
-                Choose
+                {t('transactions.form.choose')}
               </button>
             </div>
 
@@ -349,7 +352,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
 
           <div>
             <label htmlFor="transaction-description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description <span className="text-xs text-gray-500">(optional)</span>
+              {t('transactions.details.description')} <span className="text-xs text-gray-500">{t('common.optional')}</span>
             </label>
             <input
               id="transaction-description"
@@ -358,13 +361,13 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
               value={formData.description}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter transaction description (optional)"
+              placeholder={t('transactions.form.descriptionPlaceholder')}
             />
           </div>
 
           <div>
             <label htmlFor="transaction-amount" className="block text-sm font-medium text-gray-700 mb-1">
-              Amount
+              {t('transactions.details.amount')}
             </label>
             <input
               id="transaction-amount"
@@ -382,7 +385,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
 
           <div>
             <label htmlFor="transaction-family-member" className="block text-sm font-medium text-gray-700 mb-1">
-              Family member
+              {t('transactions.details.familyMember')}
             </label>
             <select
               id="transaction-family-member"
@@ -391,7 +394,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Select family member (optional)</option>
+              <option value="">{t('transactions.form.familyMemberPlaceholder')}</option>
               {familyMembers.map(member => (
                 <option key={member.id} value={member.id}>{member.name}</option>
               ))}
@@ -401,7 +404,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
           {connections.length > 0 && (
             <div>
               <label htmlFor="transaction-paid-with" className="block text-sm font-medium text-gray-700 mb-1">
-                {formData.type === 'income' ? 'Received in' : 'Paid with'}
+                {t(formData.type === 'income' ? 'transactions.form.receivedIn' : 'transactions.form.paidWith')}
               </label>
               <select
                 id="transaction-paid-with"
@@ -409,14 +412,14 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                 onChange={(e) => setPaidWith(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Cash / not a connected account</option>
+                <option value="">{t('transactions.form.cash')}</option>
                 {connections.map(conn => (
                   <option key={conn.id} value={conn.id}>{conn.display_name}</option>
                 ))}
               </select>
               {paidWith && (
                 <p className="mt-1 text-xs text-gray-500">
-                  The next import from this account will match the bank’s charge to this entry instead of adding it twice.
+                  {t('transactions.form.paidWithHint')}
                 </p>
               )}
             </div>
@@ -424,7 +427,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
 
           <div>
             <label htmlFor="transaction-date" className="block text-sm font-medium text-gray-700 mb-1">
-              Date
+              {t('transactions.details.date')}
             </label>
             <input
               id="transaction-date"
@@ -454,7 +457,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                   />
                   <label htmlFor="installments-checkbox" className="flex items-center text-sm font-medium text-gray-700 whitespace-nowrap">
                     <Calendar className="h-4 w-4 me-1" />
-                    Create as installments
+                    {t('transactions.form.installments')}
                   </label>
                 </div>
                 
@@ -466,7 +469,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                     max="36"
                     value={numberOfInstallments}
                     onChange={(e) => setNumberOfInstallments(e.target.value)}
-                    placeholder="# months"
+                    placeholder={t('transactions.form.monthsPlaceholder')}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required={isInstallment}
                   />
@@ -475,7 +478,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                 <div className="relative group flex-shrink-0">
                   <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
                   <div className="absolute start-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                    Amount will be divided equally across installments (rounded to the cent; any leftover goes on the first). The first installment keeps the selected date, the rest fall on the 1st of each following month (2-36 months).
+                    {t('transactions.form.installmentsHelp')}
                   </div>
                 </div>
               </div>
@@ -489,14 +492,14 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
               disabled={isSubmitting}
               className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit'}
+              {isSubmitting ? t('transactions.form.submitting') : t('transactions.form.submit')}
             </button>
           </div>
         </form>

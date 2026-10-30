@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget } from '../hooks/useBudgets';
+import { useT } from '../hooks/useT';
 import { X, Calendar } from 'lucide-react';
 import type { Transaction } from '../types';
 import * as SupabaseService from '../services/supabaseDataService';
@@ -12,6 +13,7 @@ interface EditTransactionModalProps {
 }
 
 const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction, onClose }) => {
+  const t = useT();
   const { updateTransaction, deleteTransaction, familyMembers, setTransactions } = useFinance();
   const { data: personalBudget } = useActiveBudget();
   
@@ -104,7 +106,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
 
     const shouldConvert = convertToInstallments && canConvertToInstallments;
     if (shouldConvert && (installmentCount < 2 || installmentCount > 36)) {
-      alert('Number of installments must be between 2 and 36.');
+      alert(t('transactions.edit.installmentsRange'));
       return;
     }
 
@@ -134,7 +136,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
       onClose();
     } catch (error) {
       console.error('Error updating transaction:', error);
-      alert('Failed to update transaction. Please try again.');
+      alert(t('transactions.edit.updateFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -165,7 +167,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
       onClose();
     } catch (error) {
       console.error('Error deleting transaction:', error);
-      alert('Failed to delete transaction. Please try again.');
+      alert(t('transactions.edit.deleteFailed'));
     }
   };
 
@@ -205,9 +207,10 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
     >
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto overscroll-contain touch-pan-y">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">Edit transaction</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('transactions.list.edit')}</h2>
           <button
             onClick={onClose}
+            aria-label={t('common.close')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="h-6 w-6" />
@@ -218,7 +221,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {/* Date */}
           <div>
             <label htmlFor="edit-date" className="block text-sm font-medium text-gray-700 mb-1">
-              Date
+              {t('transactions.details.date')}
             </label>
             <input
               id="edit-date"
@@ -234,7 +237,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {/* Description */}
           <div>
             <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              {t('transactions.details.description')}
             </label>
             <input
               id="edit-description"
@@ -243,7 +246,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
               value={formData.description}
               onChange={handleChange}
               required
-              placeholder="e.g., Grocery shopping"
+              placeholder={t('transactions.edit.descriptionPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -251,7 +254,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {/* Amount */}
           <div>
             <label htmlFor="edit-amount" className="block text-sm font-medium text-gray-700 mb-1">
-              {convertToInstallments && canConvertToInstallments ? 'Total amount' : 'Amount'} ({currencySymbol})
+              {convertToInstallments && canConvertToInstallments ? t('transactions.edit.totalAmount') : t('transactions.details.amount')} ({currencySymbol})
             </label>
             <input
               id="edit-amount"
@@ -270,7 +273,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {/* Type */}
           <div>
             <label htmlFor="edit-type" className="block text-sm font-medium text-gray-700 mb-1">
-              Type
+              {t('transactions.edit.type')}
             </label>
             <select
               id="edit-type"
@@ -280,15 +283,15 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
+              <option value="expense">{t('transactions.filters.expense')}</option>
+              <option value="income">{t('transactions.filters.income')}</option>
             </select>
           </div>
 
           {/* Category */}
           <div>
             <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700 mb-1">
-              Category
+              {t('transactions.details.category')}
             </label>
             <select
               id="edit-category"
@@ -298,7 +301,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Select a category</option>
+              <option value="">{t('transactions.edit.selectCategory')}</option>
               {currentCategories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
@@ -308,7 +311,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {/* Family Member */}
           <div>
             <label htmlFor="edit-family-member" className="block text-sm font-medium text-gray-700 mb-1">
-              Family member (optional)
+              {t('transactions.edit.familyMemberOptional')}
             </label>
             <select
               id="edit-family-member"
@@ -317,7 +320,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">None</option>
+              <option value="">{t('transactions.edit.none')}</option>
               {familyMembers.map(member => (
                 <option key={member.id} value={member.id}>{member.name}</option>
               ))}
@@ -328,7 +331,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {isManualEntry && connections.length > 0 && (
             <div>
               <label htmlFor="edit-paid-with" className="block text-sm font-medium text-gray-700 mb-1">
-                {formData.type === 'income' ? 'Received in' : 'Paid with'}
+                {t(formData.type === 'income' ? 'transactions.form.receivedIn' : 'transactions.form.paidWith')}
               </label>
               <select
                 id="edit-paid-with"
@@ -337,7 +340,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Cash / not a connected account</option>
+                <option value="">{t('transactions.form.cash')}</option>
                 {connections.map(conn => (
                   <option key={conn.id} value={conn.id}>{conn.display_name}</option>
                 ))}
@@ -362,7 +365,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                   />
                   <label htmlFor="edit-installments-checkbox" className="flex items-center text-sm font-medium text-gray-700 whitespace-nowrap">
                     <Calendar className="h-4 w-4 me-1" />
-                    Convert to installments
+                    {t('transactions.edit.convert')}
                   </label>
                 </div>
 
@@ -374,7 +377,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                     max="36"
                     value={numberOfInstallments}
                     onChange={(e) => setNumberOfInstallments(e.target.value)}
-                    placeholder="# months"
+                    placeholder={t('transactions.form.monthsPlaceholder')}
                     required
                     className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -384,11 +387,13 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
               {convertToInstallments && (
                 <p className="text-xs text-gray-500">
                   {installmentAmounts.length > 0
-                    ? `${installmentAmounts[0] !== installmentAmounts[1]
-                        ? `${currencySymbol}${installmentAmounts[0].toFixed(2)} + ${installmentCount - 1} × ${currencySymbol}${installmentAmounts[1].toFixed(2)}`
-                        : `${installmentCount} × ${currencySymbol}${installmentAmounts[0].toFixed(2)}`
-                      } — total ${currencySymbol}${totalAmount.toFixed(2)}. The first keeps this date, the rest fall on the 1st of each following month.`
-                    : 'Enter 2–36 installments. The amount above is treated as the total and split equally.'}
+                    ? t('transactions.edit.installmentsSummary', {
+                        split: installmentAmounts[0] !== installmentAmounts[1]
+                          ? `${currencySymbol}${installmentAmounts[0].toFixed(2)} + ${installmentCount - 1} × ${currencySymbol}${installmentAmounts[1].toFixed(2)}`
+                          : `${installmentCount} × ${currencySymbol}${installmentAmounts[0].toFixed(2)}`,
+                        total: `${currencySymbol}${totalAmount.toFixed(2)}`,
+                      })
+                    : t('transactions.edit.installmentsHint')}
                 </p>
               )}
             </div>
@@ -403,21 +408,21 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                   disabled={isSubmitting}
                   className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors font-medium disabled:opacity-50"
                 >
-                  {convertToInstallments && canConvertToInstallments ? 'Create installments' : 'Save changes'}
+                  {convertToInstallments && canConvertToInstallments ? t('transactions.edit.createInstallments') : t('transactions.edit.saveChanges')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
                   className="flex-1 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors font-medium"
                 >
-                  Delete
+                  {t('common.delete')}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors font-medium"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </>
             ) : (
@@ -425,7 +430,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                 {isInstallment ? (
                   <>
                     <div className="text-sm text-gray-700 font-medium mb-3">
-                      This transaction is part of an installment series ({transaction.installment_number}/{transaction.installment_total})
+                      {t('transactions.edit.seriesNotice', { number: transaction.installment_number, total: transaction.installment_total })}
                     </div>
                     
                     {/* Installment deletion options */}
@@ -440,7 +445,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                           className="mt-1"
                         />
                         <span className="text-sm text-gray-700">
-                          Delete only this installment ({transaction.installment_number}/{transaction.installment_total})
+                          {t('transactions.edit.deleteSingle', { number: transaction.installment_number, total: transaction.installment_total })}
                         </span>
                       </label>
                       
@@ -454,7 +459,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                           className="mt-1"
                         />
                         <span className="text-sm text-gray-700">
-                          Delete this and all future installments ({transaction.installment_number}-{transaction.installment_total})
+                          {t('transactions.edit.deleteFuture', { number: transaction.installment_number, total: transaction.installment_total })}
                         </span>
                       </label>
                       
@@ -468,7 +473,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                           className="mt-1"
                         />
                         <span className="text-sm text-gray-700">
-                          Delete entire installment series (all {transaction.installment_total} installments)
+                          {t('transactions.edit.deleteAll', { total: transaction.installment_total })}
                         </span>
                       </label>
                     </div>
@@ -479,21 +484,21 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                         onClick={handleDelete}
                         className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
                       >
-                        Confirm delete
+                        {t('transactions.edit.confirmDelete')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowDeleteConfirm(false)}
                         className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors font-medium"
                       >
-                        Cancel
-                      </button>
+                  {t('common.cancel')}
+                </button>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="w-full text-center text-sm text-red-600 font-medium mb-2">
-                      Are you sure you want to delete this transaction?
+                      {t('transactions.edit.areYouSure')}
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -501,15 +506,15 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                         onClick={handleDelete}
                         className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
                       >
-                        Yes, Delete
+                        {t('transactions.edit.yesDelete')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowDeleteConfirm(false)}
                         className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors font-medium"
                       >
-                        Cancel
-                      </button>
+                  {t('common.cancel')}
+                </button>
                     </div>
                   </>
                 )}

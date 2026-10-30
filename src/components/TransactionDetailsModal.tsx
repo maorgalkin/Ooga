@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Calendar, User, Tag, FileText, DollarSign } from 'lucide-react';
 import type { Transaction, FamilyMember } from '../types';
 import { getUserLocale } from '../utils/locale';
+import { useT } from '../hooks/useT';
 
 interface TransactionDetailsModalProps {
   transaction: Transaction | null;
@@ -18,6 +19,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
   formatCurrency,
   familyMembers,
 }) => {
+  const t = useT();
   if (!isOpen || !transaction) return null;
 
   const formatDate = (dateString: string) => {
@@ -42,7 +44,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Transaction details
+            {t('transactions.details.title')}
           </h2>
           <button
             onClick={onClose}
@@ -68,7 +70,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
               }`} />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Amount</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('transactions.details.amount')}</p>
               <p className={`text-2xl font-bold ${
                 transaction.type === 'income'
                   ? 'text-green-600 dark:text-green-400'
@@ -92,7 +94,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
               <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Date</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('transactions.details.date')}</p>
               <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                 {formatDate(transaction.date)}
               </p>
@@ -105,7 +107,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
               <Tag className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Category</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('transactions.details.category')}</p>
               <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                 {transaction.category}
               </p>
@@ -119,7 +121,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
                 <User className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Family member</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('transactions.details.familyMember')}</p>
                 <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                   {getFamilyMemberName(transaction.familyMember)}
                 </p>
@@ -134,8 +136,8 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
                 <FileText className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Description</p>
-                <p className="text-base font-medium text-gray-900 dark:text-gray-100">
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('transactions.details.description')}</p>
+                <p dir="auto" className="text-base font-medium text-gray-900 dark:text-gray-100">
                   {transaction.description}
                 </p>
               </div>
@@ -149,7 +151,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
             onClick={onClose}
             className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>

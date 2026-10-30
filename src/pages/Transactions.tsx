@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useT } from '../hooks/useT';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget } from '../hooks/useBudgets';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -20,6 +21,7 @@ import type { Transaction } from '../types';
  * Features month carousel, multi-dimensional filtering, and transaction editing
  */
 export const Transactions: React.FC = () => {
+  const t = useT();
   const { transactions, familyMembers, deleteTransaction } = useFinance();
   const { data: personalBudget } = useActiveBudget();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -102,10 +104,10 @@ export const Transactions: React.FC = () => {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className={`text-3xl font-bold ${getHeadingColor('blue')} mb-2`}>
-            Transactions
+            {t('transactions.title')}
           </h1>
           <p className={getSubheadingColor('blue')}>
-            View and manage your transaction history
+            {t('transactions.subtitle')}
           </p>
         </div>
       </div>

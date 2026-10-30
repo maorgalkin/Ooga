@@ -55,4 +55,13 @@ describe('right-to-left readiness', () => {
     );
     expect(unmirrored).toEqual([]);
   });
+
+  it('mirrors left and right chevrons drawn as inline SVG', () => {
+    // The chevron paths in use (Heroicons' chevron-left and chevron-right)
+    const chevron = /<svg([^>]*)>\s*<path[^>]*d="(?:M15 19l-7-7 7-7|M9 5l7 7-7 7)"/g;
+    const unmirrored = source.flatMap(({ f, s }) =>
+      [...s.matchAll(chevron)].filter((m) => !m[1].includes('rtl:-scale-x-100')).map((m) => `${f}: <svg${m[1]}>`),
+    );
+    expect(unmirrored).toEqual([]);
+  });
 });

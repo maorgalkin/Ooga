@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { isRtl } from '../../i18n';
+import { useT } from '../../hooks/useT';
 
 interface MonthData {
   label: string;
@@ -25,6 +26,7 @@ export const MonthCarousel: React.FC<MonthCarouselProps> = ({
   activeIndex,
   onIndexChange,
 }) => {
+  const t = useT();
   const isDisabled = months.length <= 1;
 
   // Get the 3 visible cards: prev, current, next (with wrapping)
@@ -63,9 +65,9 @@ export const MonthCarousel: React.FC<MonthCarouselProps> = ({
           <button
             onClick={handlePrevious}
             className="p-2 sm:p-3 rounded-full bg-blue-100 dark:bg-blue-800 border border-blue-300 dark:border-blue-600 hover:bg-blue-200 dark:hover:bg-blue-700 transition-all shadow-lg flex-shrink-0"
-            aria-label="Previous month"
+            aria-label={t('dashboard.previousMonth')}
           >
-            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-blue-700 dark:text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-blue-700 dark:text-blue-200 rtl:-scale-x-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -118,9 +120,9 @@ export const MonthCarousel: React.FC<MonthCarouselProps> = ({
           <button
             onClick={handleNext}
             className="p-2 sm:p-3 rounded-full bg-blue-100 dark:bg-blue-800 border border-blue-300 dark:border-blue-600 hover:bg-blue-200 dark:hover:bg-blue-700 transition-all shadow-lg flex-shrink-0"
-            aria-label="Next month"
+            aria-label={t('dashboard.nextMonth')}
           >
-            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-blue-700 dark:text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-blue-700 dark:text-blue-200 rtl:-scale-x-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -165,7 +167,7 @@ export const MonthCarousel: React.FC<MonthCarouselProps> = ({
                         damping: 30
                       }}
                       className="flex-shrink-0 h-2 w-12 bg-blue-600 dark:bg-blue-400 rounded-full cursor-grab active:cursor-grabbing transition-all"
-                      aria-label={`Go to ${month.monthName} ${month.year}`}
+                      aria-label={t('transactions.goToMonth', { month: month.monthName, year: month.year })}
                       title={`${month.monthName} ${month.year}`}
                     />
                   );
@@ -176,7 +178,7 @@ export const MonthCarousel: React.FC<MonthCarouselProps> = ({
                     key={idx}
                     onClick={() => onIndexChange(idx)}
                     className="flex-shrink-0 h-2 w-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded-full transition-all"
-                    aria-label={`Go to ${month.monthName} ${month.year}`}
+                    aria-label={t('transactions.goToMonth', { month: month.monthName, year: month.year })}
                     title={`${month.monthName} ${month.year}`}
                   />
                 );

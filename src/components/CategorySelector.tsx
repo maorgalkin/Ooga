@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { getCategoryColor } from '../utils/categoryColors';
 import { getCategoryIcon } from '../utils/categoryIcons';
 import { useActiveBudget } from '../hooks/useBudgets';
+import { useT } from '../hooks/useT';
 
 interface CategorySelectorProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   categories,
   type
 }) => {
+  const t = useT();
   const { data: personalBudget } = useActiveBudget();
   
   if (!isOpen) return null;
@@ -52,10 +54,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Select {type === 'income' ? 'income source' : 'expense category'}
+                {t(type === 'income' ? 'transactions.categoryPicker.titleIncome' : 'transactions.categoryPicker.titleExpense')}
               </h3>
               <p className="text-sm text-gray-500 mt-1">
-                Choose from your categories below
+                {t('transactions.categoryPicker.subtitle')}
               </p>
             </div>
             <button
@@ -103,10 +105,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 
         <div className="p-4 bg-gray-50 border-t border-gray-200 text-center">
           <p className="text-xs text-gray-500">
-            {type === 'income' ? 
-              'Select the source of your income' : 
-              'Select the category that best describes your expense'
-            }
+            {t(type === 'income' ? 'transactions.categoryPicker.footerIncome' : 'transactions.categoryPicker.footerExpense')}
           </p>
         </div>
       </div>

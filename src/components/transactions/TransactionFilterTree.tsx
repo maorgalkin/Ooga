@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { useT } from '../../hooks/useT';
 import type { FamilyMember } from '../../types';
 import { flattenCategoryGroups, type CategoryGroup } from '../../utils/transactionFilters';
 
@@ -29,6 +30,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
   onMemberChange,
   onCategoryChange,
 }) => {
+  const t = useT();
   const categories = useMemo(() => flattenCategoryGroups(categoryGroups), [categoryGroups]);
 
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -130,14 +132,14 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Filters
+          {t('transactions.filters.title')}
         </h3>
         {activeFilterCount > 0 && (
           <button
             onClick={handleClearAll}
             className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
           >
-            Clear ({activeFilterCount})
+            {t('transactions.filters.clear', { count: activeFilterCount })}
           </button>
         )}
       </div>
@@ -148,7 +150,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
           onClick={() => toggleSection('type')}
           className="flex items-center justify-between w-full text-start text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
-          <span>Transaction type</span>
+          <span>{t('transactions.filters.type')}</span>
           {expandedSections.has('type') ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
@@ -170,7 +172,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Select all
+                {t('transactions.filters.selectAll')}
               </span>
             </label>
 
@@ -182,7 +184,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
                 onChange={() => handleTypeToggle('income')}
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Income</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('transactions.filters.income')}</span>
             </label>
 
             {/* Expense */}
@@ -193,7 +195,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
                 onChange={() => handleTypeToggle('expense')}
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Expense</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('transactions.filters.expense')}</span>
             </label>
           </div>
         )}
@@ -205,7 +207,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
           onClick={() => toggleSection('members')}
           className="flex items-center justify-between w-full text-start text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
-          <span>Family members</span>
+          <span>{t('transactions.filters.members')}</span>
           {expandedSections.has('members') ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
@@ -227,7 +229,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Select all
+                {t('transactions.filters.selectAll')}
               </span>
             </label>
 
@@ -258,7 +260,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
           onClick={() => toggleSection('categories')}
           className="flex items-center justify-between w-full text-start text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
-          <span>Categories</span>
+          <span>{t('transactions.filters.categories')}</span>
           {expandedSections.has('categories') ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
@@ -280,7 +282,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Select all
+                {t('transactions.filters.selectAll')}
               </span>
             </label>
 
@@ -289,7 +291,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
               <div key={group.type}>
                 {categoryGroups.length > 1 && (
                   <p className="px-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                    {group.label}
+                    {t(group.type === 'income' ? 'common.income' : 'common.expenses')}
                   </p>
                 )}
                 {group.categories.map(category => (
