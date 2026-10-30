@@ -542,7 +542,7 @@
       "editCategoryTitle": "עריכת {{name}}",
       "categoryName": "שם הקטגוריה *",
       "categoryNamePlaceholder": "לדוגמה: מכולת",
-      "monthlyLimitRequired": "תקרה חודשית ($) *",
+      "monthlyLimitRequired": "תקרה חודשית ({{symbol}}) *",
       "color": "צבע",
       "colorAuto": "(נבחר אוטומטית כדי להבדיל)",
       "preview": "תצוגה מקדימה",
@@ -1246,7 +1246,7 @@
     "details": "פרטי השגיאה:",
     "reload": "טעינה מחדש",
     "tryAgain": "ניסיון חוזר",
-    "persists": "אם הבעיה חוזרת, אפשר לפנות לתמיכה או לבדוק את הקונסולה של הדפדפן לפרטים נוספים."
+    "persists": "אם זה חוזר, כדאי לנסות שוב בעוד כמה דקות."
   },
   "buildInfo": {
     "commit": "גרסה:",

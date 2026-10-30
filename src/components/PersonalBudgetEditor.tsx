@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import type { PersonalBudget, CategoryConfig } from '../types/budget';
 import { getNextAvailableColor, CATEGORY_COLOR_PALETTE } from '../utils/categoryColors';
-import { formatCurrencyFromSettings } from '../utils/formatCurrency';
+import { formatCurrencyFromSettings, getCurrencySymbol } from '../utils/formatCurrency';
 
 interface PersonalBudgetEditorProps {
   className?: string;
@@ -674,7 +674,7 @@ export const PersonalBudgetEditor: React.FC<PersonalBudgetEditorProps> = ({
                   {/* Monthly Limit */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('budget.editor.monthlyLimitRequired')}
+                      {t('budget.editor.monthlyLimitRequired', { symbol: getCurrencySymbol(currency) })}
                     </label>
                     <input
                       type="number"
