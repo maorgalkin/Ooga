@@ -16,7 +16,7 @@ export default function AboutPage() {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden">
+      <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800" />
         <div className="max-w-6xl mx-auto px-4 py-14 sm:py-20 grid gap-14 lg:grid-cols-2 lg:items-center">
           <motion.div {...rise()}>
@@ -75,7 +75,7 @@ export default function AboutPage() {
       </section>
 
       <section className="max-w-4xl mx-auto px-4 pb-20">
-        <div className="relative overflow-hidden rounded-3xl p-8 sm:p-10 text-center text-white shadow-xl">
+        <div className="relative isolate overflow-hidden rounded-3xl p-8 sm:p-10 text-center text-white shadow-xl">
           <div className="absolute inset-0 -z-10 bg-gradient-to-r from-purple-600 via-blue-600 to-green-600" />
           <h2 className="text-2xl sm:text-3xl font-bold">Ready when you are</h2>
           <p className="mt-3 text-white/90">The guide walks you through it step by step, from your household to your first trends.</p>

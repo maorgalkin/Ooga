@@ -48,7 +48,7 @@ export function HeroShowcase() {
   const Icon = item.icon;
 
   return (
-    <div aria-hidden className="relative mx-auto w-full max-w-md select-none">
+    <div aria-hidden className="relative isolate mx-auto w-full max-w-md select-none">
       {/* Soft brand-colored glow behind the cards */}
       <div className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-purple-400/30 via-blue-400/30 to-green-400/30 blur-2xl" />
 
