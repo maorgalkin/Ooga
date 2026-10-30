@@ -40,7 +40,7 @@ export default function AboutPage() {
                 to={user ? '/' : '/register'}
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-5 py-3 font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                {user ? t('nav.openOoga') : t('about.createAccount')}
+                {user ? t('nav.dashboard') : t('about.createAccount')}
                 <ArrowRight className="h-5 w-5 rtl:-scale-x-100" />
               </Link>
             </div>

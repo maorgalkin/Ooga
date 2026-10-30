@@ -7,7 +7,7 @@ import { safeReturnPath } from '../../utils/returnPath';
 import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { PublicLayout } from '../../components/info/PublicLayout';
 import { HeroShowcase } from '../../components/info/HeroShowcase';
-import { FloatingShapes, LandingSections } from '../../components/info/LandingSections';
+import { LandingSections } from '../../components/info/LandingSections';
 
 const Login: React.FC = () => {
   const { signIn, user, loading: authLoading } = useAuth();
@@ -41,9 +41,7 @@ const Login: React.FC = () => {
 
   return (
     <PublicLayout>
-      <section className="relative isolate overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800" />
-        <FloatingShapes />
+      <section>
         <div className="max-w-6xl mx-auto px-4 py-12 sm:py-16 grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:items-center">
           <div>
             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">

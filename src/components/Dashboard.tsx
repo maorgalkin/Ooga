@@ -17,6 +17,7 @@ import { useDashboardData } from '../hooks/useDashboardData';
 import { getUserLocale } from '../utils/locale';
 import { DashboardTabNavigation } from './dashboard/DashboardTabNavigation';
 import { DashboardEmptyState } from './dashboard/DashboardEmptyState';
+import { DashboardSkeleton } from './dashboard/DashboardSkeleton';
 import { DashboardTileLayout } from './dashboard/DashboardTileLayout';
 import { ProjectedMonthView } from './dashboard/ProjectedMonthView';
 import {
@@ -45,8 +46,8 @@ import { getProjectedBankInstallments, getLastCommittedMonth } from '../utils/pr
 
 const Dashboard: React.FC = () => {
   const t = useT();
-  const { transactions, familyMembers, addTransaction, deleteTransaction } = useFinance();
-  const { data: personalBudget } = useActiveBudget();
+  const { transactions, familyMembers, addTransaction, deleteTransaction, hasLoaded } = useFinance();
+  const { data: personalBudget, isLoading: budgetLoading } = useActiveBudget();
   const { data: monthlyBudget } = useCurrentMonthBudget();
   const { user } = useAuth();
   
@@ -54,13 +55,6 @@ const Dashboard: React.FC = () => {
   useAutoApplyScheduledAdjustments(!!user);
   
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check OS/browser dark mode preference
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
   
   // Initialize activeTab from URL query parameter
   const tabParam = searchParams.get('tab');
@@ -197,23 +191,6 @@ const Dashboard: React.FC = () => {
         });
       }
     }, 100);
-  }, []);
-
-  // Track dark mode changes based on OS/browser preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsDarkMode(e.matches);
-    };
-    
-    // Set initial value
-    setIsDarkMode(mediaQuery.matches);
-    
-    // Listen for changes
-    mediaQuery.addEventListener('change', handleChange);
-    
-    return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
   // Load viewed alert IDs from database and household data
@@ -378,46 +355,8 @@ const Dashboard: React.FC = () => {
   };
 
   // Dynamic background based on active tab with subtle textures
-  const getBackgroundClass = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return 'bg-purple-100 dark:bg-purple-950/30';
-      case 'transactions':
-        return 'bg-blue-100 dark:bg-blue-950/30';
-      case 'budget':
-        return 'bg-green-100 dark:bg-green-950/30';
-      case 'insights':
-        return 'bg-indigo-100 dark:bg-indigo-950/30';
-      default:
-        return 'bg-white dark:bg-gray-900';
-    }
-  };
-
-  const getTextureStyle = (): React.CSSProperties => {
-    // Flat honeycomb hexagon pattern with white lines (only in light mode, flat in dark mode)
-    if (isDarkMode) {
-      return {}; // No pattern in dark mode
-    }
-    
-    const lineWidth = 2;
-    const lineStart = 50;
-    const lineEnd = lineStart + lineWidth;
-    
-    return {
-      backgroundImage: [
-        `repeating-linear-gradient(0deg, transparent 0px, transparent ${lineStart}px, rgba(255, 255, 255, 0.2) ${lineStart}px, rgba(255, 255, 255, 0.2) ${lineEnd}px)`,
-        `repeating-linear-gradient(60deg, transparent 0px, transparent ${lineStart}px, rgba(255, 255, 255, 0.2) ${lineStart}px, rgba(255, 255, 255, 0.2) ${lineEnd}px)`,
-        `repeating-linear-gradient(120deg, transparent 0px, transparent ${lineStart}px, rgba(255, 255, 255, 0.2) ${lineStart}px, rgba(255, 255, 255, 0.2) ${lineEnd}px)`
-      ].join(', '),
-      backgroundSize: '100% 100%',
-    };
-  };
-
   return (
-    <div 
-      className={`min-h-screen transition-all duration-500 ${getBackgroundClass()}`}
-      style={getTextureStyle()}
-    >
+    <div className="min-h-screen">
       <div className="px-3 sm:px-4 lg:px-6 py-8 max-w-7xl mx-auto">
       
       {/* Tab Navigation */}
@@ -503,8 +442,11 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Future month: committed charges only. Otherwise the empty state when there are no transactions */}
-          {isProjectedMonth ? (
+          {/* Future month: committed charges only. Otherwise the empty state when there are no transactions,
+              once they've had a chance to arrive */}
+          {!hasLoaded || budgetLoading ? (
+            <DashboardSkeleton />
+          ) : isProjectedMonth ? (
             <ProjectedMonthView
               monthDate={dashboardMonthDate}
               transactions={dashboardMonthTransactions}

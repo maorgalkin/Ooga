@@ -5,7 +5,6 @@ import { authErrorMessage } from '../../i18n/authErrors';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, AlertCircle, Loader2, CheckCircle, User } from 'lucide-react';
 import { PublicLayout } from '../../components/info/PublicLayout';
-import { FloatingShapes } from '../../components/info/LandingSections';
 
 const inputClass =
   'block w-full ps-10 pe-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed';
@@ -14,12 +13,10 @@ const MIN_PASSWORD_LENGTH = 6;
 const cardClass =
   'max-w-md w-full mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8';
 
-/** Same backdrop as the /login hero, so moving between the two pages feels like one place. */
+/** The page's spacing around the sign-up card; the backdrop comes from PublicLayout. */
 function AuthBackdrop({ children }: { children: React.ReactNode }) {
   return (
-    <section className="relative isolate overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800" />
-      <FloatingShapes />
+    <section>
       <div className="max-w-6xl mx-auto px-4 py-12 sm:py-16">{children}</div>
     </section>
   );

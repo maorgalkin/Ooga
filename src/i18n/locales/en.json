@@ -42,9 +42,9 @@
     "signOut": "Sign out",
     "about": "About",
     "guide": "Guide",
-    "openOoga": "Open Ooga",
     "signIn": "Sign in",
-    "footer": "Footer"
+    "footer": "Footer",
+    "dashboard": "Dashboard"
   },
   "tabs": {
     "dashboard": "Dashboard",
@@ -335,7 +335,8 @@
       "showDetails": "Show details",
       "manage": "Manage budget",
       "overBy": "Over by {{amount}}"
-    }
+    },
+    "loading": "Loading your dashboard…"
   },
   "transactions": {
     "title": "Transactions",

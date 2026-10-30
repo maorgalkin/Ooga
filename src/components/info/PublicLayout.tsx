@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Languages } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { BrandBackdrop, BrandLogo } from './BrandBar';
+import { GlossyBackdrop } from './GlossyBackdrop';
 import { LANGUAGE_NAMES, applyLanguage } from '../../i18n';
 import { savePreferences } from '../../services/preferencesService';
 
@@ -44,7 +45,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="relative isolate min-h-screen flex flex-col">
+      <GlossyBackdrop />
       <nav className="relative overflow-hidden shadow-md border-b border-gray-200/20">
         <BrandBackdrop />
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 relative z-10">
@@ -62,7 +64,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                 to={user ? '/' : '/login'}
                 className="px-3 py-2 min-h-[38px] flex items-center bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium shadow-lg"
               >
-                {user ? t('nav.openOoga') : t('nav.signIn')}
+                {user ? t('nav.dashboard') : t('nav.signIn')}
               </Link>
             </div>
           </div>
@@ -76,7 +78,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <Link to="/about" className="hover:text-gray-700 dark:hover:text-gray-200">{t('nav.about')}</Link>
           <Link to="/guide" className="hover:text-gray-700 dark:hover:text-gray-200">{t('nav.guide')}</Link>
           <Link to={user ? '/' : '/login'} className="hover:text-gray-700 dark:hover:text-gray-200">
-            {user ? t('nav.openOoga') : t('nav.signIn')}
+            {user ? t('nav.dashboard') : t('nav.signIn')}
           </Link>
         </nav>
       </footer>

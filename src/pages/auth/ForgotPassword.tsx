@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { GlossyBackdrop } from '../../components/info/GlossyBackdrop';
 
 const ForgotPassword: React.FC = () => {
   const { resetPassword } = useAuth();
@@ -30,7 +31,8 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
+    <div className="relative isolate min-h-screen flex items-center justify-center px-4">
+      <GlossyBackdrop />
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('auth.forgot.title')}</h1>
