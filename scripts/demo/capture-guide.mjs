@@ -1,12 +1,14 @@
 // Captures the Getting started guide's screenshots from the demo household.
 //
-//   node scripts/demo/capture-guide.mjs <phase>
+//   node scripts/demo/capture-guide.mjs <phase> [--mobile]
 //
 // Needs the dev server from scripts/demo/dev-against-test.mjs on :5174 and the demo sign-in
 // from seed-demo-household.ts. Phases run in order because the early ones create data the
 // later ones show: signed-out → household → budget → transactions → (seed history) → tour.
 // Each frame is written to public/guide/<chapter>/<name>.webp and its pointer/highlight
 // boxes (percentages of the frame) to src/content/guide-frames.json, which the guide reads.
+// --mobile captures the phone set instead: a 390×844 touch screen, written to
+// public/guide/mobile/ and src/content/guide-frames.mobile.json under the same keys.
 // Full refresh procedure: docs/GUIDE_SCREENSHOTS.md.
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -17,7 +19,12 @@ const require = createRequire(new URL('../../scraper/package.json', import.meta.
 const puppeteer = require('puppeteer-core');
 
 const BASE = 'http://localhost:5174';
-const MANIFEST = 'src/content/guide-frames.json';
+const MOBILE = process.argv.includes('--mobile');
+const VIEW = MOBILE ? { width: 390, height: 844 } : { width: 1280, height: 800 };
+// A phone frame taller than this is cropped around its target, so a clip fits on a phone screen
+const MAX_MOBILE_HEIGHT = Math.round(VIEW.width * 1.4);
+const OUT = MOBILE ? 'guide/mobile' : 'guide';
+const MANIFEST = MOBILE ? 'src/content/guide-frames.mobile.json' : 'src/content/guide-frames.json';
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : {};
 
@@ -28,7 +35,7 @@ const browser = await puppeteer.launch({
   args: ['--force-color-profile=srgb'],
 });
 const page = await browser.newPage();
-await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1.5 });
+await page.setViewport(MOBILE ? { ...VIEW, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { ...VIEW, deviceScaleFactor: 1.5 });
 await page.emulateMediaFeatures([
   { name: 'prefers-color-scheme', value: 'light' },
 ]);
@@ -41,6 +48,8 @@ page.on('dialog', (d) => {
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const text = (t) => `::-p-text(${t})`;
+// On phones the top bar shows only the + icon
+const ADD = MOBILE ? 'nav button:has(.lucide-plus)' : `nav ${text('Add transaction')}`;
 
 async function go(path) {
   await page.goto(BASE + path, { waitUntil: 'networkidle0' });
@@ -68,25 +77,30 @@ async function box(selector) {
 
 /**
  * Saves one frame. `area` crops to an element (with padding); `target` is the control the
- * frame is about: it gets the pointer and, with `ring`, a highlight.
+ * frame is about: it gets the pointer and, with `ring`, a highlight. `focus` keeps an element in a
+ * cropped phone frame without pointing at it.
  */
-async function shot(chapter, name, { area, target, ring = true, pad = 24 } = {}) {
-  mkdirSync(`public/guide/${chapter}`, { recursive: true });
-  const viewport = { x: 0, y: 0, width: 1280, height: 800 };
-  let clip = viewport;
+async function shot(chapter, name, { area, target, focus, ring = true, pad = 24 } = {}) {
+  mkdirSync(`public/${OUT}/${chapter}`, { recursive: true });
+  let clip = { x: 0, y: 0, ...VIEW };
   const areaBox = await box(area);
   if (areaBox) {
-    clip = {
-      x: Math.max(0, areaBox.x - pad),
-      y: Math.max(0, areaBox.y - pad),
-      width: Math.min(1280, areaBox.width + pad * 2),
-      height: Math.min(800, areaBox.height + pad * 2),
-    };
+    const x = Math.max(0, areaBox.x - pad);
+    const y = Math.max(0, areaBox.y - pad);
+    clip = { x, y, width: Math.min(VIEW.width - x, areaBox.width + pad * 2), height: Math.min(VIEW.height - y, areaBox.height + pad * 2) };
+  }
+  const t = await box(target);
+  const keep = (await box(focus)) ?? t;
+  if (MOBILE && clip.height > MAX_MOBILE_HEIGHT) {
+    // Keep the target in view: centre the crop on it, else keep the top of the screen
+    const centre = keep ? keep.y + keep.height / 2 : clip.y;
+    const top = Math.min(Math.max(clip.y, centre - MAX_MOBILE_HEIGHT / 2), clip.y + clip.height - MAX_MOBILE_HEIGHT);
+    clip = { ...clip, y: keep ? top : clip.y, height: MAX_MOBILE_HEIGHT };
   }
   // Boxes are viewport-relative but a screenshot clip is page-relative
   const scroll = await page.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
   await page.screenshot({
-    path: `public/guide/${chapter}/${name}.webp`,
+    path: `public/${OUT}/${chapter}/${name}.webp`,
     type: 'webp',
     quality: 82,
     clip: { ...clip, x: clip.x + scroll.x, y: clip.y + scroll.y },
@@ -94,8 +108,7 @@ async function shot(chapter, name, { area, target, ring = true, pad = 24 } = {})
     captureBeyondViewport: false,
   });
 
-  const frame = { src: `/guide/${chapter}/${name}.webp`, size: { w: Math.round(clip.width), h: Math.round(clip.height) } };
-  const t = await box(target);
+  const frame = { src: `/${OUT}/${chapter}/${name}.webp`, size: { w: Math.round(clip.width), h: Math.round(clip.height) } };
   if (t) {
     const pct = (v, origin, size) => Math.round(((v - origin) / size) * 1000) / 10;
     frame.pointer = { x: pct(t.x + t.width / 2, clip.x, clip.width), y: pct(t.y + t.height / 2, clip.y, clip.height) };
@@ -233,8 +246,8 @@ const phases = {
   async transactions() {
     await signIn();
     await go('/');
-    await shot('transactions', 'open', { target: `nav ${text('Add transaction')}` });
-    await click(`nav ${text('Add transaction')}`);
+    await shot('transactions', 'open', { target: ADD });
+    await click(ADD);
     await markPanel(text('Choose'));
     await shot('transactions', 'modal', { area: PANEL, target: text('Choose'), pad: 0 });
     await click(text('Choose'));
@@ -304,7 +317,7 @@ const phases = {
     await waitText('Budget history');
     await page.evaluate(() => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes('Budget history'))?.scrollIntoView({ block: 'start' }));
     await pause(500);
-    await shot('update-budget', 'history');
+    await shot('update-budget', 'history', { focus: text('View and manage all budget versions') });
 
     await tab('Insights');
     await pause(3000);
@@ -324,7 +337,7 @@ const phases = {
   },
 };
 
-const phase = process.argv[2];
+const phase = process.argv.slice(2).find((a) => !a.startsWith('--'));
 if (!phases[phase]) {
   console.error(`Usage: node scripts/demo/capture-guide.mjs <${Object.keys(phases).join('|')}>`);
   process.exit(1);

@@ -80,7 +80,7 @@ export function LandingSections() {
                         See how <ArrowRight className="h-4 w-4" />
                       </Link>
                     </div>
-                    {step?.clip && <GuideClip frames={step.clip.frames} alt={step.clip.alt} />}
+                    {step?.clip && <GuideClip frames={step.clip.frames} mobileFrames={step.clip.mobileFrames} alt={step.clip.alt} />}
                   </motion.div>
                 );
               })}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { safeReturnPath } from '../../utils/returnPath';
 import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { PublicLayout } from '../../components/info/PublicLayout';
 import { HeroShowcase } from '../../components/info/HeroShowcase';
@@ -9,6 +10,7 @@ import { FloatingShapes, LandingSections } from '../../components/info/LandingSe
 const Login: React.FC = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +28,7 @@ const Login: React.FC = () => {
       setError(error.message);
       setLoading(false);
     } else {
-      navigate('/');
+      navigate(safeReturnPath((location.state as { from?: unknown } | null)?.from), { replace: true });
     }
   };
 

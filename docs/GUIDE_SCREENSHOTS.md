@@ -11,10 +11,11 @@ Everything runs against the **test** Supabase project from `.env.test.local`, ne
 | `scripts/demo/seed-demo-household.ts` | Creates and resets the demo household (steps below) |
 | `scripts/demo/dev-against-test.mjs` | Serves the app on `http://localhost:5174` against the test project |
 | `scripts/demo/capture-guide.mjs` | Drives Chrome through the app and saves the frames |
-| `public/guide/<chapter>/<name>.webp` | The frames, captured at 1.5× |
-| `src/content/guide-frames.json` | Size, pointer and highlight box for each frame (percentages of the frame) |
+| `public/guide/<chapter>/<name>.webp` | The desktop frames, captured at 1.5× in a 1280×800 window |
+| `public/guide/mobile/<chapter>/<name>.webp` | The phone frames, captured at 2× in a 390×844 touch window (`--mobile`) |
+| `src/content/guide-frames.json`, `guide-frames.mobile.json` | Size, pointer and highlight box for each frame (percentages of the frame); both use the same keys |
 | `src/content/guide.ts` | Guide text; each step picks its frames by key with `clip(alt, 'chapter/name', ...)` |
-| `src/components/info/GuideClip.tsx` | Plays a step's frames as a looping walkthrough |
+| `src/components/info/GuideClip.tsx` | Plays a step's frames as a looping walkthrough; below 768px it plays the phone frames, if the step has a phone version of every frame |
 
 ## Prerequisites
 
@@ -59,7 +60,9 @@ Run with `npx tsx scripts/demo/seed-demo-household.ts <step>`.
 
    The order matters: `household` and `budget` create the data that later phases show, and `tour` (Update budget and Insights chapters) needs the history.
 
-3. Check the result at `/guide`, then commit `public/guide/` and `src/content/guide-frames.json` together.
+3. For the phone set, run the same sequence again from `fresh`, adding `--mobile` to every `capture-guide.mjs` call (for example `node scripts/demo/capture-guide.mjs household --mobile`). The phases change the demo data, so the phone run needs its own fresh household.
+
+4. Check the result at `/guide` on desktop and at phone width, then commit `public/guide/` and both manifests together.
 
 To refresh one chapter, rerun only its phase, but read the gotchas first.
 
@@ -67,4 +70,6 @@ To refresh one chapter, rerun only its phase, but read the gotchas first.
 
 - **Capture phases aren't idempotent.** `household` renames the household and `budget` creates the budget. Run `fresh` and `family` before rerunning them.
 - **Keep `captureBeyondViewport: false`** in `capture-guide.mjs`. Capturing beyond the viewport resizes the page mid-shot, so the Dashboard collapses its grid and replays its chart animation.
+- **Phone frames are cropped.** A phone frame taller than 1.4× its width is cropped around its `target` (or `focus`, which keeps an element in view without the pointer), so a clip fits on a phone screen.
+- **Phone selectors differ.** The top bar shows icons only on phones (the `ADD` selector in the script handles Add transaction); check new selectors at 390px too.
 - **Frame keys are shared.** Renaming a frame in `capture-guide.mjs` means updating the matching `clip(...)` call in `src/content/guide.ts`.

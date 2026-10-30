@@ -15,6 +15,8 @@ export interface ClipFrame {
 
 interface GuideClipProps {
   frames: ClipFrame[];
+  /** Phone-sized screenshots of the same steps, shown instead below the md breakpoint. */
+  mobileFrames?: ClipFrame[];
   /** Describes the whole clip for screen readers. */
   alt: string;
   /** Milliseconds each frame stays on screen. */
@@ -34,17 +36,37 @@ function fit(frame: ClipFrame, boxRatio: number) {
   return { left: 0, top: (100 - height) / 2, width: 100, height };
 }
 
+const PHONE_QUERY = '(max-width: 767px)';
+
+// Phones get their own screenshots: a desktop screen shrunk to 340px is unreadable
+function usePhoneWidth() {
+  const [phone, setPhone] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(PHONE_QUERY).matches);
+  useEffect(() => {
+    const query = window.matchMedia?.(PHONE_QUERY);
+    if (!query) return;
+    const update = () => setPhone(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  return phone;
+}
+
 /**
  * Plays real screenshots as a short looping walkthrough: frames cross-fade while a pointer
  * glides to the next control and "clicks" it. Built from stills rather than video so the
  * guide stays small, sharp at any width and easy to refresh when a screen changes. Holds on
  * the first frame when the reader prefers reduced motion or the clip is off screen.
  */
-export function GuideClip({ frames: given, alt, interval = 2000, className = '' }: GuideClipProps) {
+export function GuideClip({ frames: desktop, mobileFrames, alt, interval = 2000, className = '' }: GuideClipProps) {
   const reduceMotion = useReducedMotion();
+  const phone = usePhoneWidth() && !!mobileFrames?.length;
+  const given = phone ? mobileFrames! : desktop;
   // A single still with a target still plays: first the plain screen, then the pointer arrives
   const frames = given.length === 1 && given[0].pointer ? [{ src: given[0].src, size: given[0].size }, given[0]] : given;
   const [index, setIndex] = useState(0);
+  // Switching between the phone and desktop sets changes the frame count
+  useEffect(() => setIndex(0), [phone]);
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const animate = !reduceMotion && frames.length > 1;
@@ -63,8 +85,9 @@ export function GuideClip({ frames: given, alt, interval = 2000, className = '' 
     return () => clearInterval(timer);
   }, [animate, visible, frames.length, interval]);
 
-  // The box takes the widest frame's shape, capped so a tall dialog never towers over the text
-  const boxRatio = Math.max(0.9, ...frames.map((f) => f.size.w / f.size.h));
+  // The box takes the widest frame's shape, capped so a tall dialog never towers over the text.
+  // Phone shots are portrait by nature, so they get a taller cap.
+  const boxRatio = Math.max(phone ? 0.6 : 0.9, ...frames.map((f) => f.size.w / f.size.h));
   const frame = frames[animate ? index : 0];
   const area = fit(frame, boxRatio);
   const at = (x: number, y: number) => ({ left: `${area.left + (x * area.width) / 100}%`, top: `${area.top + (y * area.height) / 100}%` });
@@ -76,7 +99,11 @@ export function GuideClip({ frames: given, alt, interval = 2000, className = '' 
       role="img"
       aria-label={alt}
       style={{ aspectRatio: boxRatio }}
-      className={`relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 shadow-xl dark:border-gray-700 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700 ${className}`}
+      className={`relative w-full overflow-hidden bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 shadow-xl dark:from-gray-800 dark:via-gray-800 dark:to-gray-700 ${
+        phone
+          ? 'mx-auto max-w-sm rounded-[1.75rem] border-[6px] border-gray-900 dark:border-gray-600'
+          : 'rounded-xl border border-gray-200 dark:border-gray-700'
+      } ${className}`}
     >
       <AnimatePresence initial={false}>
         <motion.img

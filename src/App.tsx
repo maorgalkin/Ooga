@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FinanceProvider } from './context/FinanceContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -31,6 +31,7 @@ const queryClient = new QueryClient({
 // Protected Route Component - requires authentication
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -44,7 +45,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    // Remember where they were heading, so a link from the guide lands there after sign-in
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
 
   return <>{children}</>;
@@ -90,7 +92,7 @@ function AppContent() {
                 className="flex items-center justify-center px-3 py-2 bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"
               >
                 <Plus className="h-4 w-4 flex-shrink-0" />
-                <span className="ml-2 max-md:hidden">Add transaction</span>
+                <span className="ml-2 max-md:sr-only">Add transaction</span>
               </button>
               <button
                 onClick={signOut}

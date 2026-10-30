@@ -1,10 +1,10 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import AboutPage from '../../../src/pages/info/AboutPage';
 import GuidePage from '../../../src/pages/info/GuidePage';
-import { GUIDE_CHAPTERS } from '../../../src/content/guide';
+import { GUIDE_CHAPTERS, GUIDE_PARTS } from '../../../src/content/guide';
 
 // jsdom has no IntersectionObserver, which framer-motion's whileInView needs
 vi.stubGlobal(
@@ -56,26 +56,46 @@ describe('About page', () => {
 });
 
 describe('Guide page', () => {
-  it('lists every chapter on the overview', () => {
+  it('opens with a welcome page that lays out the four parts', () => {
     renderAt('/guide');
-    expect(screen.getByRole('heading', { level: 1, name: 'Getting started with Ooga' })).toBeInTheDocument();
-    for (const chapter of GUIDE_CHAPTERS) {
-      expect(screen.getByRole('heading', { level: 2, name: chapter.title })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Less to learn than it looks' })).toBeInTheDocument();
+    for (const part of GUIDE_PARTS) {
+      expect(screen.getByRole('heading', { level: 2, name: part.title })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('link', { name: /Start with part 1/ })).toHaveAttribute('href', `/guide/${GUIDE_PARTS[0].chapters[0]}`);
+  });
+
+  it('puts every chapter in exactly one part, in reading order', () => {
+    expect(GUIDE_PARTS.flatMap((p) => p.chapters)).toEqual(GUIDE_CHAPTERS.map((c) => c.slug));
+  });
+
+  it('links steps only to places the app can open', () => {
+    const tabs = ['dashboard', 'transactions', 'budget', 'insights'];
+    for (const step of GUIDE_CHAPTERS.flatMap((c) => c.steps)) {
+      if (!step.link) continue;
+      const url = new URL(step.link.to, 'https://haooga.com');
+      expect(['/', '/register']).toContain(url.pathname);
+      const tab = url.searchParams.get('tab');
+      if (tab) expect(tabs).toContain(tab);
+      const subtab = url.searchParams.get('subtab');
+      if (subtab) expect(['categories', 'settings']).toContain(subtab);
     }
   });
 
-  it('shows a chapter with links to its neighbours', () => {
+  it('shows a chapter with its part and links to its neighbours', () => {
     const [first, second, third] = GUIDE_CHAPTERS;
     renderAt(`/guide/${second.slug}`);
     expect(screen.getByRole('heading', { level: 1, name: second.title })).toBeInTheDocument();
+    expect(within(screen.getByRole('article')).getByText('Part 2 · Your budget')).toBeInTheDocument();
     const pager = screen.getByRole('navigation', { name: 'Chapter navigation' });
     expect(pager.querySelector(`a[href="/guide/${first.slug}"]`)).not.toBeNull();
     expect(pager.querySelector(`a[href="/guide/${third.slug}"]`)).not.toBeNull();
     expect(screen.getByRole('link', { name: new RegExp(second.title) })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Create budget' })).toHaveAttribute('href', '/?tab=budget&create=true');
   });
 
   it('sends unknown chapters back to the overview', () => {
     renderAt('/guide/not-a-chapter');
-    expect(screen.getByRole('heading', { level: 1, name: 'Getting started with Ooga' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Less to learn than it looks' })).toBeInTheDocument();
   });
 });
