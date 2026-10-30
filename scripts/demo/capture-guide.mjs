@@ -1,6 +1,6 @@
 // Captures the Getting started guide's screenshots from the demo household.
 //
-//   node scripts/demo/capture-guide.mjs <phase> [--mobile]
+//   node scripts/demo/capture-guide.mjs <phase> [--mobile] [--lang he]
 //
 // Needs the dev server from scripts/demo/dev-against-test.mjs on :5174 and the demo sign-in
 // from seed-demo-household.ts. Phases run in order because the early ones create data the
@@ -9,22 +9,33 @@
 // boxes (percentages of the frame) to src/content/guide-frames.json, which the guide reads.
 // --mobile captures the phone set instead: a 390×844 touch screen, written to
 // public/guide/mobile/ and src/content/guide-frames.mobile.json under the same keys.
+// --lang he captures the Hebrew app into public/guide/he/ (and he/mobile/) and
+// src/content/guide-frames.he.json (and .he.mobile.json), again under the same keys; the
+// server must run with VITE_ENABLE_HEBREW=1 and the demo household seeded with --lang he.
 // Full refresh procedure: docs/GUIDE_SCREENSHOTS.md.
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { parse } from 'dotenv';
 import { testProject } from './guard.mjs';
+import { DATA, labels } from './guide-labels.mjs';
 
 const require = createRequire(new URL('../../scraper/package.json', import.meta.url));
 const puppeteer = require('puppeteer-core');
 
 const BASE = 'http://localhost:5174';
 const MOBILE = process.argv.includes('--mobile');
+const langAt = process.argv.indexOf('--lang');
+const LANG = langAt > -1 ? process.argv[langAt + 1] : 'en';
+if (!DATA[LANG]) throw new Error(`Unknown --lang ${LANG}; use en or he.`);
+// The labels to click and the data to type, in the language being captured
+const L = labels(LANG);
+const D = DATA[LANG];
 const VIEW = MOBILE ? { width: 390, height: 844 } : { width: 1280, height: 800 };
 // A phone frame taller than this is cropped around its target, so a clip fits on a phone screen
 const MAX_MOBILE_HEIGHT = Math.round(VIEW.width * 1.4);
-const OUT = MOBILE ? 'guide/mobile' : 'guide';
-const MANIFEST = MOBILE ? 'src/content/guide-frames.mobile.json' : 'src/content/guide-frames.json';
+const SET = LANG === 'en' ? '' : `${LANG}/`;
+const OUT = `guide/${SET}${MOBILE ? 'mobile' : ''}`.replace(/\/$/, '');
+const MANIFEST = `src/content/guide-frames${LANG === 'en' ? '' : `.${LANG}`}${MOBILE ? '.mobile' : ''}.json`;
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : {};
 
@@ -39,6 +50,11 @@ await page.setViewport(MOBILE ? { ...VIEW, deviceScaleFactor: 2, isMobile: true,
 await page.emulateMediaFeatures([
   { name: 'prefers-color-scheme', value: 'light' },
 ]);
+// The app reads its language from here before it starts; set on every load, so a leftover
+// choice from another run can't leak in
+await page.evaluateOnNewDocument((lang) => {
+  try { localStorage.setItem('ooga.language', lang); } catch { /* about:blank */ }
+}, LANG);
 page.on('pageerror', (e) => console.log(`page error: ${e.message}`));
 page.on('console', (m) => m.type() === 'error' && console.log(`console error: ${m.text().slice(0, 200)}`));
 page.on('dialog', (d) => {
@@ -47,9 +63,10 @@ page.on('dialog', (d) => {
 });
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
-const text = (t) => `::-p-text(${t})`;
+// Quoted, because labels can hold parentheses ("ויזה כאל (קוד ב־SMS)")
+const text = (t) => `::-p-text(${JSON.stringify(t)})`;
 // On phones the top bar shows only the + icon
-const ADD = MOBILE ? 'nav button:has(.lucide-plus)' : `nav ${text('Add transaction')}`;
+const ADD = MOBILE ? 'nav button:has(.lucide-plus)' : `nav ${text(L.addTransaction)}`;
 
 async function go(path) {
   await page.goto(BASE + path, { waitUntil: 'networkidle0' });
@@ -168,7 +185,7 @@ async function waitText(t) {
 }
 
 async function tab(name) {
-  await click(`nav ::-p-text(${name})`).catch(() => click(`button::-p-text(${name})`));
+  await click(`nav ${text(name)}`).catch(() => click(`button${text(name)}`));
   await pause(1200);
 }
 
@@ -179,8 +196,8 @@ const phases = {
     await go('/register');
     const card = '.max-w-md';
     await shot('household', 'register-1', { area: card, target: '#firstName', ring: false });
-    await type('#firstName', 'Dana');
-    await type('#lastName', 'Levi');
+    await type('#firstName', D.firstName);
+    await type('#lastName', D.lastName);
     await shot('household', 'register-2', { area: card, target: '#email', ring: false });
     await type('#email', 'dana@example.com');
     await type('#password', 'demo-only');
@@ -191,53 +208,55 @@ const phases = {
   async household() {
     await signIn();
     await go('/');
-    await waitText('Manage household');
-    await shot('household', 'dashboard-empty', { target: text('Manage household') });
-    await click(text('Manage household'));
-    await waitText('Owner');
-    await markPanel(text('Household settings'));
-    await shot('household', 'settings', { area: PANEL, target: text('Edit'), pad: 0 });
-    await click(text('Edit'));
-    await type(`${PANEL} input`, 'The Levi family');
+    await waitText(L.manageHousehold);
+    await shot('household', 'dashboard-empty', { target: text(L.manageHousehold) });
+    await click(text(L.manageHousehold));
+    await waitText(L.owner);
+    await markPanel(text(L.householdSettings));
+    await shot('household', 'settings', { area: PANEL, target: text(L.edit), pad: 0 });
+    await click(text(L.edit));
+    await type(`${PANEL} input`, D.householdName);
     await shot('household', 'rename', { area: PANEL, target: `${PANEL} input`, pad: 0 });
     await page.keyboard.press('Enter');
     await pause(1500);
-    await shot('household', 'members', { area: PANEL, target: text('Add member'), pad: 0 });
-    await page.$eval(text('Switch households'), (el) => el.scrollIntoView({ block: 'end' }));
+    await shot('household', 'members', { area: PANEL, target: text(L.addMember), pad: 0 });
+    await page.$eval(text(L.switchHouseholds), (el) => el.scrollIntoView({ block: 'end' }));
     await pause(400);
-    await shot('household', 'invite', { area: PANEL, target: text('Copy'), pad: 0 });
-    await shot('household', 'switch', { area: PANEL, target: text('Switch households'), pad: 0 });
+    await shot('household', 'invite', { area: PANEL, target: text(L.copy), pad: 0 });
+    await shot('household', 'switch', { area: PANEL, target: text(L.switchHouseholds), pad: 0 });
   },
 
   async budget() {
     await signIn();
     await go('/');
-    await tab('Budget');
-    await waitText('Create budget');
-    await shot('budget', 'tab', { target: text('Create budget') });
-    await click(text('Create budget'));
-    await type('input[placeholder="e.g., Summer 2025 Budget"]', 'Family budget');
-    await shot('budget', 'defaults', { target: 'input[placeholder="e.g., Summer 2025 Budget"]' });
+    await tab(L.budgetTab);
+    await waitText(L.createBudget);
+    await shot('budget', 'tab', { target: text(L.createBudget) });
+    await click(text(L.createBudget));
+    const budgetName = `input[placeholder=${JSON.stringify(L.budgetNamePlaceholder)}]`;
+    await type(budgetName, D.budgetName);
+    await shot('budget', 'defaults', { target: budgetName });
 
-    await click(text('Groceries'));
+    await click(text(L.groceries));
     await markPanel('input[type=color]');
     await type(`${PANEL} input[type=number]`, 3200);
     await shot('budget', 'edit-category', { area: PANEL, target: `${PANEL} input[type=number]`, pad: 0 });
-    await click(`${PANEL} ::-p-text(Save changes)`);
+    await click(`${PANEL} ${text(L.saveCategory)}`);
 
-    for (const [name, limit] of [['Kids', 1200], ['Dining out', 900]]) {
-      await click(text('Click to create new'));
-      await markPanel('input[placeholder="e.g., Groceries"]');
-      await type('input[placeholder="e.g., Groceries"]', name);
+    const categoryName = `input[placeholder=${JSON.stringify(L.categoryNamePlaceholder)}]`;
+    for (const [i, [name, limit]] of D.newCategories.entries()) {
+      await click(text(L.clickToCreate));
+      await markPanel(categoryName);
+      await type(categoryName, name);
       await type('input[placeholder="500"]', limit);
-      if (name === 'Kids') await shot('budget', 'add-category', { area: PANEL, target: `${PANEL} button.bg-blue-600`, pad: 0 });
+      if (i === 0) await shot('budget', 'add-category', { area: PANEL, target: `${PANEL} button.bg-blue-600`, pad: 0 });
       await click(`${PANEL} button.bg-blue-600`);
     }
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await pause(500);
-    await shot('budget', 'save', { target: text('Save budget') });
-    await click(text('Save budget'));
-    await waitText('Remaining');
+    await shot('budget', 'save', { target: text(L.saveBudget) });
+    await click(text(L.saveBudget));
+    await waitText(L.remaining);
     await pause(1500);
     await page.evaluate(() => window.scrollTo(0, 0));
     await shot('budget', 'saved');
@@ -248,42 +267,43 @@ const phases = {
     await go('/');
     await shot('transactions', 'open', { target: ADD });
     await click(ADD);
-    await markPanel(text('Choose'));
-    await shot('transactions', 'modal', { area: PANEL, target: text('Choose'), pad: 0 });
-    await click(text('Choose'));
+    await markPanel(text(L.choose));
+    await shot('transactions', 'modal', { area: PANEL, target: text(L.choose), pad: 0 });
+    await click(text(L.choose));
     await pause(500);
-    await markPanel(`h3${text('Select expense category')}`);
-    await shot('transactions', 'categories', { area: PANEL, target: `${PANEL} ${text('Groceries')}`, pad: 0 });
-    await click(`${PANEL} ${text('Groceries')}`);
-    await markPanel(text('Choose'));
-    await type('input[placeholder="Enter transaction description (optional)"]', 'Shufersal weekly shop');
+    await markPanel(`h3${text(L.selectExpenseCategory)}`);
+    await shot('transactions', 'categories', { area: PANEL, target: `${PANEL} ${text(L.groceries)}`, pad: 0 });
+    await click(`${PANEL} ${text(L.groceries)}`);
+    await markPanel(text(L.choose));
+    await type(`input[placeholder=${JSON.stringify(L.descriptionPlaceholder)}]`, D.description);
     await type('input[placeholder="0.00"]', 412);
     await page.select(`${PANEL} select`, await page.$eval(`${PANEL} select option:nth-child(2)`, (o) => o.value));
     await shot('transactions', 'filled', { area: PANEL, target: `${PANEL} button[type=submit]`, pad: 0 });
-    await click(`${PANEL} ${text('Income')}`);
-    await shot('transactions', 'income', { area: PANEL, target: `${PANEL} ${text('Income')}`, pad: 0 });
-    await click(`${PANEL} button::-p-text(Expense)`);
-    await click(`${PANEL} ${text('Choose')}`);
-    await markPanel(`h3${text('Select expense category')}`);
-    await click(`${PANEL} ${text('Groceries')}`);
-    await markPanel(text('Choose'));
+    await click(`${PANEL} ${text(L.incomeToggle)}`);
+    await shot('transactions', 'income', { area: PANEL, target: `${PANEL} ${text(L.incomeToggle)}`, pad: 0 });
+    await click(`${PANEL} button${text(L.expenseToggle)}`);
+    await click(`${PANEL} ${text(L.choose)}`);
+    await markPanel(`h3${text(L.selectExpenseCategory)}`);
+    await click(`${PANEL} ${text(L.groceries)}`);
+    await markPanel(text(L.choose));
     await type('input[placeholder="0.00"]', 412);
-    await page.evaluate(() => document.querySelector('[data-capture=panel] input[placeholder="# months"]')?.scrollIntoView());
-    await click(`${PANEL} ${text('installments')}`);
-    await type('input[placeholder="# months"]', 6).catch(() => {});
-    await shot('transactions', 'installments', { area: PANEL, target: 'input[placeholder="# months"]', pad: 0 });
+    const months = `input[placeholder=${JSON.stringify(L.monthsPlaceholder)}]`;
+    await page.evaluate((sel) => document.querySelector(`[data-capture=panel] ${sel}`)?.scrollIntoView(), months);
+    await click(`${PANEL} ${text(L.installments)}`);
+    await type(months, 6).catch(() => {});
+    await shot('transactions', 'installments', { area: PANEL, target: months, pad: 0 });
     await page.keyboard.press('Escape');
     await go('/');
 
-    await tab('Budget');
-    await click(text('Settings'));
-    await waitText('Connected accounts');
-    await page.evaluate(() => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes('Connected accounts'))?.scrollIntoView({ block: 'center' }));
+    await tab(L.budgetTab);
+    await click(text(L.settingsTab));
+    await waitText(L.connectedAccounts);
+    await page.evaluate((t) => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes(t))?.scrollIntoView({ block: 'center' }), L.connectedAccounts);
     await pause(500);
-    await shot('transactions', 'accounts', { target: text('Add account') });
-    await click(text('Add account'));
-    await markPanel(text('Discount Bank'));
-    await shot('transactions', 'providers', { area: PANEL, target: `${PANEL} ${text('Visa Cal (SMS code)')}`, pad: 0 });
+    await shot('transactions', 'accounts', { target: text(L.addAccount) });
+    await click(text(L.addAccount));
+    await markPanel(text(L.discountBank));
+    await shot('transactions', 'providers', { area: PANEL, target: `${PANEL} ${text(L.visaCal)}`, pad: 0 });
   },
 
   async tour() {
@@ -295,39 +315,39 @@ const phases = {
     await pause(1500);
     await shot('insights', 'dashboard-chart');
     await page.evaluate(() => window.scrollTo(0, 0));
-    await tab('Transactions');
-    await shot('transactions', 'list', { target: 'button[title="Edit transaction"]' });
-    await tab('Budget');
+    await tab(L.transactionsTab);
+    await shot('transactions', 'list', { target: `button[title=${JSON.stringify(L.editTransaction)}]` });
+    await tab(L.budgetTab);
     await pause(1500);
     await shot('update-budget', 'overview');
-    await click(text('Categories'));
+    await click(text(L.categoriesTab));
     await pause(1000);
-    await shot('update-budget', 'categories', { target: `${text('Edit')}` });
-    await click(text('Edit'));
-    await markPanel(text('Details'));
-    await shot('update-budget', 'details', { area: PANEL, target: `${PANEL} ${text('Monthly limit')}`, pad: 0 });
-    await click(`${PANEL} button::-p-text(Adjust)`);
-    await shot('update-budget', 'adjust', { area: PANEL, target: `${PANEL} ${text('New limit')}`, pad: 0 });
-    await click(`${PANEL} button::-p-text(Merge)`);
+    await shot('update-budget', 'categories', { target: text(L.edit) });
+    await click(text(L.edit));
+    await markPanel(text(L.detailsTab));
+    await shot('update-budget', 'details', { area: PANEL, target: `${PANEL} ${text(L.monthlyLimit)}`, pad: 0 });
+    await click(`${PANEL} button${text(L.adjustTab)}`);
+    await shot('update-budget', 'adjust', { area: PANEL, target: `${PANEL} ${text(L.newLimit)}`, pad: 0 });
+    await click(`${PANEL} button${text(L.mergeTab)}`);
     await shot('update-budget', 'merge', { area: PANEL, target: `${PANEL} select`, pad: 0 });
     await page.keyboard.press('Escape');
     await go('/');
-    await tab('Budget');
-    await click(text('Settings'));
-    await waitText('Budget history');
-    await page.evaluate(() => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes('Budget history'))?.scrollIntoView({ block: 'start' }));
+    await tab(L.budgetTab);
+    await click(text(L.settingsTab));
+    await waitText(L.budgetHistory);
+    await page.evaluate((t) => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes(t))?.scrollIntoView({ block: 'start' }), L.budgetHistory);
     await pause(500);
-    await shot('update-budget', 'history', { focus: text('View and manage all budget versions') });
+    await shot('update-budget', 'history', { focus: text(L.budgetHistorySubtitle) });
 
-    await tab('Insights');
+    await tab(L.insightsTab);
     await pause(3000);
-    await shot('insights', 'range', { target: text('Current month') });
+    await shot('insights', 'range', { target: text(L.currentMonth) });
     for (const [title, name] of [
-      ['Budget summary', 'summary'],
-      ['Original vs current', 'chart'],
-      ['Category accuracy', 'accuracy'],
-      ['Category pace tracker', 'pace'],
-      ['Household member expenses', 'members'],
+      [L.budgetSummary, 'summary'],
+      [L.performanceTitle, 'chart'],
+      [L.accuracyTitle, 'accuracy'],
+      [L.paceTitle, 'pace'],
+      [L.membersTitle, 'members'],
     ]) {
       await page.evaluate((t) => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes(t))?.scrollIntoView({ block: 'start' }), title);
       await page.evaluate(() => window.scrollBy(0, -80));

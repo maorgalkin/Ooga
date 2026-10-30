@@ -13,8 +13,11 @@ Everything runs against the **test** Supabase project from `.env.test.local`, ne
 | `scripts/demo/capture-guide.mjs` | Drives Chrome through the app and saves the frames |
 | `public/guide/<chapter>/<name>.webp` | The desktop frames, captured at 1.5× in a 1280×800 window |
 | `public/guide/mobile/<chapter>/<name>.webp` | The phone frames, captured at 2× in a 390×844 touch window (`--mobile`) |
+| `public/guide/he/…`, `public/guide/he/mobile/…` | The same frames from the Hebrew app (`--lang he`) |
 | `src/content/guide-frames.json`, `guide-frames.mobile.json` | Size, pointer and highlight box for each frame (percentages of the frame); both use the same keys |
-| `src/content/guide.ts` | The guide's shape: each step's id, frame keys (`clip: ['chapter/name', ...]`) and link |
+| `src/content/guide-frames.he.json`, `guide-frames.he.mobile.json` | The Hebrew set's manifests, under the same keys |
+| `scripts/demo/guide-labels.mjs` | What the capture clicks (by translation key, so it works in either language) and the demo data it types, per language |
+| `src/content/guide.ts` | The guide's shape: each step's id, frame keys (`clip: ['chapter/name', ...]`) and link. In Hebrew, a clip shows the Hebrew frames when the Hebrew set has every one of them, else the English ones |
 | `src/i18n/locales/guide.en.json`, `guide.he.json` | The guide's words in each language, including each clip's alt text |
 | `src/components/info/GuideClip.tsx` | Plays a step's frames as a looping walkthrough; below 768px it plays the phone frames, if the step has a phone version of every frame |
 
@@ -65,6 +68,24 @@ Run with `npx tsx scripts/demo/seed-demo-household.ts <step>`.
 
 4. Check the result at `/guide` on desktop and at phone width, then commit `public/guide/` and both manifests together.
 
+## The Hebrew set
+
+The Hebrew guide shows its own screenshots of the Hebrew app, with a Hebrew household (דנה ואבי לוי, נועה ואיתי). Run the same sequence with the Hebrew app and data:
+
+1. Serve the app with Hebrew on: `VITE_ENABLE_HEBREW=1 node scripts/demo/dev-against-test.mjs --preview`.
+2. Add `--lang he` to every seed and capture call, for example:
+
+   ```bash
+   npx tsx scripts/demo/seed-demo-household.ts fresh --lang he
+   npx tsx scripts/demo/seed-demo-household.ts family --lang he
+   node scripts/demo/capture-guide.mjs signed-out --lang he
+   ```
+
+   and so on through `tour`, then again from `fresh` with `--mobile --lang he`. Frames go to `public/guide/he/` and the manifests to `guide-frames.he*.json`.
+3. Put the demo household back to English afterwards (`fresh`, then `family`, without `--lang`): `family` sets the demo account's saved language, and an account left on Hebrew would turn the next English capture Hebrew.
+
+A UI change that makes the English frames stale usually makes the Hebrew ones stale too: refresh both sets.
+
 To refresh one chapter, rerun only its phase, but read the gotchas first.
 
 The `guide-visuals` agent (`.claude/agents/guide-visuals.md`) follows this procedure for you: after a UI change it works out which frames and guide text went stale, and re-captures them when the drift is substantial.
@@ -76,3 +97,4 @@ The `guide-visuals` agent (`.claude/agents/guide-visuals.md`) follows this proce
 - **Phone frames are cropped.** A phone frame taller than 1.4× its width is cropped around its `target` (or `focus`, which keeps an element in view without the pointer), so a clip fits on a phone screen.
 - **Phone selectors differ.** The top bar shows icons only on phones (the `ADD` selector in the script handles Add transaction); check new selectors at 390px too.
 - **Frame keys are shared.** Renaming a frame in `capture-guide.mjs` means updating the step's `clip: [...]` in `src/content/guide.ts`.
+- **Labels come from the translation files.** The capture finds buttons by their text in the language it captures (`guide-labels.mjs`). A new label it clicks needs a key there; `tests/scripts/guideLabels.test.ts` checks every key exists in both languages.

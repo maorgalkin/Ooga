@@ -6,6 +6,8 @@ import { Home, PiggyBank, ReceiptText, SlidersHorizontal, TrendingUp } from 'luc
 import type { ClipFrame } from '../components/info/GuideClip';
 import FRAMES from './guide-frames.json';
 import MOBILE_FRAMES from './guide-frames.mobile.json';
+import HE_FRAMES from './guide-frames.he.json';
+import HE_MOBILE_FRAMES from './guide-frames.he.mobile.json';
 
 export interface GuideStep {
   /** Stable key for the step's text in src/i18n/locales/guide.*.json. */
@@ -60,13 +62,26 @@ type ChapterShape = Omit<GuideChapter, 'title' | 'summary' | 'intro' | 'steps'> 
 
 // Screenshots come from a made-up demo household, never a real account, and are
 // regenerated with scripts/demo/capture-guide.mjs, which also records where the pointer
-// and highlight go on each frame in guide-frames.json (guide-frames.mobile.json for phones).
-const frames = FRAMES as Record<string, ClipFrame>;
-const mobileFrames = MOBILE_FRAMES as Record<string, ClipFrame>;
-const clip = (alt: string, keys: string[]) => {
-  // A phone set is used only when every frame has a phone version, so a clip never mixes the two
-  const mobile = keys.map((k) => mobileFrames[k]);
-  return { alt, frames: keys.map((k) => frames[k]), mobileFrames: mobile.every(Boolean) ? mobile : undefined };
+// and highlight go on each frame in guide-frames.json (guide-frames.mobile.json for phones;
+// guide-frames.he*.json for the Hebrew app, captured with --lang he).
+type FrameSet = Record<string, ClipFrame>;
+const SETS: Record<string, { desktop: FrameSet; mobile: FrameSet }> = {
+  en: { desktop: FRAMES as FrameSet, mobile: MOBILE_FRAMES as FrameSet },
+  he: { desktop: HE_FRAMES as FrameSet, mobile: HE_MOBILE_FRAMES as FrameSet },
+};
+// A set is used for a clip only when it has every frame of it, so a clip never mixes two sets
+const all = (set: FrameSet, keys: string[]) => {
+  const found = keys.map((k) => set[k]);
+  return found.every(Boolean) ? found : undefined;
+};
+const clip = (alt: string, keys: string[], language: string) => {
+  // The reader's language first; English, the complete set, otherwise
+  const own = language !== 'en' ? SETS[language] : undefined;
+  return {
+    alt,
+    frames: (own && all(own.desktop, keys)) ?? keys.map((k) => SETS.en.desktop[k]),
+    mobileFrames: (own && all(own.mobile, keys)) ?? all(SETS.en.mobile, keys),
+  };
 };
 
 const BUDGET_SETTINGS = '/?tab=budget&subtab=settings';
@@ -145,8 +160,11 @@ export const GUIDE_PARTS: Pick<GuidePart, 'id' | 'chapters'>[] = [
   { id: 'deeper', chapters: ['insights'] },
 ];
 
-/** The guide with its words, in the language `t` speaks (a `t` for the `guide` namespace). */
-export function localizeGuide(t: TFunction): { chapters: GuideChapter[]; parts: GuidePart[] } {
+/**
+ * The guide with its words, in the language `t` speaks (a `t` for the `guide` namespace), and its
+ * screenshots in `language` where that set has them.
+ */
+export function localizeGuide(t: TFunction, language = 'en'): { chapters: GuideChapter[]; parts: GuidePart[] } {
   const chapters = GUIDE_CHAPTERS.map((shape) => {
     const at = `chapters.${shape.slug}`;
     return {
@@ -162,7 +180,7 @@ export function localizeGuide(t: TFunction): { chapters: GuideChapter[]; parts: 
           title: t(`${step}.title`),
           body: t(`${step}.body`, { returnObjects: true }) as string[],
           tip: has('tip') ? t(`${step}.tip`) : undefined,
-          clip: keys ? clip(t(`${step}.alt`), keys) : undefined,
+          clip: keys ? clip(t(`${step}.alt`), keys, language) : undefined,
           link: to ? { label: t(`${step}.link`), to } : undefined,
           featured,
           signedOutOnly,
@@ -182,9 +200,8 @@ export function localizeGuide(t: TFunction): { chapters: GuideChapter[]; parts: 
 
 /** The guide in the current language; re-renders when the language changes. */
 export function useGuide() {
-  // react-i18next hands out a new t when the language changes
-  const { t } = useTranslation('guide');
-  return useMemo(() => localizeGuide(t), [t]);
+  const { t, i18n } = useTranslation('guide');
+  return useMemo(() => localizeGuide(t, i18n.language), [t, i18n.language]);
 }
 
 /** The part a chapter belongs to. */

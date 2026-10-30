@@ -82,7 +82,7 @@ Banks and cards by their Hebrew names: ויזה כאל, מקס, ישראכרט, 
 
 ## Labels the guide names
 
-The Hebrew guide quotes these UI labels, so the screens must use exactly these words when they're translated. If a screen needs different wording, change the guide (`guide.he.json`) in the same PR.
+The Hebrew guide quotes these UI labels, so the screens must use exactly these words. If a screen needs different wording, change the guide (`guide.he.json`) in the same PR, and refresh the Hebrew screenshots (`public/guide/he/`, see `docs/GUIDE_SCREENSHOTS.md`), which show them.
 
 | Where | Labels |
 |---|---|

@@ -1,0 +1,526 @@
+{
+  "household/register-1": {
+    "src": "/guide/he/household/register-1.webp",
+    "size": {
+      "w": 496,
+      "h": 695
+    },
+    "pointer": {
+      "x": 70.3,
+      "y": 30.2
+    }
+  },
+  "household/register-2": {
+    "src": "/guide/he/household/register-2.webp",
+    "size": {
+      "w": 496,
+      "h": 695
+    },
+    "pointer": {
+      "x": 50,
+      "y": 44.3
+    }
+  },
+  "household/register-3": {
+    "src": "/guide/he/household/register-3.webp",
+    "size": {
+      "w": 496,
+      "h": 695
+    },
+    "pointer": {
+      "x": 50,
+      "y": 85.5
+    },
+    "highlight": {
+      "x": 10.7,
+      "y": 81.3,
+      "w": 78.6,
+      "h": 8.3
+    }
+  },
+  "household/dashboard-empty": {
+    "src": "/guide/he/household/dashboard-empty.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    },
+    "pointer": {
+      "x": 72.5,
+      "y": 28.4
+    },
+    "highlight": {
+      "x": 68.4,
+      "y": 26.9,
+      "w": 8.2,
+      "h": 3
+    }
+  },
+  "household/settings": {
+    "src": "/guide/he/household/settings.webp",
+    "size": {
+      "w": 672,
+      "h": 720
+    },
+    "pointer": {
+      "x": 6.2,
+      "y": 18.2
+    },
+    "highlight": {
+      "x": 3,
+      "y": 16.3,
+      "w": 6.5,
+      "h": 3.9
+    }
+  },
+  "household/rename": {
+    "src": "/guide/he/household/rename.webp",
+    "size": {
+      "w": 672,
+      "h": 720
+    },
+    "pointer": {
+      "x": 61.2,
+      "y": 19.4
+    },
+    "highlight": {
+      "x": 25.4,
+      "y": 15.7,
+      "w": 71.6,
+      "h": 7.5
+    }
+  },
+  "household/members": {
+    "src": "/guide/he/household/members.webp",
+    "size": {
+      "w": 672,
+      "h": 720
+    },
+    "pointer": {
+      "x": 50,
+      "y": 66.5
+    },
+    "highlight": {
+      "x": 3,
+      "y": 62.9,
+      "w": 94,
+      "h": 7.2
+    }
+  },
+  "household/invite": {
+    "src": "/guide/he/household/invite.webp",
+    "size": {
+      "w": 672,
+      "h": 720
+    },
+    "pointer": {
+      "x": 14.2,
+      "y": 74.2
+    },
+    "highlight": {
+      "x": 5.5,
+      "y": 70.8,
+      "w": 17.3,
+      "h": 6.7
+    }
+  },
+  "household/switch": {
+    "src": "/guide/he/household/switch.webp",
+    "size": {
+      "w": 672,
+      "h": 720
+    },
+    "pointer": {
+      "x": 71.9,
+      "y": 98.6
+    },
+    "highlight": {
+      "x": 61.6,
+      "y": 96.7,
+      "w": 20.6,
+      "h": 3.9
+    }
+  },
+  "budget/tab": {
+    "src": "/guide/he/budget/tab.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    },
+    "pointer": {
+      "x": 8.9,
+      "y": 67.8
+    },
+    "highlight": {
+      "x": 3.4,
+      "y": 65,
+      "w": 10.9,
+      "h": 5.5
+    }
+  },
+  "budget/defaults": {
+    "src": "/guide/he/budget/defaults.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    },
+    "pointer": {
+      "x": 50,
+      "y": 81.3
+    },
+    "highlight": {
+      "x": 3.4,
+      "y": 78.1,
+      "w": 93.1,
+      "h": 6.3
+    }
+  },
+  "budget/edit-category": {
+    "src": "/guide/he/budget/edit-category.webp",
+    "size": {
+      "w": 448,
+      "h": 526
+    },
+    "pointer": {
+      "x": 26.8,
+      "y": 25.5
+    },
+    "highlight": {
+      "x": 4.5,
+      "y": 20.7,
+      "w": 44.6,
+      "h": 9.5
+    }
+  },
+  "budget/add-category": {
+    "src": "/guide/he/budget/add-category.webp",
+    "size": {
+      "w": 448,
+      "h": 505
+    },
+    "pointer": {
+      "x": 58.5,
+      "y": 92.9
+    },
+    "highlight": {
+      "x": 21.4,
+      "y": 88.1,
+      "w": 74.2,
+      "h": 9.5
+    }
+  },
+  "budget/save": {
+    "src": "/guide/he/budget/save.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    },
+    "pointer": {
+      "x": 53.9,
+      "y": 61.9
+    },
+    "highlight": {
+      "x": 11.3,
+      "y": 58.9,
+      "w": 85.2,
+      "h": 6
+    }
+  },
+  "budget/saved": {
+    "src": "/guide/he/budget/saved.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  },
+  "transactions/open": {
+    "src": "/guide/he/transactions/open.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    },
+    "pointer": {
+      "x": 15.6,
+      "y": 4
+    },
+    "highlight": {
+      "x": 12,
+      "y": 2.3,
+      "w": 7.1,
+      "h": 3.5
+    }
+  },
+  "transactions/modal": {
+    "src": "/guide/he/transactions/modal.webp",
+    "size": {
+      "w": 448,
+      "h": 720
+    },
+    "pointer": {
+      "x": 13.9,
+      "y": 41.1
+    },
+    "highlight": {
+      "x": 6.3,
+      "y": 38.6,
+      "w": 15.2,
+      "h": 5
+    }
+  },
+  "transactions/categories": {
+    "src": "/guide/he/transactions/categories.webp",
+    "size": {
+      "w": 672,
+      "h": 515
+    },
+    "pointer": {
+      "x": 50,
+      "y": 59.3
+    },
+    "highlight": {
+      "x": 46.5,
+      "y": 56.9,
+      "w": 6.9,
+      "h": 5
+    }
+  },
+  "transactions/filled": {
+    "src": "/guide/he/transactions/filled.webp",
+    "size": {
+      "w": 448,
+      "h": 720
+    }
+  },
+  "transactions/income": {
+    "src": "/guide/he/transactions/income.webp",
+    "size": {
+      "w": 448,
+      "h": 720
+    },
+    "pointer": {
+      "x": 27.8,
+      "y": 29.3
+    },
+    "highlight": {
+      "x": 4.7,
+      "y": 25.7,
+      "w": 46.3,
+      "h": 7.2
+    }
+  },
+  "transactions/installments": {
+    "src": "/guide/he/transactions/installments.webp",
+    "size": {
+      "w": 448,
+      "h": 720
+    },
+    "pointer": {
+      "x": 35.1,
+      "y": 96.7
+    },
+    "highlight": {
+      "x": 10.7,
+      "y": 93.2,
+      "w": 48.8,
+      "h": 6.9
+    }
+  },
+  "transactions/accounts": {
+    "src": "/guide/he/transactions/accounts.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    },
+    "pointer": {
+      "x": 7.7,
+      "y": 51.1
+    },
+    "highlight": {
+      "x": 2.9,
+      "y": 48.9,
+      "w": 9.6,
+      "h": 4.5
+    }
+  },
+  "transactions/providers": {
+    "src": "/guide/he/transactions/providers.webp",
+    "size": {
+      "w": 448,
+      "h": 565
+    },
+    "pointer": {
+      "x": 69.6,
+      "y": 44.6
+    },
+    "highlight": {
+      "x": 53.7,
+      "y": 42.1,
+      "w": 31.8,
+      "h": 5
+    }
+  },
+  "insights/dashboard": {
+    "src": "/guide/he/insights/dashboard.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  },
+  "insights/dashboard-chart": {
+    "src": "/guide/he/insights/dashboard-chart.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  },
+  "transactions/list": {
+    "src": "/guide/he/transactions/list.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    },
+    "pointer": {
+      "x": 4.3,
+      "y": 82.3
+    },
+    "highlight": {
+      "x": 2.9,
+      "y": 80,
+      "w": 2.8,
+      "h": 4.5
+    }
+  },
+  "update-budget/overview": {
+    "src": "/guide/he/update-budget/overview.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  },
+  "update-budget/categories": {
+    "src": "/guide/he/update-budget/categories.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    },
+    "pointer": {
+      "x": 6.4,
+      "y": 56.4
+    },
+    "highlight": {
+      "x": 2.9,
+      "y": 53.9,
+      "w": 7,
+      "h": 5
+    }
+  },
+  "update-budget/details": {
+    "src": "/guide/he/update-budget/details.webp",
+    "size": {
+      "w": 512,
+      "h": 520
+    },
+    "pointer": {
+      "x": 50,
+      "y": 41.5
+    },
+    "highlight": {
+      "x": 2.3,
+      "y": 38.8,
+      "w": 95.3,
+      "h": 5.4
+    }
+  },
+  "update-budget/adjust": {
+    "src": "/guide/he/update-budget/adjust.webp",
+    "size": {
+      "w": 512,
+      "h": 520
+    },
+    "pointer": {
+      "x": 50,
+      "y": 41.2
+    },
+    "highlight": {
+      "x": 2.3,
+      "y": 38.5,
+      "w": 95.3,
+      "h": 5.4
+    }
+  },
+  "update-budget/merge": {
+    "src": "/guide/he/update-budget/merge.webp",
+    "size": {
+      "w": 512,
+      "h": 520
+    },
+    "pointer": {
+      "x": 50,
+      "y": 62.1
+    },
+    "highlight": {
+      "x": 2.3,
+      "y": 57.7,
+      "w": 95.3,
+      "h": 8.8
+    }
+  },
+  "update-budget/history": {
+    "src": "/guide/he/update-budget/history.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  },
+  "insights/range": {
+    "src": "/guide/he/insights/range.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    },
+    "pointer": {
+      "x": 36.7,
+      "y": 24.1
+    },
+    "highlight": {
+      "x": 31.8,
+      "y": 21.4,
+      "w": 9.7,
+      "h": 5.5
+    }
+  },
+  "insights/summary": {
+    "src": "/guide/he/insights/summary.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  },
+  "insights/chart": {
+    "src": "/guide/he/insights/chart.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  },
+  "insights/accuracy": {
+    "src": "/guide/he/insights/accuracy.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  },
+  "insights/pace": {
+    "src": "/guide/he/insights/pace.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  },
+  "insights/members": {
+    "src": "/guide/he/insights/members.webp",
+    "size": {
+      "w": 1280,
+      "h": 800
+    }
+  }
+}
