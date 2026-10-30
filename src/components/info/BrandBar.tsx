@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import wordmark from '../../assets/ooga-wordmark.svg';
 
 /** The diagonal purple/blue/green band behind the nav bar, shared by the app and the public pages. */
 export function BrandBackdrop() {
@@ -12,26 +13,12 @@ export function BrandBackdrop() {
   );
 }
 
-/** The hexagon logo with the app name and tagline, linking home. */
+/** The cake wordmark (the cake is the O, its slice the A) with the tagline, linking home. */
 export function BrandLogo({ children }: { children?: ReactNode }) {
   return (
-    <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity group">
-      <svg width="50" height="58" viewBox="0 0 50 58" className="drop-shadow-lg" aria-hidden>
-        <path
-          d="M25 0 L50 14.5 L50 43.5 L25 58 L0 43.5 L0 14.5 Z"
-          fill="rgba(255, 255, 255, 0.25)"
-          stroke="rgba(255, 255, 255, 0.5)"
-          strokeWidth="2"
-          className="group-hover:fill-white/30 transition-all"
-        />
-        <text x="25" y="38" textAnchor="middle" fill="white" fontSize="28" fontWeight="bold" fontFamily="system-ui, -apple-system, sans-serif">
-          G
-        </text>
-      </svg>
-      <div className="flex flex-col">
-        <span className="text-lg font-bold text-white drop-shadow-md leading-tight">Ooga</span>
-        <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">Take the Cake</span>
-      </div>
+    <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+      <img src={wordmark} alt="Ooga" width={90} height={56} className="h-14 w-auto" />
+      <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">Take the Cake</span>
       {children}
     </Link>
   );
