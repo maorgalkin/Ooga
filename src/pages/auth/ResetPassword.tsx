@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { Lock, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -12,6 +13,7 @@ const MIN_PASSWORD_LENGTH = 6;
 const ResetPassword: React.FC = () => {
   const { user, loading: authLoading, updatePassword, isRecovery, awaitingRecovery } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   // Supabase sends an expired or used link back with error_code in the hash; checking it
   // catches those links whatever the session state
   const { hash } = useLocation();
@@ -27,11 +29,11 @@ const ResetPassword: React.FC = () => {
     setError(null);
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`);
+      setError(t('auth.reset.errors.tooShort', { count: MIN_PASSWORD_LENGTH }));
       return;
     }
     if (password !== confirmPassword) {
-      setError("The passwords don't match.");
+      setError(t('auth.reset.errors.mismatch'));
       return;
     }
 
@@ -41,7 +43,7 @@ const ResetPassword: React.FC = () => {
 
     if (error) {
       console.error('Failed to update password:', error);
-      setError("Couldn't save your new password. Try again, or request a new reset link.");
+      setError(t('auth.reset.errors.saveFailed'));
     } else {
       navigate('/', { replace: true });
     }
@@ -54,7 +56,7 @@ const ResetPassword: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Choose a new password</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('auth.reset.title')}</h1>
         </div>
 
         {authLoading || awaitingRecovery ? (
@@ -64,13 +66,13 @@ const ResetPassword: React.FC = () => {
         ) : !user || linkFailed || !isRecovery ? (
           <div className="text-center space-y-4">
             <p className="text-gray-600 dark:text-gray-400">
-              This reset link has expired or was already used. Request a new one to continue.
+              {t('auth.reset.expired')}
             </p>
             <Link
               to="/forgot-password"
               className="inline-block py-2 px-4 rounded-lg text-white bg-blue-600 hover:bg-blue-700 font-medium transition-colors"
             >
-              Request a new link
+              {t('auth.reset.requestNew')}
             </Link>
           </div>
         ) : (
@@ -85,7 +87,7 @@ const ResetPassword: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  New password
+                  {t('auth.reset.newPassword')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
@@ -102,12 +104,12 @@ const ResetPassword: React.FC = () => {
                     className={inputClass}
                   />
                 </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">At least {MIN_PASSWORD_LENGTH} characters</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('auth.reset.help', { count: MIN_PASSWORD_LENGTH })}</p>
               </div>
 
               <div>
                 <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Confirm new password
+                  {t('auth.reset.confirm')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
@@ -134,10 +136,10 @@ const ResetPassword: React.FC = () => {
                 {saving ? (
                   <>
                     <Loader2 className="animate-spin h-5 w-5 me-2" />
-                    Saving…
+                    {t('common.saving')}
                   </>
                 ) : (
-                  'Save new password'
+                  t('auth.reset.submit')
                 )}
               </button>
             </form>

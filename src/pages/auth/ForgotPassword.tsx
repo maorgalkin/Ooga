@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 const ForgotPassword: React.FC = () => {
   const { resetPassword } = useAuth();
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,7 @@ const ForgotPassword: React.FC = () => {
 
     if (error) {
       console.error('Failed to send password reset email:', error);
-      setError("Couldn't send the reset email. Check the address and try again in a minute.");
+      setError(t('auth.forgot.error'));
     } else {
       setSent(true);
     }
@@ -31,17 +33,15 @@ const ForgotPassword: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Reset your password</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Enter your account's email and we'll send you a link to choose a new password.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('auth.forgot.title')}</h1>
+          <p className="text-gray-600 dark:text-gray-400">{t('auth.forgot.body')}</p>
         </div>
 
         {sent ? (
           <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-start" role="status">
             <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 me-3 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-green-800 dark:text-green-300">
-              Check your email. If <strong>{email.trim()}</strong> has an Ooga account, a reset link is on its way.
+              <Trans i18nKey="auth.forgot.sent" values={{ email: email.trim() }} components={{ strong: <strong /> }} />
             </div>
           </div>
         ) : (
@@ -56,7 +56,7 @@ const ForgotPassword: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email address
+                  {t('auth.forgot.email')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
@@ -70,7 +70,7 @@ const ForgotPassword: React.FC = () => {
                     required
                     disabled={loading}
                     className="block w-full ps-10 pe-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    placeholder="you@example.com"
+                    placeholder={t('auth.fields.emailPlaceholder')}
                   />
                 </div>
               </div>
@@ -83,10 +83,10 @@ const ForgotPassword: React.FC = () => {
                 {loading ? (
                   <>
                     <Loader2 className="animate-spin h-5 w-5 me-2" />
-                    Sending…
+                    {t('auth.forgot.submitting')}
                   </>
                 ) : (
-                  'Send reset link'
+                  t('auth.forgot.submit')
                 )}
               </button>
             </form>
@@ -95,7 +95,7 @@ const ForgotPassword: React.FC = () => {
 
         <div className="mt-6 text-center">
           <Link to="/login" className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
-            Back to sign in
+            {t('auth.forgot.back')}
           </Link>
         </div>
       </div>

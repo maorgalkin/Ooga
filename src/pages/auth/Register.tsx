@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
+import { authErrorMessage } from '../../i18n/authErrors';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, AlertCircle, Loader2, CheckCircle, User } from 'lucide-react';
 import { PublicLayout } from '../../components/info/PublicLayout';
@@ -8,6 +10,7 @@ import { FloatingShapes } from '../../components/info/LandingSections';
 const inputClass =
   'block w-full ps-10 pe-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2';
+const MIN_PASSWORD_LENGTH = 6;
 const cardClass =
   'max-w-md w-full mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8';
 
@@ -25,6 +28,7 @@ function AuthBackdrop({ children }: { children: React.ReactNode }) {
 const Register: React.FC = () => {
   const { signUp, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -40,19 +44,19 @@ const Register: React.FC = () => {
 
   const validateForm = () => {
     if (!firstName.trim()) {
-      setError('Enter your first name.');
+      setError(t('auth.register.errors.firstName'));
       return false;
     }
     if (!lastName.trim()) {
-      setError('Enter your last name.');
+      setError(t('auth.register.errors.lastName'));
       return false;
     }
-    if (password.length < 6) {
-      setError('Use a password of at least 6 characters.');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(t('auth.register.errors.passwordLength', { count: MIN_PASSWORD_LENGTH }));
       return false;
     }
     if (password !== confirmPassword) {
-      setError("The passwords don't match. Type the same password in both fields.");
+      setError(t('auth.register.errors.mismatch'));
       return false;
     }
     return true;
@@ -71,7 +75,7 @@ const Register: React.FC = () => {
     const { error } = await signUp(email, password, firstName.trim(), lastName.trim());
 
     if (error) {
-      setError(error.message);
+      setError(authErrorMessage(error, t, 'auth.errors.signUpFailed'));
       setLoading(false);
     } else {
       setSuccess(true);
@@ -91,15 +95,17 @@ const Register: React.FC = () => {
                 <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Check your email</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('auth.register.checkEmail.title')}</h1>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              We sent a verification link to <strong className="text-gray-900 dark:text-white">{email}</strong>
+              <Trans
+                i18nKey="auth.register.checkEmail.body"
+                values={{ email }}
+                components={{ strong: <strong className="text-gray-900 dark:text-white" /> }}
+              />
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              Open the link to activate your account, then sign in.
-            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('auth.register.checkEmail.hint')}</p>
             <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
-              Sign in
+              {t('auth.register.checkEmail.signIn')}
             </Link>
           </div>
         </AuthBackdrop>
@@ -113,18 +119,20 @@ const Register: React.FC = () => {
         <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
           <div className="text-center lg:text-start">
             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-              Start your family's{' '}
-              <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text text-transparent">budget</span>
+              <Trans
+                i18nKey="auth.register.heroTitle"
+                components={{ highlight: <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text text-transparent" /> }}
+              />
             </h1>
             <p className="mt-5 text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto lg:mx-0">
-              Create your account, then set up a household and invite everyone who shares the money.
+              {t('auth.register.heroBody')}
             </p>
           </div>
 
           <div className={cardClass}>
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create account</h2>
-              <p className="text-gray-600 dark:text-gray-300">It takes about a minute</p>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('auth.register.title')}</h2>
+              <p className="text-gray-600 dark:text-gray-300">{t('auth.register.subtitle')}</p>
             </div>
 
             {error && (
@@ -141,7 +149,7 @@ const Register: React.FC = () => {
               <div className="grid gap-5 sm:grid-cols-2">
                 <div>
                   <label htmlFor="firstName" className={labelClass}>
-                    First name
+                    {t('auth.register.firstName')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
@@ -156,14 +164,14 @@ const Register: React.FC = () => {
                       required
                       disabled={loading}
                       className={inputClass}
-                      placeholder="e.g., Dana"
+                      placeholder={t('auth.register.firstNamePlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div>
                   <label htmlFor="lastName" className={labelClass}>
-                    Last name
+                    {t('auth.register.lastName')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
@@ -178,7 +186,7 @@ const Register: React.FC = () => {
                       required
                       disabled={loading}
                       className={inputClass}
-                      placeholder="e.g., Levi"
+                      placeholder={t('auth.register.lastNamePlaceholder')}
                     />
                   </div>
                 </div>
@@ -186,7 +194,7 @@ const Register: React.FC = () => {
 
               <div>
                 <label htmlFor="email" className={labelClass}>
-                  Email
+                  {t('auth.fields.email')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
@@ -201,14 +209,14 @@ const Register: React.FC = () => {
                     required
                     disabled={loading}
                     className={inputClass}
-                    placeholder="you@example.com"
+                    placeholder={t('auth.fields.emailPlaceholder')}
                   />
                 </div>
               </div>
 
               <div>
                 <label htmlFor="password" className={labelClass}>
-                  Password
+                  {t('auth.fields.password')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
@@ -227,13 +235,13 @@ const Register: React.FC = () => {
                   />
                 </div>
                 <p id="password-help" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  At least 6 characters.
+                  {t('auth.register.passwordHelp', { count: MIN_PASSWORD_LENGTH })}
                 </p>
               </div>
 
               <div>
                 <label htmlFor="confirmPassword" className={labelClass}>
-                  Confirm password
+                  {t('auth.register.confirmPassword')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
@@ -260,19 +268,19 @@ const Register: React.FC = () => {
                 {loading ? (
                   <>
                     <Loader2 className="animate-spin h-5 w-5 me-2" />
-                    Creating account…
+                    {t('auth.register.submitting')}
                   </>
                 ) : (
-                  'Create account'
+                  t('auth.register.submit')
                 )}
               </button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Already have an account?{' '}
+                {t('auth.register.haveAccount')}{' '}
                 <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
-                  Sign in
+                  {t('auth.register.signIn')}
                 </Link>
               </p>
             </div>

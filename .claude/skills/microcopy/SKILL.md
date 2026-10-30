@@ -14,6 +14,8 @@ The newest screens (import review, "Paid with", the duplicates bubble) already f
 
 Terms and their meanings: [glossary.md](glossary.md). Use the glossary term every time; inconsistency reads as a different feature.
 
+Writing Hebrew: [hebrew.md](hebrew.md) (form of address, mechanics, patterns and the Hebrew glossary).
+
 ## Voice
 
 - **Plain and specific.** Name the thing: "Couldn't save the budget" beats "An error occurred". Say what happens next: "The next import will match the bank's charge to it."
@@ -63,7 +65,7 @@ Terms and their meanings: [glossary.md](glossary.md). Use the glossary term ever
 
 ## Hebrew and bank text
 
-- The UI is English; a Hebrew translation is in progress behind a flag (`docs/I18N.md` has the rules for writing it, including the neutral form of address every Hebrew string needs). Text that comes from banks (descriptions, merchant names) is usually Hebrew: render it untouched with `dir="auto"`, and never translate or reformat it.
+- The UI is English; a Hebrew translation is in progress behind a flag. Write Hebrew by [hebrew.md](hebrew.md); `docs/I18N.md` covers how text is stored and shown. Text that comes from banks (descriptions, merchant names) is usually Hebrew: render it untouched with `dir="auto"`, and never translate or reformat it.
 - Bank login fields use the English label plus the exact term the bank's own site shows, in parentheses: `National ID (ת.ז.)`, `Access code (קוד גישה)`. Check the Hebrew against the bank's site before changing it.
 - Bank and card names follow their own branding: `Visa Cal`, `Max`, `Isracard`, `Amex Israel`, `Discount Bank`, `Bank Hapoalim`, `Bank Leumi`.
 

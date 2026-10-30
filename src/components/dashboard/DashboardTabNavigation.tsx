@@ -1,4 +1,5 @@
 import React from 'react';
+import { useT } from '../../hooks/useT';
 
 interface DashboardTabNavigationProps {
   activeTab: 'dashboard' | 'transactions' | 'budget' | 'insights';
@@ -14,6 +15,7 @@ export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({
   onTabChange,
   alertsCount = 0,
 }) => {
+  const t = useT();
   return (
     <div className="mb-6">
       <div className="border-b-2 border-gray-200 dark:border-gray-700">
@@ -27,7 +29,7 @@ export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({
             }`}
           >
             <span className="relative">
-              Dashboard
+              {t('tabs.dashboard')}
               {alertsCount > 0 && (
                 <span className="absolute -top-1 -end-3 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {alertsCount}
@@ -44,7 +46,7 @@ export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            <span>Transactions</span>
+            <span>{t('tabs.transactions')}</span>
             <span className={`mt-2 w-4 h-1 rounded-full translate-y-[7px] ${activeTab === 'transactions' ? 'bg-blue-500' : 'bg-transparent'}`} />
           </button>
           <button
@@ -55,7 +57,7 @@ export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            <span>Budget</span>
+            <span>{t('tabs.budget')}</span>
             <span className={`mt-2 w-4 h-1 rounded-full translate-y-[7px] ${activeTab === 'budget' ? 'bg-green-500' : 'bg-transparent'}`} />
           </button>
           <button
@@ -66,7 +68,7 @@ export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            <span>Insights</span>
+            <span>{t('tabs.insights')}</span>
             <span className={`mt-2 w-4 h-1 rounded-full translate-y-[7px] ${activeTab === 'insights' ? 'bg-indigo-500' : 'bg-transparent'}`} />
           </button>
         </nav>

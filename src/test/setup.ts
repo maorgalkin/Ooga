@@ -2,6 +2,8 @@ import { vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeAll } from 'vitest';
+// The app loads translations in main.tsx; tests render components without it
+import '../i18n';
 
 // Mock user for authentication
 const mockUser = {

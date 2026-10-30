@@ -78,12 +78,19 @@ describe('Register page', () => {
     expect(screen.getByText('dana@example.com')).toBeInTheDocument();
   });
 
-  it('shows the sign-up error inline', async () => {
-    signUp.mockResolvedValue({ error: { message: 'User already registered' } });
+  it('shows the sign-up error inline, in its own words rather than Supabase\'s', async () => {
+    signUp.mockResolvedValue({ error: { code: 'user_already_exists', message: 'User already registered' } });
     renderRegister();
     await fillForm();
-    expect(await screen.findByRole('alert')).toHaveTextContent('User already registered');
+    expect(await screen.findByRole('alert')).toHaveTextContent("There's already an account with this email. Sign in instead.");
     expect(screen.getByRole('button', { name: 'Create account' })).toBeEnabled();
+  });
+
+  it('falls back to a general message for errors it has no sentence for', async () => {
+    signUp.mockResolvedValue({ error: { code: 'unexpected_failure', message: 'Database error saving new user' } });
+    renderRegister();
+    await fillForm();
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't create your account. Check your connection and try again.");
   });
 });
 

@@ -40,6 +40,8 @@ jobs:
     env:
       # Pre-existing errors. Lower this as they get fixed; never raise it.
       ESLINT_MAX_ERRORS: 124
+      # On-screen English not yet in src/i18n/locales. Lower it as screens are translated; never raise it.
+      UNTRANSLATED_MAX: 739
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -49,6 +51,8 @@ jobs:
       - run: npm ci
       - name: ESLint must not get worse
         run: node .github/scripts/eslint-ratchet.mjs
+      - name: Untranslated text must not grow
+        run: node .github/scripts/untranslated-ratchet.mjs
 
   scraper:
     name: Scraper
