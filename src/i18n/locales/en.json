@@ -22,7 +22,11 @@
     "expenses": "Expenses",
     "balance": "Balance",
     "close": "Close",
-    "backToTop": "Back to top"
+    "backToTop": "Back to top",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "optional": "(optional)"
   },
   "nav": {
     "help": "Help",
@@ -323,6 +327,105 @@
       "showDetails": "Show details",
       "manage": "Manage budget",
       "overBy": "Over by {{amount}}"
+    }
+  },
+  "transactions": {
+    "title": "Transactions",
+    "subtitle": "View and manage your transaction history",
+    "goToMonth": "Go to {{month}} {{year}}",
+    "filters": {
+      "title": "Filters",
+      "clear": "Clear ({{count}})",
+      "type": "Transaction type",
+      "selectAll": "Select all",
+      "income": "Income",
+      "expense": "Expense",
+      "members": "Family members",
+      "categories": "Categories",
+      "allTypes": "All types",
+      "allMembers": "All members",
+      "allCategories": "All categories",
+      "unknownMember": "Unknown",
+      "selectMonth": "Select month",
+      "more": "More",
+      "comingSoon": "Coming soon…"
+    },
+    "list": {
+      "select": "Select",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "awaitingBank": "awaiting bank",
+      "awaitingBankHint": "Added by hand and paid with a connected account: the next import will match the bank's charge to it",
+      "edit": "Edit transaction",
+      "confirmDelete_one": "Delete {{count}} transaction? This can't be undone.",
+      "confirmDelete_other": "Delete {{count}} transactions? This can't be undone.",
+      "selected": "{{count}} selected",
+      "tapToSelect": "Tap rows to select",
+      "deleteSelected": "Delete selected"
+    },
+    "details": {
+      "title": "Transaction details",
+      "amount": "Amount",
+      "date": "Date",
+      "category": "Category",
+      "familyMember": "Family member",
+      "description": "Description"
+    },
+    "categoryPicker": {
+      "titleIncome": "Select income source",
+      "titleExpense": "Select expense category",
+      "subtitle": "Choose from your categories below",
+      "footerIncome": "Select the source of your income",
+      "footerExpense": "Select the category that best describes your expense"
+    },
+    "form": {
+      "titleIncome": "Add 💰 income",
+      "titleExpense": "Add 💸 expense",
+      "importTransactions": "Import transactions",
+      "addAccountHint": "Add a bank account in Settings",
+      "addAccount": "Add account",
+      "expenseToggle": "💸 Expense",
+      "incomeToggle": "💰 Income",
+      "categoriesIncome": "Income Categories",
+      "categoriesExpense": "Expense Categories",
+      "choose": "Choose",
+      "descriptionPlaceholder": "Enter transaction description (optional)",
+      "familyMemberPlaceholder": "Select family member (optional)",
+      "paidWith": "Paid with",
+      "receivedIn": "Received in",
+      "cash": "Cash / not a connected account",
+      "paidWithHint": "The next import from this account will match the bank’s charge to this entry instead of adding it twice.",
+      "installments": "Create as installments",
+      "monthsPlaceholder": "# months",
+      "installmentsHelp": "Amount will be divided equally across installments (rounded to the cent; any leftover goes on the first). The first installment keeps the selected date, the rest fall on the 1st of each following month (2-36 months).",
+      "submit": "Submit",
+      "submitting": "Submitting...",
+      "missingFields": "Please fill in the following required fields: {{fields}}",
+      "installmentsField": "Number of installments (minimum 2)",
+      "addFailed": "Failed to add transaction. Please try again."
+    },
+    "edit": {
+      "descriptionPlaceholder": "e.g., Grocery shopping",
+      "totalAmount": "Total amount",
+      "type": "Type",
+      "selectCategory": "Select a category",
+      "familyMemberOptional": "Family member (optional)",
+      "none": "None",
+      "convert": "Convert to installments",
+      "installmentsHint": "Enter 2–36 installments. The amount above is treated as the total and split equally.",
+      "installmentsSummary": "{{split}} — total {{total}}. The first keeps this date, the rest fall on the 1st of each following month.",
+      "createInstallments": "Create installments",
+      "saveChanges": "Save changes",
+      "seriesNotice": "This transaction is part of an installment series ({{number}}/{{total}})",
+      "deleteSingle": "Delete only this installment ({{number}}/{{total}})",
+      "deleteFuture": "Delete this and all future installments ({{number}}-{{total}})",
+      "deleteAll": "Delete entire installment series (all {{total}} installments)",
+      "confirmDelete": "Confirm delete",
+      "areYouSure": "Are you sure you want to delete this transaction?",
+      "yesDelete": "Yes, Delete",
+      "installmentsRange": "Number of installments must be between 2 and 36.",
+      "updateFailed": "Failed to update transaction. Please try again.",
+      "deleteFailed": "Failed to delete transaction. Please try again."
     }
   }
 }
