@@ -273,25 +273,25 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
 /** The guide's four parts, which group the chapters by how often you need them. */
 export const GUIDE_PARTS: GuidePart[] = [
   {
-    title: 'Getting started',
+    title: 'Your household',
     cadence: 'Once',
     purpose: 'Create your account and bring the family in.',
     chapters: ['household'],
   },
   {
-    title: 'Setting up the budget',
+    title: 'Your budget',
     cadence: 'Once',
     purpose: 'Decide what you plan to spend each month.',
     chapters: ['budget'],
   },
   {
-    title: 'The day-to-day',
+    title: 'Day to day',
     cadence: 'A minute or two at a time',
     purpose: 'Add what you spend and adjust the plan as life happens.',
     chapters: ['transactions', 'update-budget'],
   },
   {
-    title: 'Deeper understanding',
+    title: 'Going deeper',
     cadence: 'After a few weeks, whenever you like',
     purpose: 'See where the money really goes and how your plan holds up.',
     chapters: ['insights'],

@@ -57,8 +57,8 @@ App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → Bank
 ├── /reset-password → pages/auth/ResetPassword (the email's link lands here, signed in)
 └── Public, signed in or out:
     ├── /about → pages/info/AboutPage
-    └── /guide → pages/info/GuidePage: welcome page with the four parts (Getting started,
-        Setting up the budget, The day-to-day, Deeper understanding);
+    └── /guide → pages/info/GuidePage: welcome page with the four parts (Your household,
+        Your budget, Day to day, Going deeper);
         /guide/:chapter → household, budget, transactions, update-budget, insights
         (text and parts in src/content/guide.ts; step links open app tabs via ?tab= / ?subtab=)
 ```
