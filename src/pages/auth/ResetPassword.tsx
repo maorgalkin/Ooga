@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Lock, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -12,6 +12,10 @@ const MIN_PASSWORD_LENGTH = 6;
 const ResetPassword: React.FC = () => {
   const { user, loading: authLoading, updatePassword } = useAuth();
   const navigate = useNavigate();
+  // Supabase sends an expired or used link back with error_code in the hash, and leaves any
+  // existing session in place, so the hash, not the session, says whether the link worked
+  const { hash } = useLocation();
+  const linkFailed = new URLSearchParams(hash.replace(/^#/, '')).has('error_code');
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,7 +61,7 @@ const ResetPassword: React.FC = () => {
           <div className="flex justify-center py-6">
             <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
           </div>
-        ) : !user ? (
+        ) : !user || linkFailed ? (
           <div className="text-center space-y-4">
             <p className="text-gray-600 dark:text-gray-400">
               This reset link has expired or was already used. Request a new one to continue.

@@ -110,6 +110,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updatePassword = async (password: string) => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
+      if (!error) {
+        // A reset often follows a suspected compromise, so end every other session
+        const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' });
+        if (signOutError) console.error('Failed to sign out other sessions:', signOutError);
+      }
       return { error };
     } catch (error) {
       return { error: error as AuthError };

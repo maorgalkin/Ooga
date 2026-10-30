@@ -71,6 +71,17 @@ describe('ResetPassword', () => {
     expect(auth.updatePassword).not.toHaveBeenCalled();
   });
 
+  it('treats an expired link as expired even when someone is already signed in', () => {
+    render(
+      <MemoryRouter initialEntries={['/reset-password#error=access_denied&error_code=otp_expired']}>
+        <ResetPassword />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Request a new link' })).toBeInTheDocument();
+  });
+
   it('offers a new link when the reset link has expired', () => {
     auth.user = null;
     renderPage(<ResetPassword />);
