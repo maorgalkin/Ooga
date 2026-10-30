@@ -48,7 +48,7 @@ describe('sign-in pages in Hebrew', () => {
     await userEvent.type(within(form).getByLabelText('סיסמה'), 'wrong');
     await userEvent.click(within(form).getByRole('button', { name: 'התחברות' }));
     expect(await screen.findByText('האימייל או הסיסמה לא נכונים. כדאי לבדוק ולנסות שוב.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'טוב לראות אותך שוב' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'כבר ב־Ooga?' })).toBeInTheDocument();
   });
 
   it('leaves no English on the create-account card', async () => {

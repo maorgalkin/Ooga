@@ -12,6 +12,13 @@ const BLOBS = [
   { className: 'start-1/3 bottom-[-6rem] h-72 w-72 bg-blue-400/25', drift: { x: [0, 20, 0], y: [0, -25, 0] } },
 ];
 
+/** The landing page's "How it works" steps and the guide chapter each one shows. */
+const STEPS = [
+  { id: 'household', chapter: 'household' },
+  { id: 'budget', chapter: 'budget' },
+  { id: 'track', chapter: 'transactions' },
+] as const;
+
 /** Slowly drifting brand-colored blobs behind the landing hero. */
 export function FloatingShapes() {
   const reduce = useReducedMotion();
@@ -35,7 +42,13 @@ export function LandingSections() {
   const rise = (delay = 0) =>
     reduce ? {} : { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { delay, duration: 0.5 } };
   const { t } = useTranslation();
-  const showcase = useGuide().chapters.filter((c) => c.landing);
+  const { chapters } = useGuide();
+  // The landing page introduces rather than instructs, so its steps have their own words;
+  // each still plays its guide chapter's featured clip and links to that chapter.
+  const showcase = STEPS.flatMap(({ id, chapter: slug }) => {
+    const chapter = chapters.find((c) => c.slug === slug);
+    return chapter ? [{ id, chapter }] : [];
+  });
 
   return (
     <>
@@ -67,14 +80,14 @@ export function LandingSections() {
               {t('landing.howTitle')}
             </motion.h2>
             <div className="mt-12 space-y-16">
-              {showcase.map((chapter, i) => {
+              {showcase.map(({ id, chapter }, i) => {
                 const step = chapter.steps.find((s) => s.featured) ?? chapter.steps.find((s) => s.clip);
                 return (
-                  <motion.div key={chapter.slug} {...rise()} className="grid gap-8 md:grid-cols-2 md:items-center">
+                  <motion.div key={id} {...rise()} className="grid gap-8 md:grid-cols-2 md:items-center">
                     <div className={i % 2 ? 'md:order-2' : ''}>
-                      <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">{t('landing.step', { number: i + 1 })}</span>
-                      <h3 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{chapter.title}</h3>
-                      <p className="mt-3 text-gray-600 dark:text-gray-300">{chapter.summary}</p>
+                      <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">{t('landing.stepNumber', { number: i + 1 })}</span>
+                      <h3 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{t(`landing.steps.${id}.title`)}</h3>
+                      <p className="mt-3 text-gray-600 dark:text-gray-300">{t(`landing.steps.${id}.body`)}</p>
                       <Link
                         to={`/guide/${chapter.slug}`}
                         className="mt-4 inline-flex items-center gap-1 font-medium text-purple-700 hover:text-purple-600 dark:text-purple-300"
@@ -90,6 +103,24 @@ export function LandingSections() {
           </div>
         </section>
       )}
+
+      <section className="max-w-3xl mx-auto px-4 pt-16">
+        <motion.div
+          {...rise()}
+          className="flex flex-col items-center gap-5 rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm sm:flex-row sm:items-start sm:p-8 sm:text-start dark:border-gray-700 dark:bg-gray-800"
+        >
+          <span
+            aria-hidden
+            className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 via-blue-600 to-green-600 text-xl font-bold text-white shadow"
+          >
+            {t('landing.maker.initials')}
+          </span>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('landing.maker.title')}</h2>
+            <p className="mt-2 text-gray-600 dark:text-gray-300">{t('landing.maker.body')}</p>
+          </div>
+        </motion.div>
+      </section>
 
       <section className="max-w-4xl mx-auto px-4 py-16">
         <motion.div {...rise()} className="relative isolate overflow-hidden rounded-3xl p-8 sm:p-10 text-center text-white shadow-xl">

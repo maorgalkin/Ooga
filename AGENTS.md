@@ -50,7 +50,8 @@ App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → Bank
 │   │   └── Settings: BudgetSettings (currency, notifications, LanguageSettings,
 │   │                 ConnectedAccountsSettings, HouseholdSettingsModal, BudgetHistory)
 │   └── Insights → pages/InsightsPage (date range, budget vs actual, accuracy, pacing, member spend)
-├── /login — landing page: hero, sign-in card, feature cards, "How it works" clips
+├── /login — landing page: hero, sign-in card, feature cards, "How it works" (three steps
+│            with guide clips), the maker's note, "Ready to budget?"
 │            (components/info/LandingSections); after sign-in returns to the page that sent
 │            you there (router state `from`, checked by utils/returnPath)
 ├── /register

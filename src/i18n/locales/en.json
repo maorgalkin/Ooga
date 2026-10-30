@@ -71,12 +71,11 @@
     "signIn": {
       "heroTitle": "Your family's money, <highlight>finally clear</highlight>",
       "heroBody": "Ooga brings everyone's spending into one budget, so you know where the money goes and stay in control of the bottom line every month.",
-      "title": "Welcome back",
-      "subtitle": "Sign in to your Ooga account",
+      "title": "Already on Ooga?",
       "forgot": "Forgot your password?",
       "submit": "Sign in",
       "submitting": "Signing in…",
-      "noAccount": "Don't have an account?",
+      "noAccount": "Don't have an account yet?",
       "createAccount": "Create account"
     },
     "register": {
@@ -168,12 +167,31 @@
   "landing": {
     "featuresTitle": "Everything a family budget needs",
     "howTitle": "How it works",
-    "step": "Step {{number}}",
     "seeHow": "See how",
-    "newTitle": "New to Ooga?",
+    "newTitle": "Ready to budget?",
     "newBody": "Create your account in a minute; your household comes with it. The guide shows you every step.",
     "createAccount": "Create account",
-    "readGuide": "Read the guide"
+    "readGuide": "Read the guide",
+    "stepNumber": "Step {{number}}",
+    "steps": {
+      "household": {
+        "title": "Set up your household",
+        "body": "Create your account and invite your partner."
+      },
+      "budget": {
+        "title": "Build your budget",
+        "body": "Pick categories and give each a monthly limit."
+      },
+      "track": {
+        "title": "Track and adjust",
+        "body": "Add spending by hand or import it from the bank. Ooga shows where you stand, and you adjust as you go."
+      }
+    },
+    "maker": {
+      "title": "Who's behind Ooga",
+      "body": "Hi, I'm Maor. I'm 38, a husband and a father of two, and I work as a test automation developer at a semiconductor manufacturer. Somewhere along the way I developed an unexplained passion for finance. Ooga is what came of it.",
+      "initials": "MG"
+    }
   },
   "hero": {
     "leftToSpend": "Left to spend this month",
@@ -1218,5 +1236,8 @@
     "budgetLocked": "This month's budget is locked and can't be changed.",
     "noBudget": "There's no budget yet. Create one on the Budget tab.",
     "duplicateName": "That name is already taken. Choose another one."
+  },
+  "footer": {
+    "copyright": "© Maor Galkin"
   }
 }
