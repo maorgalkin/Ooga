@@ -17,7 +17,7 @@ export function BrandBackdrop() {
 export function BrandLogo({ children }: { children?: ReactNode }) {
   return (
     <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-      <img src={wordmark} alt="Ooga" width={90} height={56} className="h-14 w-auto" />
+      <img src={wordmark} alt="Ooga" width={92} height={56} className="h-14 w-auto" />
       <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">Take the Cake</span>
       {children}
     </Link>
