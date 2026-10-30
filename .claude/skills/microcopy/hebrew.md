@@ -12,6 +12,7 @@ Hebrew verbs and adjectives change with the reader's gender. Every key has a **n
 |---|---|---|
 | Buttons, tabs, headings, menu items | Verbal noun: `שמירה`, `ביטול`, `הוספת תנועה`, `ייבוא תנועות` | Imperative: `שמור`, `הוסיפי` |
 | Instructions and hints | Impersonal: `אפשר לייבא…`, `כדאי לבדוק…`, `צריך להזין סכום` | `את/ה יכול/ה`, `הזן/י` |
+| Step-by-step instructions (the guide) | Present plural: `לוחצים על "שמירה"`, `בוחרים קטגוריה` | Imperative: `לחץ/י` |
 | Questions to the reader | Infinitive: `למחוק את "מכולת"?`, `לצאת ממשק הבית?` | `האם את/ה בטוח/ה?` |
 | Things the reader did | 2nd-person past, written the same for both: `שכחת`, `הוספת`, `בחרת` | |
 | Our side of an error | `לא הצלחנו לשמור את התקציב.` | Passive blame: `השמירה נכשלה` |
@@ -78,3 +79,17 @@ Text from banks stays as the bank wrote it, with `dir="auto"`.
 | Cancel / Close / Save | ביטול / סגירה / שמירה | |
 
 Banks and cards by their Hebrew names: ויזה כאל, מקס, ישראכרט, אמריקן אקספרס, בנק דיסקונט, בנק הפועלים, בנק לאומי.
+
+## Labels the guide names
+
+The Hebrew guide quotes these UI labels, so the screens must use exactly these words when they're translated. If a screen needs different wording, change the guide (`guide.he.json`) in the same PR.
+
+| Where | Labels |
+|---|---|
+| Top bar and tabs | הוספת תנועה · תמונת מצב · תנועות · תקציב · תובנות |
+| Dashboard and household | ניהול משק הבית · עריכה · הוספת בן/בת משפחה · הזמנת משתתפים · העתקה · מעבר למשק בית אחר · מחיקת הנתונים והצטרפות |
+| Budget | יצירת תקציב · הוספת קטגוריה · שמירת התקציב · סקירה · קטגוריות · פרטים · התאמה · מיזוג · היסטוריית התקציב |
+| Default categories | מכולת · תחבורה · בילויים · חשבונות · בית וגינה |
+| Add transaction | בחירה · שמירה · הכנסה · משכורת · פריסה לתשלומים |
+| Bank import | חשבונות מקושרים · הוספת חשבון · בקרוב · בדיקה ושמירה · ייבוא תנועות · החודש הנוכחי · החודש הקודם · טווח מותאם · ייבוא · שליחת קוד · אימות וייבוא · אישור · שולם באמצעות |
+| Insights | מתחילת השנה · סיכום התקציב · דיוק לפי קטגוריה · קצב לפי קטגוריה · הוצאות לפי בני משפחה |

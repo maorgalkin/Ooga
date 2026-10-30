@@ -2,6 +2,8 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
 import he from './locales/he.json';
+import guideEn from './locales/guide.en.json';
+import guideHe from './locales/guide.he.json';
 
 export const LANGUAGES = ['en', 'he'] as const;
 export type Language = (typeof LANGUAGES)[number];
@@ -61,7 +63,8 @@ export const isRtl = () => typeof document !== 'undefined' && document.documentE
 export const browserLanguage = storedLanguage;
 
 void i18n.use(initReactI18next).init({
-  resources: { en: { translation: en }, he: { translation: he } },
+  // The guide's long text has a namespace of its own: useTranslation('guide')
+  resources: { en: { translation: en, guide: guideEn }, he: { translation: he, guide: guideHe } },
   lng: resolveLanguage(),
   fallbackLng: 'en',
   // React already escapes what it renders

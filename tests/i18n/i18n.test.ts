@@ -2,9 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import i18n, { applyLanguage, resolveLanguage } from '../../src/i18n';
 import en from '../../src/i18n/locales/en.json';
 import he from '../../src/i18n/locales/he.json';
+import guideEn from '../../src/i18n/locales/guide.en.json';
+import guideHe from '../../src/i18n/locales/guide.he.json';
 
+// Arrays (a guide step's paragraphs) count as one key with their length, so Hebrew can't drop a paragraph
 const keys = (o: object, prefix = ''): string[] =>
-  Object.entries(o).flatMap(([k, v]) => (typeof v === 'object' ? keys(v, `${prefix}${k}.`) : [`${prefix}${k}`]));
+  Object.entries(o).flatMap(([k, v]) =>
+    Array.isArray(v) ? [`${prefix}${k}[${v.length}]`] : typeof v === 'object' ? keys(v, `${prefix}${k}.`) : [`${prefix}${k}`],
+  );
 
 describe('i18n', () => {
   beforeEach(() => localStorage.clear());
@@ -42,5 +47,9 @@ describe('i18n', () => {
     // Gendered variants (_female/_male) are Hebrew-only; their neutral key must exist in both
     const hebrew = keys(he).map((k) => k.replace(/_(female|male)$/, ''));
     expect(new Set(hebrew)).toEqual(new Set(keys(en)));
+  });
+
+  it('has the guide in Hebrew in the same shape, paragraph for paragraph', () => {
+    expect(new Set(keys(guideHe))).toEqual(new Set(keys(guideEn)));
   });
 });

@@ -61,7 +61,7 @@ App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → Bank
     └── /guide → pages/info/GuidePage: welcome page with the four parts (Your household,
         Your budget, Day to day, Going deeper);
         /guide/:chapter → household, budget, transactions, update-budget, insights
-        (text and parts in src/content/guide.ts; step links open app tabs via ?tab= / ?subtab=)
+        (shape in src/content/guide.ts, words in src/i18n/locales/guide.*.json; step links open app tabs via ?tab= / ?subtab=)
 ```
 
 ## Conventions

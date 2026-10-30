@@ -14,7 +14,8 @@ Everything runs against the **test** Supabase project from `.env.test.local`, ne
 | `public/guide/<chapter>/<name>.webp` | The desktop frames, captured at 1.5× in a 1280×800 window |
 | `public/guide/mobile/<chapter>/<name>.webp` | The phone frames, captured at 2× in a 390×844 touch window (`--mobile`) |
 | `src/content/guide-frames.json`, `guide-frames.mobile.json` | Size, pointer and highlight box for each frame (percentages of the frame); both use the same keys |
-| `src/content/guide.ts` | Guide text; each step picks its frames by key with `clip(alt, 'chapter/name', ...)` |
+| `src/content/guide.ts` | The guide's shape: each step's id, frame keys (`clip: ['chapter/name', ...]`) and link |
+| `src/i18n/locales/guide.en.json`, `guide.he.json` | The guide's words in each language, including each clip's alt text |
 | `src/components/info/GuideClip.tsx` | Plays a step's frames as a looping walkthrough; below 768px it plays the phone frames, if the step has a phone version of every frame |
 
 ## Prerequisites
@@ -74,4 +75,4 @@ The `guide-visuals` agent (`.claude/agents/guide-visuals.md`) follows this proce
 - **Keep `captureBeyondViewport: false`** in `capture-guide.mjs`. Capturing beyond the viewport resizes the page mid-shot, so the Dashboard collapses its grid and replays its chart animation.
 - **Phone frames are cropped.** A phone frame taller than 1.4× its width is cropped around its `target` (or `focus`, which keeps an element in view without the pointer), so a clip fits on a phone screen.
 - **Phone selectors differ.** The top bar shows icons only on phones (the `ADD` selector in the script handles Add transaction); check new selectors at 390px too.
-- **Frame keys are shared.** Renaming a frame in `capture-guide.mjs` means updating the matching `clip(...)` call in `src/content/guide.ts`.
+- **Frame keys are shared.** Renaming a frame in `capture-guide.mjs` means updating the step's `clip: [...]` in `src/content/guide.ts`.
