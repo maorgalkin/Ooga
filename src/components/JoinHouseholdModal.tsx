@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { errorMessage } from '../i18n/errors';
 import { X, AlertTriangle, Users, Loader2, CheckCircle } from 'lucide-react';
 import * as HouseholdService from '../services/householdService';
 import { Trans } from 'react-i18next';
@@ -53,11 +54,11 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
         setLoading(false);
       } else {
         // Error occurred
-        setError(result.error || t('household.join.joinFailed'));
+        setError(errorMessage(result.error, t, 'household.join.joinFailed'));
         setLoading(false);
       }
     } catch (err: any) {
-      setError(err.message || t('household.join.genericError'));
+      setError(errorMessage(err, t, 'household.join.genericError'));
       setLoading(false);
     }
   };

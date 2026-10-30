@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { errorMessage } from '../i18n/errors';
 import { Trans } from 'react-i18next';
 import i18n from '../i18n';
 import { useT } from '../hooks/useT';
@@ -152,7 +153,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
       }
       setStep('success');
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : t('import.addAccount.saveFailed'));
+      setErrorMsg(errorMessage(err, t, 'import.addAccount.saveFailed'));
       setStep('error');
     }
   };

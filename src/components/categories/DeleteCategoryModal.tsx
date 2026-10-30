@@ -2,6 +2,7 @@
 // Part of Category Management Restructure (Phase 4)
 
 import React, { useState } from 'react';
+import { errorMessage } from '../../i18n/errors';
 import { useT } from '../../hooks/useT';
 import { X, AlertTriangle, Trash2, ArrowRight } from 'lucide-react';
 import { useDeleteCategory, useCategories } from '../../hooks/useCategories';
@@ -51,7 +52,7 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('categories.edit.errors.deleteFailed'));
+      setError(errorMessage(err, t, 'categories.edit.errors.deleteFailed'));
     } finally {
       setIsDeleting(false);
     }

@@ -2,6 +2,7 @@
 // Part of Category Management Restructure (Phase 4)
 
 import React, { useState, useMemo } from 'react';
+import { errorMessage } from '../../i18n/errors';
 import { useT } from '../../hooks/useT';
 import { X, AlertCircle, GitMerge, ArrowRight, Check, Info } from 'lucide-react';
 import { useMergeCategories } from '../../hooks/useCategories';
@@ -63,7 +64,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('categories.edit.errors.mergeFailed'));
+      setError(errorMessage(err, t, 'categories.edit.errors.mergeFailed'));
     }
   };
 

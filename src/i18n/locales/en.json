@@ -560,8 +560,7 @@
       "transactionsDeleted_one": "\n• {{count}} transaction deleted",
       "transactionsDeleted_other": "\n• {{count}} transactions deleted",
       "resetTail": "\n\nYou can now create a fresh budget!",
-      "resetFailed": "Failed to reset configuration: {{error}}",
-      "unknownError": "Unknown error"
+      "resetFailedPlain": "Couldn't reset the budget. Try again in a minute."
     }
   },
   "categories": {
@@ -1023,7 +1022,6 @@
   },
   "insights": {
     "loading": "Loading insights...",
-    "loadError": "Error loading budget data: {{message}}",
     "subtitle": "Analyze your spending patterns and budget accuracy",
     "summaryTitle": "Budget summary",
     "summarySubtitle": "Overview of planned vs actual spending",
@@ -1175,7 +1173,8 @@
       "total": "Total",
       "average": "Average",
       "percentOfTotal": "% of Total"
-    }
+    },
+    "loadErrorPlain": "Couldn't load your budget data. Try again in a minute."
   },
   "errorScreen": {
     "criticalTitle": "Critical error detected",
@@ -1193,5 +1192,25 @@
     "commit": "Commit:",
     "built": "Built:",
     "scrollToTop": "Click to scroll to top"
+  },
+  "errors": {
+    "importUnreachable": "The import service is unreachable. Try again in a minute.",
+    "importTimeout": "The import is taking too long. Check back in a few minutes.",
+    "signedOut": "You're signed out. Sign in again and retry.",
+    "noHousehold": "You're not in a household yet. Set one up in Household settings.",
+    "ownerCannotLeave": "The owner can't leave the household. Make someone else the owner first, or delete the household.",
+    "ownerOnly": "Only the household's owner can do this.",
+    "newOwnerNotMember": "Ownership can only go to a participant in this household.",
+    "alreadyOwner": "They're already the owner.",
+    "invalidInvitation": "That invitation code doesn't work. Check it, or ask for a new one.",
+    "reconnectAccount": "This connected account needs reconnecting. Remove it and add it again.",
+    "noCards": "No cards were found on this Visa Cal account.",
+    "otpRejected": "That code didn't work. Check the SMS and try again.",
+    "otpRequestFailed": "Couldn't send the code. Try again in a minute.",
+    "bankLoginRejected": "The bank didn't accept the login details. Check them in Connected accounts and try again.",
+    "bankPasswordExpired": "The bank wants a new password. Change it on the bank's site, then update the account here.",
+    "budgetLocked": "This month's budget is locked and can't be changed.",
+    "noBudget": "There's no budget yet. Create one on the Budget tab.",
+    "duplicateName": "That name is already taken. Choose another one."
   }
 }

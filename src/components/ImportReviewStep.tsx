@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { errorMessage } from '../i18n/errors';
 import { Trans } from 'react-i18next';
 import { useT } from '../hooks/useT';
 import { getUserLocale } from '../utils/locale';
@@ -88,7 +89,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         setSuggestions(result.suggestions);
         await loadRows();
       } catch (e) {
-        setError(e instanceof Error ? e.message : t('import.review.loadFailed'));
+        setError(errorMessage(e, t, 'import.review.loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -102,7 +103,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       setMerged((prev) => prev.filter((m) => m.entry.id !== match.entry.id));
       await loadRows(); // the bank row is back in the list
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('import.review.undoFailed'));
+      setError(errorMessage(e, t, 'import.review.undoFailed'));
     } finally {
       setBusyId(null);
     }
@@ -116,7 +117,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       setMerged((prev) => [...prev, match]);
       await loadRows(); // the bank row is now part of the entry
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('import.review.mergeFailed'));
+      setError(errorMessage(e, t, 'import.review.mergeFailed'));
     } finally {
       setBusyId(null);
     }
@@ -172,7 +173,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
 
       onDone(selected.size);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('import.review.saveFailed'));
+      setError(errorMessage(e, t, 'import.review.saveFailed'));
       setSaving(false);
     }
   }, [transactions, selected, categoryOverrides, onDone, t]);
@@ -186,7 +187,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       await deleteTransactions(rows.map((t) => t.id));
       onCancel();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('import.review.cancelFailed'));
+      setError(errorMessage(e, t, 'import.review.cancelFailed'));
       setSaving(false);
     }
   }, [dbSessionId, onCancel, t]);
