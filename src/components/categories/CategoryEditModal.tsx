@@ -400,7 +400,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                 `}
               >
                 <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span>{tab.label}</span>
                 {hasAdjustment && (
                   <span className="absolute top-1 right-1 sm:relative sm:top-0 sm:right-0 w-2 h-2 bg-orange-500 rounded-full" />
                 )}

@@ -50,14 +50,17 @@ App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → Bank
 │   │                 HouseholdSettingsModal, BudgetHistory)
 │   └── Insights → pages/InsightsPage (date range, budget vs actual, accuracy, pacing, member spend)
 ├── /login — landing page: hero, sign-in card, feature cards, "How it works" clips
-│            (components/info/LandingSections)
+│            (components/info/LandingSections); after sign-in returns to the page that sent
+│            you there (router state `from`, checked by utils/returnPath)
 ├── /register
 ├── /forgot-password → pages/auth/ForgotPassword (sends the reset email)
 ├── /reset-password → pages/auth/ResetPassword (the email's link lands here, signed in)
 └── Public, signed in or out:
     ├── /about → pages/info/AboutPage
-    └── /guide, /guide/:chapter → pages/info/GuidePage (household, budget, transactions,
-                                  update-budget, insights; text in src/content/guide.ts)
+    └── /guide → pages/info/GuidePage: welcome page with the four parts (Getting started,
+        Setting up the budget, The day-to-day, Deeper understanding);
+        /guide/:chapter → household, budget, transactions, update-budget, insights
+        (text and parts in src/content/guide.ts; step links open app tabs via ?tab= / ?subtab=)
 ```
 
 ## Conventions
