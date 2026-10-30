@@ -19,6 +19,7 @@ import {
 import type { PersonalBudget } from '../../types/budget';
 import { formatCurrencyFromSettings } from '../../utils/formatCurrency';
 import { getUserLocale } from '../../utils/locale';
+import { useT } from '../../hooks/useT';
 
 interface BudgetHistoryProps {
   className?: string;
@@ -29,6 +30,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
   className = '',
   currency = 'ILS'
 }) => {
+  const t = useT();
   const { data: history = [], isLoading } = usePersonalBudgetHistory();
   const setActive = useSetActiveBudget();
   const deleteBudget = useDeletePersonalBudget();
@@ -44,7 +46,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
       await setActive.mutateAsync(budgetId);
     } catch (error) {
       console.error('Error setting active budget:', error);
-      alert('Failed to set active budget');
+      alert(t('history.setActiveFailed'));
     }
   };
 
@@ -53,19 +55,11 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
     
     let confirmMessage: string;
     if (isOnlyBudget) {
-      confirmMessage = 
-        'This is your only budget. Deleting it will:\n\n' +
-        '• Remove your budget configuration\n' +
-        '• You will need to create a new budget\n\n' +
-        'Are you sure you want to delete this budget?';
+      confirmMessage = t('history.confirmOnly');
     } else if (isActive) {
-      confirmMessage = 
-        'This is your active budget. Deleting it will:\n\n' +
-        '• Make another budget version active\n' +
-        '• Remove this version permanently\n\n' +
-        'Are you sure you want to delete the active budget?';
+      confirmMessage = t('history.confirmActive');
     } else {
-      confirmMessage = 'Are you sure you want to delete this budget version?';
+      confirmMessage = t('history.confirmVersion');
     }
 
     if (confirm(confirmMessage)) {
@@ -73,7 +67,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
         await deleteBudget.mutateAsync(budgetId);
       } catch (error) {
         console.error('Error deleting budget:', error);
-        alert('Failed to delete budget');
+        alert(t('history.deleteFailed'));
       }
     }
   };
@@ -83,7 +77,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
       <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-          <span className="ms-2 text-gray-500 dark:text-gray-400">Loading history...</span>
+          <span className="ms-2 text-gray-500 dark:text-gray-400">{t('history.loading')}</span>
         </div>
       </div>
     );
@@ -96,14 +90,14 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
         <div className="flex items-center gap-2">
           <History className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-            Budget history
+            {t('history.title')}
           </h3>
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            ({history.length} version{history.length !== 1 ? 's' : ''})
+            {t('history.versions', { count: history.length })}
           </span>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          View and manage all budget versions
+          {t('history.subtitle')}
         </p>
       </div>
 
@@ -112,9 +106,9 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
         {history.length === 0 ? (
           <div className="text-center py-8">
             <AlertCircle className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600 dark:text-gray-400">No budget history</p>
+            <p className="text-gray-600 dark:text-gray-400">{t('history.empty')}</p>
             <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-              Create a budget to start tracking
+              {t('history.emptyHint')}
             </p>
           </div>
         ) : (
@@ -141,7 +135,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                         {budget.is_active && (
                           <span className="flex items-center text-xs bg-green-600 text-white px-2 py-0.5 rounded">
                             <CheckCircle className="h-3 w-3 me-1" />
-                            Active
+                            {t('history.active')}
                           </span>
                         )}
                         <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -149,7 +143,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {Object.keys(budget.categories).length} categories • {formatCurrency(totalBudget)} total
+                        {t('history.summary', { count: Object.keys(budget.categories).length, total: formatCurrency(totalBudget) })}
                       </p>
                       {budget.notes && (
                         <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 italic truncate">
@@ -158,7 +152,10 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                       )}
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         <Clock className="inline h-3 w-3 me-1" />
-                        {new Date(budget.updated_at).toLocaleDateString(getUserLocale())} at {new Date(budget.updated_at).toLocaleTimeString(getUserLocale(), { hour: '2-digit', minute: '2-digit' })}
+                        {t('history.updatedAt', {
+                          date: new Date(budget.updated_at).toLocaleDateString(getUserLocale()),
+                          time: new Date(budget.updated_at).toLocaleTimeString(getUserLocale(), { hour: '2-digit', minute: '2-digit' }),
+                        })}
                       </p>
                     </div>
 
@@ -169,7 +166,8 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                           onClick={() => handleSetActive(budget.id)}
                           disabled={setActive.isPending}
                           className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded transition-colors"
-                          title="Set as active budget"
+                          title={t('history.setActive')}
+                          aria-label={t('history.setActive')}
                         >
                           {setActive.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -182,7 +180,8 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                         onClick={() => handleDelete(budget.id, budget.is_active)}
                         disabled={deleteBudget.isPending}
                         className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                        title={budget.is_active ? "Delete active budget" : "Delete this version"}
+                        title={t(budget.is_active ? 'history.deleteActive' : 'history.deleteVersion')}
+                        aria-label={t(budget.is_active ? 'history.deleteActive' : 'history.deleteVersion')}
                       >
                         {deleteBudget.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

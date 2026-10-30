@@ -21,6 +21,7 @@ import { useActiveBudget, useUpdatePersonalBudget } from '../../hooks/useBudgets
 import ConnectedAccountsSettings from '../ConnectedAccountsSettings';
 import { LanguageSettings } from './LanguageSettings';
 import { isHebrewEnabled } from '../../i18n';
+import { useT } from '../../hooks/useT';
 import HouseholdSettingsModal from '../HouseholdSettingsModal';
 import * as HouseholdService from '../../services/householdService';
 import type { Household } from '../../services/householdService';
@@ -30,6 +31,7 @@ interface BudgetSettingsProps {
 }
 
 export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }) => {
+  const t = useT();
   const { data: activeBudget, isLoading: loadingBudget } = useActiveBudget();
   const updateBudget = useUpdatePersonalBudget();
   
@@ -107,7 +109,7 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings');
+      alert(t('settings.saveFailed'));
     }
   };
 
@@ -147,7 +149,7 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
       <div className="text-center py-12">
         <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
         <p className="text-gray-600 dark:text-gray-400">
-          Create a budget first to configure settings
+          {t('settings.noBudget')}
         </p>
       </div>
     );
@@ -159,10 +161,10 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Budget settings
+            {t('settings.title')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Configure your budget preferences and household
+            {t('settings.subtitle')}
           </p>
         </div>
         
@@ -177,14 +179,14 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Save changes
+            {t('settings.saveChanges')}
           </button>
         )}
         
         {saveSuccess && (
           <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
             <Check className="h-5 w-5" />
-            <span className="text-sm font-medium">Saved!</span>
+            <span className="text-sm font-medium">{t('settings.saved')}</span>
           </div>
         )}
       </div>
@@ -200,7 +202,7 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
                 <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="flex-1">
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Budget name</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100">{t('settings.budgetName')}</h4>
                 {isEditingName ? (
                   <input
                     type="text"
@@ -209,11 +211,11 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
                     onBlur={() => !hasChanges && setIsEditingName(false)}
                     autoFocus
                     className="mt-1 w-full max-w-xs px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="e.g., Summer 2025 Budget"
+                    placeholder={t('settings.budgetNamePlaceholder')}
                   />
                 ) : (
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {budgetName || 'Unnamed budget'}
+                    {budgetName || t('settings.unnamed')}
                     <span className="ms-2 text-xs text-gray-400">v{activeBudget?.version}</span>
                   </p>
                 )}
@@ -223,7 +225,8 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
               <button
                 onClick={() => setIsEditingName(true)}
                 className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
-                title="Rename budget"
+                title={t('settings.rename')}
+                aria-label={t('settings.rename')}
               >
                 <Edit2 className="h-4 w-4" />
               </button>
@@ -239,14 +242,14 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
                 <Home className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Household</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100">{t('settings.household')}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {loadingHousehold ? 'Loading...' : household ? (
+                  {loadingHousehold ? t('settings.loading') : household ? (
                     <span className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
                       {household.name}
                     </span>
-                  ) : 'Not configured'}
+                  ) : t('settings.notConfigured')}
                 </p>
               </div>
             </div>
@@ -254,7 +257,7 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
               onClick={() => setShowHouseholdModal(true)}
               className="px-3 py-1.5 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
             >
-              {household ? 'Manage' : 'Set up'}
+              {household ? t('settings.manage') : t('settings.setUp')}
             </button>
           </div>
         </div>
@@ -267,9 +270,9 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
                 <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Currency</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100">{t('settings.currency')}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Display format for amounts
+                  {t('settings.currencyHint')}
                 </p>
               </div>
             </div>
@@ -295,9 +298,9 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
                 <Bell className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Budget warnings</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100">{t('settings.warnings')}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Alert when approaching category limits
+                  {t('settings.warningsHint')}
                 </p>
               </div>
             </div>
@@ -321,9 +324,9 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
                 <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Email alerts</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100">{t('settings.emailAlerts')}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Receive email for important budget events
+                  {t('settings.emailAlertsHint')}
                 </p>
               </div>
             </div>
@@ -347,9 +350,9 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
                 <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div className="flex-1">
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">Exact amounts</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100">{t('settings.exactAmounts')}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Show amounts with decimal precision
+                  {t('settings.exactAmountsHint')}
                 </p>
               </div>
             </div>

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle, Users, Loader2, CheckCircle } from 'lucide-react';
 import * as HouseholdService from '../services/householdService';
+import { Trans } from 'react-i18next';
+import { useT } from '../hooks/useT';
 
 interface JoinHouseholdModalProps {
   isOpen: boolean;
@@ -8,6 +10,7 @@ interface JoinHouseholdModalProps {
 }
 
 export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, onClose }) => {
+  const t = useT();
   const [invitationCode, setInvitationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +24,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
 
   const handleSubmit = async (confirmDeletion: boolean = false) => {
     if (!invitationCode.trim()) {
-      setError('Please enter an invitation code');
+      setError(t('household.join.enterCode'));
       return;
     }
 
@@ -50,11 +53,11 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
         setLoading(false);
       } else {
         // Error occurred
-        setError(result.error || 'Failed to join household');
+        setError(result.error || t('household.join.joinFailed'));
         setLoading(false);
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || t('household.join.genericError'));
       setLoading(false);
     }
   };
@@ -84,10 +87,10 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Successfully joined!
+              {t('household.join.successTitle')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Welcome to your new household. Redirecting...
+              {t('household.welcomeRedirect')}
             </p>
           </div>
         </div>
@@ -105,7 +108,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-6 w-6 text-white" />
-                <h2 className="text-xl font-semibold text-white">Warning: data loss</h2>
+                <h2 className="text-xl font-semibold text-white">{t('household.join.warningTitle')}</h2>
               </div>
               <button
                 onClick={handleCancel}
@@ -120,31 +123,31 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
           <div className="p-6">
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
               <p className="text-red-800 dark:text-red-200 font-medium mb-2">
-                You are about to leave your current household
+                {t('household.join.aboutToLeave')}
               </p>
               <p className="text-red-700 dark:text-red-300 text-sm">
-                Since you are the only member of your current household, <strong>all of your data will be permanently deleted</strong>:
+                <Trans i18nKey="household.join.onlyMember" components={{ strong: <strong /> }} />
               </p>
               <ul className="mt-3 text-sm text-red-700 dark:text-red-300 space-y-1 list-disc list-inside">
-                <li>All transactions</li>
-                <li>Budget configurations</li>
-                <li>Monthly budgets and adjustments</li>
-                <li>Family members</li>
-                <li>All household settings</li>
+                <li>{t('household.dataList.transactions')}</li>
+                <li>{t('household.dataList.budgets')}</li>
+                <li>{t('household.dataList.monthly')}</li>
+                <li>{t('household.dataList.familyMembers')}</li>
+                <li>{t('household.dataList.settings')}</li>
               </ul>
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
               <p className="text-blue-800 dark:text-blue-200 font-medium mb-1">
-                You will join: <strong>{warning.householdName}</strong>
+                <Trans i18nKey="household.join.youWillJoin" values={{ name: warning.householdName }} components={{ strong: <strong /> }} />
               </p>
               <p className="text-blue-700 dark:text-blue-300 text-sm">
-                You'll have access to their shared household data and can collaborate with other members.
+                {t('household.join.accessHint')}
               </p>
             </div>
 
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
-              <strong>This action cannot be undone.</strong> Make sure you've exported any data you want to keep before proceeding.
+              <Trans i18nKey="household.join.cannotUndo" components={{ strong: <strong /> }} />
             </p>
 
             {/* Actions */}
@@ -153,7 +156,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
                 onClick={handleCancel}
                 className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleConfirmAndJoin}
@@ -163,12 +166,12 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Joining...
+                    {t('household.join.joining')}
                   </>
                 ) : (
                   <>
                     <AlertTriangle className="h-4 w-4" />
-                    Delete data & join
+                    {t('household.join.deleteAndJoin')}
                   </>
                 )}
               </button>
@@ -188,10 +191,11 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Users className="h-6 w-6 text-white" />
-              <h2 className="text-xl font-semibold text-white">Join household</h2>
+              <h2 className="text-xl font-semibold text-white">{t('household.join.title')}</h2>
             </div>
             <button
               onClick={handleCancel}
+                aria-label={t('common.close')}
               className="text-white hover:bg-white/20 rounded-lg p-1 transition-colors"
             >
               <X className="h-5 w-5" />
@@ -202,7 +206,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Enter the invitation code shared by a household owner or admin to join their household.
+            {t('household.join.intro')}
           </p>
 
           {error && (
@@ -213,18 +217,18 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Invitation code
+              {t('household.join.codeLabel')}
             </label>
             <input
               type="text"
               value={invitationCode}
               onChange={(e) => setInvitationCode(e.target.value)}
-              placeholder="Paste invitation code here"
+              placeholder={t('household.join.codePlaceholder')}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 font-mono text-sm"
               disabled={loading}
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              The code should be a long string of letters and numbers
+              {t('household.join.codeHint')}
             </p>
           </div>
 
@@ -235,8 +239,8 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
               className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
               disabled={loading}
             >
-              Cancel
-            </button>
+                {t('common.cancel')}
+              </button>
             <button
               onClick={() => handleSubmit(false)}
               disabled={loading || !invitationCode.trim()}
@@ -245,12 +249,12 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Checking...
+                  {t('household.join.checking')}
                 </>
               ) : (
                 <>
                   <Users className="h-4 w-4" />
-                  Join household
+                  {t('household.join.title')}
                 </>
               )}
             </button>
