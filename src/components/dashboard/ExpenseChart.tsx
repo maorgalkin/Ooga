@@ -5,6 +5,7 @@ import { getCategoryColor } from '../../utils/categoryColors';
 import type { Transaction } from '../../types';
 import type { PersonalBudget } from '../../types/budget';
 import { getUserLocale } from '../../utils/locale';
+import { isRtl } from '../../i18n';
 
 interface CategoryData {
   category: string;
@@ -797,11 +798,11 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
           <AnimatePresence>
             {selectedDesktopCategory && (
               <motion.div
-                initial={{ opacity: 0, x: 50 }}
+                initial={{ opacity: 0, x: isRtl() ? -50 : 50 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 50 }}
+                exit={{ opacity: 0, x: isRtl() ? -50 : 50 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="flex-1 border-l pl-4 pr-2 overflow-y-auto"
+                className="flex-1 border-s ps-4 pe-2 overflow-y-auto"
               >
                 {/* Category budget overview — shown at top of unified panel */}
                 {(() => {
@@ -882,7 +883,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                             <div className="flex-1 min-w-0 text-sm text-gray-900 dark:text-gray-100 truncate">
                               {transaction.description}
                             </div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 ml-3 flex-shrink-0">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 ms-3 flex-shrink-0">
                               {formatCurrency(transaction.amount)}
                             </div>
                           </div>
@@ -1028,7 +1029,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                             {new Date(transaction.date).toLocaleDateString(getUserLocale())}
                           </div>
                         </div>
-                        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 ml-3 flex-shrink-0">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 ms-3 flex-shrink-0">
                           {formatCurrency(transaction.amount)}
                         </div>
                       </div>
@@ -1070,7 +1071,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
               Use this sandbox to prototype the hover lens. Safari-friendly behaviors only.
             </p>
           </div>
-          <div className="text-xs text-purple-700 dark:text-purple-300 text-right">
+          <div className="text-xs text-purple-700 dark:text-purple-300 text-end">
             <div>Active: {playgroundPointerState.isActive ? 'YES' : 'NO'}</div>
             <div>Pointer: {playgroundPointerState.pointerType || '-'}</div>
             <div>Pos: {Math.round(playgroundPointerState.x)}x{Math.round(playgroundPointerState.y)}</div>

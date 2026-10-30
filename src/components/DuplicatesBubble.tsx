@@ -62,7 +62,7 @@ export default function DuplicatesBubble({ count, duplicates }: Props) {
           id={bubbleId}
           role="dialog"
           aria-label="Skipped duplicates"
-          className="absolute left-0 top-full z-20 mt-1.5 w-72 max-w-[calc(100vw-3rem)] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg"
+          className="absolute start-0 top-full z-20 mt-1.5 w-72 max-w-[calc(100vw-3rem)] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg"
         >
           {rows.length > 0 && (
             <ul className="max-h-44 overflow-y-auto overscroll-contain divide-y divide-gray-100 dark:divide-gray-700">

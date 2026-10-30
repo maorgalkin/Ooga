@@ -240,7 +240,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
       <Tag
         key={label}
         onClick={action}
-        className={`rounded-xl p-3 text-left transition-all
+        className={`rounded-xl p-3 text-start transition-all
           ${bg} border border-white/60 dark:border-gray-700/50
           ${interactive
             ? `cursor-pointer shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md
@@ -266,7 +266,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
           Category breakdown
           {categoryFilter === 'over' && (
-            <span className="ml-2 text-xs font-normal text-red-500 dark:text-red-400">· over budget</span>
+            <span className="ms-2 text-xs font-normal text-red-500 dark:text-red-400">· over budget</span>
           )}
         </h3>
         {categoryFilter !== 'all' && (
@@ -307,7 +307,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
                 <button
                   key={comp.category}
                   onClick={() => onTileClick(comp.category)}
-                  className={`relative text-left p-3 rounded-lg border transition-all
+                  className={`relative text-start p-3 rounded-lg border transition-all
                     ${isSelected
                       ? 'border-purple-400 dark:border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-sm'
                       : noTxns
@@ -316,7 +316,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
                     }`}
                 >
                   {showDot && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-700" />
+                    <span className="absolute top-1.5 end-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-700" />
                   )}
                   <div className="flex items-center gap-1.5 mb-2">
                     {catColor && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: catColor }} />}
@@ -324,7 +324,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
                   </div>
                   <div className="flex items-baseline justify-between mb-1.5">
                     <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formatCurrency(comp.actual)}</span>
-                    <span className="text-xs text-gray-400 ml-1">/ {formatCurrency(comp.budgeted)}</span>
+                    <span className="text-xs text-gray-400 ms-1">/ {formatCurrency(comp.budgeted)}</span>
                   </div>
                   <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full transition-all ${progressColor(pct)}`} style={{ width: `${pct}%` }} />
@@ -343,7 +343,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none rounded-b-xl"
+                className="absolute bottom-0 start-0 end-0 h-14 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none rounded-b-xl"
               />
             )}
           </AnimatePresence>

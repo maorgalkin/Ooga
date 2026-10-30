@@ -224,7 +224,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600 dark:text-gray-300">Calculating accuracy...</span>
+          <span className="ms-3 text-gray-600 dark:text-gray-300">Calculating accuracy...</span>
         </div>
       )}
 
@@ -306,7 +306,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                   </button>
                   
                   {isDropdownOpen && (
-                    <div className="absolute z-50 left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 
+                    <div className="absolute z-50 start-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 
                                   border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
                       {accuracyData.map((accuracy) => (
                         <button
@@ -316,7 +316,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                             setSelectedCategory(accuracy.category);
                             setIsDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-4 py-2 text-sm 
+                          className={`w-full text-start px-4 py-2 text-sm 
                                     hover:bg-gray-100 dark:hover:bg-gray-700
                                     first:rounded-t-lg last:rounded-b-lg
                                     ${accuracy.category === selectedCategory 
@@ -337,7 +337,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                     handleRangeClick();
                   }}
                   className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg
-                           hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
+                           hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-start"
                 >
                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Range</div>
                   <div className="text-base font-bold text-gray-800 dark:text-white">

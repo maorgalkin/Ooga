@@ -77,7 +77,7 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
                   </button>
                   
                   {isDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
+                    <div className="absolute top-full start-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
                       {categories.map(cat => (
                         <div
                           key={cat}
@@ -162,7 +162,7 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <p className="text-lg font-bold text-red-600">
                         -{formatCurrency(transaction.amount)}
                       </p>

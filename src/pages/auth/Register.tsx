@@ -6,7 +6,7 @@ import { PublicLayout } from '../../components/info/PublicLayout';
 import { FloatingShapes } from '../../components/info/LandingSections';
 
 const inputClass =
-  'block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed';
+  'block w-full ps-10 pe-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2';
 const cardClass =
   'max-w-md w-full mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8';
@@ -111,7 +111,7 @@ const Register: React.FC = () => {
     <PublicLayout>
       <AuthBackdrop>
         <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-          <div className="text-center lg:text-left">
+          <div className="text-center lg:text-start">
             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
               Start your family's{' '}
               <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text text-transparent">budget</span>
@@ -132,7 +132,7 @@ const Register: React.FC = () => {
                 role="alert"
                 className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start"
               >
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mr-3 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 me-3 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-red-800 dark:text-red-200">{error}</div>
               </div>
             )}
@@ -144,7 +144,7 @@ const Register: React.FC = () => {
                     First name
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                       <User className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -166,7 +166,7 @@ const Register: React.FC = () => {
                     Last name
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                       <User className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
@@ -189,7 +189,7 @@ const Register: React.FC = () => {
                   Email
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
@@ -211,7 +211,7 @@ const Register: React.FC = () => {
                   Password
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
@@ -236,7 +236,7 @@ const Register: React.FC = () => {
                   Confirm password
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
@@ -259,7 +259,7 @@ const Register: React.FC = () => {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                    <Loader2 className="animate-spin h-5 w-5 me-2" />
                     Creating account…
                   </>
                 ) : (

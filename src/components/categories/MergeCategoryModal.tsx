@@ -165,7 +165,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
                   <Info className="h-4 w-4" />
                   After merge:
                 </div>
-                <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1 ml-6">
+                <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1 ms-6">
                   <li className="flex items-center gap-2">
                     <Check className="h-3 w-3" />
                     New budget: ₪{combinedBudget.toLocaleString()} / month

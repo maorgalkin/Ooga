@@ -22,7 +22,7 @@ export const FamilyMembersCard: React.FC<FamilyMembersCardProps> = ({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center">
-          <Users className="h-5 w-5 text-purple-600 dark:text-purple-400 mr-3" />
+          <Users className="h-5 w-5 text-purple-600 dark:text-purple-400 me-3" />
           <div>
             <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
               {householdName || 'Family Members'}

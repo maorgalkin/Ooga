@@ -185,7 +185,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
                     .slice(0, 3)
                     .map(([category, amount]) => (
                       <div key={category} className="flex justify-between text-xs">
-                        <span className="text-gray-600 dark:text-gray-400 truncate mr-2">
+                        <span className="text-gray-600 dark:text-gray-400 truncate me-2">
                           {category}
                         </span>
                         <span className="text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
@@ -205,19 +205,19 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-4 py-3 text-start text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 Member
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-4 py-3 text-end text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 Transactions
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-4 py-3 text-end text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 Total
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-4 py-3 text-end text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 Average
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-4 py-3 text-end text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                 % of Total
               </th>
             </tr>
@@ -238,16 +238,16 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
+                <td className="px-4 py-3 text-end text-sm text-gray-900 dark:text-gray-100">
                   {member.transactionCount}
                 </td>
-                <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <td className="px-4 py-3 text-end text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {formatCurrency(member.totalExpenses)}
                 </td>
-                <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
+                <td className="px-4 py-3 text-end text-sm text-gray-900 dark:text-gray-100">
                   {formatCurrency(member.averageTransaction)}
                 </td>
-                <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">
+                <td className="px-4 py-3 text-end text-sm text-gray-900 dark:text-gray-100">
                   <div className="flex items-center justify-end gap-2">
                     <div className="w-16 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                       <div

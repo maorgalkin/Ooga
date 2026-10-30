@@ -351,7 +351,7 @@ export const BudgetOverviewTab: React.FC = () => {
               </span>
             </div>
           </div>
-          <div className="text-right flex-shrink-0">
+          <div className="text-end flex-shrink-0">
             <p className={`text-xs opacity-60 ${getTextColor(THEME)}`}>Last updated</p>
             <p className="text-sm font-medium">
               {new Date(activeBudget.updated_at).toLocaleDateString(getUserLocale(), {
@@ -446,7 +446,7 @@ export const BudgetOverviewTab: React.FC = () => {
                 <select
                   value={effectiveSelectedName ?? ''}
                   onChange={(e) => setSelectedCategoryName(e.target.value)}
-                  className="w-full appearance-none bg-transparent text-base font-semibold text-gray-900 dark:text-gray-100 pr-8 focus:outline-none cursor-pointer"
+                  className="w-full appearance-none bg-transparent text-base font-semibold text-gray-900 dark:text-gray-100 pe-8 focus:outline-none cursor-pointer"
                 >
                   {activeCategories.map(([name]) => (
                     <option key={name} value={name}>
@@ -454,7 +454,7 @@ export const BudgetOverviewTab: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute end-0 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
             {effectiveSelectedName && (

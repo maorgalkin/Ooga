@@ -182,7 +182,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        <span className="ml-3 text-gray-600 dark:text-gray-300">Loading budget data...</span>
+        <span className="ms-3 text-gray-600 dark:text-gray-300">Loading budget data...</span>
       </div>
     );
   }
@@ -302,7 +302,8 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
             </div>
 
             {/* Column Chart with Y-Axis - Drag Scrollable */}
-            <div className="flex gap-2">
+            {/* Charts stay left to right in Hebrew too: the drag maths and label offsets assume it */}
+            <div dir="ltr" className="flex gap-2">
               {/* Y-Axis */}
               <div className="relative text-xs text-gray-500 dark:text-gray-400" style={{ height: '480px', width: '60px' }}>
                 {(() => {
@@ -317,7 +318,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                   return (
                     <>
                       {/* Max - aligned with top of bars */}
-                      <div className="absolute top-0 right-0 flex flex-col items-end pr-2">
+                      <div className="absolute top-0 end-0 flex flex-col items-end pe-2">
                         <div className="flex items-center gap-1">
                           <TrendingUp className="h-3 w-3" />
                           <span className="font-medium">{formatCurrencyRounded(maxVal)}</span>
@@ -326,13 +327,13 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                       </div>
                       
                       {/* Mid - at visual middle of bar area (175px from top) */}
-                      <div className="absolute right-0 flex flex-col items-end pr-2" style={{ top: '175px' }}>
+                      <div className="absolute end-0 flex flex-col items-end pe-2" style={{ top: '175px' }}>
                         <span className="font-medium">{formatCurrencyRounded(logMidVal)}</span>
                         <span className="text-[10px] text-gray-400 dark:text-gray-500">Mid</span>
                       </div>
                       
                       {/* Min - aligned with bottom of bars (350px from top) */}
-                      <div className="absolute right-0 flex flex-col items-end pr-2" style={{ top: '350px' }}>
+                      <div className="absolute end-0 flex flex-col items-end pe-2" style={{ top: '350px' }}>
                         <span className="font-medium">{formatCurrencyRounded(0)}</span>
                         <span className="text-[10px] text-gray-400 dark:text-gray-500">Min</span>
                       </div>
@@ -439,7 +440,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                         >
                           {/* Original Budget (Gray) - leftmost */}
                           <div
-                            className="absolute bottom-0 left-0 bg-gray-400 dark:bg-gray-600 rounded-t transition-all duration-500 shadow-md border-r border-gray-500 dark:border-gray-700 pointer-events-none"
+                            className="absolute bottom-0 start-0 bg-gray-400 dark:bg-gray-600 rounded-t transition-all duration-500 shadow-md border-e border-gray-500 dark:border-gray-700 pointer-events-none"
                             style={{ 
                               height: `${originalHeight}%`, 
                               minHeight: cat.originalBudget > 0 ? '4px' : '0',
@@ -451,7 +452,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
 
                           {/* Current Budget (Blue) - middle, overlaps gray */}
                           <div
-                            className="absolute bottom-0 bg-blue-400 dark:bg-blue-600 rounded-t transition-all duration-500 shadow-md border-r border-blue-500 dark:border-blue-700 pointer-events-none"
+                            className="absolute bottom-0 bg-blue-400 dark:bg-blue-600 rounded-t transition-all duration-500 shadow-md border-e border-blue-500 dark:border-blue-700 pointer-events-none"
                             style={{ 
                               height: `${currentHeight}%`, 
                               minHeight: cat.currentBudget > 0 ? '4px' : '0',

@@ -348,7 +348,7 @@ Are you absolutely sure you want to continue?`;
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          <span className="ml-3 text-gray-600 dark:text-gray-300">Loading budgets...</span>
+          <span className="ms-3 text-gray-600 dark:text-gray-300">Loading budgets...</span>
         </div>
       </div>
     );
@@ -373,7 +373,7 @@ Are you absolutely sure you want to continue?`;
                 onClick={handleStartCreate}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Create budget
               </button>
             )}
@@ -383,7 +383,7 @@ Are you absolutely sure you want to continue?`;
                 className="flex items-center px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
                 title="Reset all budget configuration - delete everything"
               >
-                <RotateCcw className="h-4 w-4 mr-2" />
+                <RotateCcw className="h-4 w-4 me-2" />
                 Reset all
               </button>
             )}
@@ -526,12 +526,12 @@ Are you absolutely sure you want to continue?`;
               >
                 {createBudget.isPending || updateBudget.isPending ? (
                   <>
-                    <Loader2 className="inline h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="inline h-4 w-4 me-2 animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="inline h-4 w-4 mr-2" />
+                    <Save className="inline h-4 w-4 me-2" />
                     Save budget
                   </>
                 )}
@@ -540,7 +540,7 @@ Are you absolutely sure you want to continue?`;
                 onClick={handleCancel}
                 className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
               >
-                <X className="inline h-4 w-4 mr-2" />
+                <X className="inline h-4 w-4 me-2" />
                 Cancel
               </button>
             </div>
@@ -577,7 +577,7 @@ Are you absolutely sure you want to continue?`;
                         </h4>
                         {budget.is_active && (
                           <span className="flex items-center text-xs bg-blue-600 text-white px-2 py-1 rounded">
-                            <CheckCircle className="h-3 w-3 mr-1" />
+                            <CheckCircle className="h-3 w-3 me-1" />
                             Active
                           </span>
                         )}
@@ -596,13 +596,13 @@ Are you absolutely sure you want to continue?`;
                         </p>
                       )}
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                        <Clock className="inline h-3 w-3 mr-1" />
+                        <Clock className="inline h-3 w-3 me-1" />
                         Updated {new Date(budget.updated_at).toLocaleDateString(getUserLocale())}
                       </p>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="flex items-center gap-2 ms-4">
                       {!budget.is_active && (
                         <button
                           onClick={() => handleSetActive(budget.id)}
@@ -791,7 +791,7 @@ Are you absolutely sure you want to continue?`;
                       }}
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                     >
-                      <Plus className="inline h-4 w-4 mr-2" />
+                      <Plus className="inline h-4 w-4 me-2" />
                       Add category
                     </button>
                     <button
@@ -930,7 +930,7 @@ Are you absolutely sure you want to continue?`;
                       onClick={() => setEditingCategory(null)}
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                     >
-                      <Save className="inline h-4 w-4 mr-2" />
+                      <Save className="inline h-4 w-4 me-2" />
                       Save changes
                     </button>
                     <button

@@ -155,7 +155,7 @@ function Welcome() {
 
       <ol className="relative mt-10 space-y-5">
         {/* Joins the parts so they read as one path rather than four separate tasks */}
-        <span aria-hidden className="absolute left-5 top-6 bottom-6 w-px bg-gradient-to-b from-purple-300 via-blue-300 to-amber-300 dark:from-purple-700 dark:via-blue-700 dark:to-amber-700" />
+        <span aria-hidden className="absolute start-5 top-6 bottom-6 w-px bg-gradient-to-b from-purple-300 via-blue-300 to-amber-300 dark:from-purple-700 dark:via-blue-700 dark:to-amber-700" />
         {GUIDE_PARTS.map((part, p) => (
           <motion.li
             key={part.title}
@@ -207,7 +207,7 @@ function Welcome() {
         to={`/guide/${first}`}
         className="mt-10 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-3 font-medium text-white shadow hover:shadow-lg"
       >
-        Start with part 1 <ArrowRight className="h-4 w-4" />
+        Start with part 1 <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
       </Link>
     </>
   );
@@ -232,7 +232,7 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
             {part.title}
           </span>
         )}
-        <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+        <span className="ms-auto inline-flex shrink-0 items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
           <Clock className="h-4 w-4" /> {chapter.minutes} min read
         </span>
       </div>
@@ -259,7 +259,7 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
                   to={step.link.to}
                   className="mt-3 inline-flex items-center gap-1 min-h-[38px] font-medium text-purple-700 hover:text-purple-600 dark:text-purple-300 dark:hover:text-purple-200"
                 >
-                  {step.link.label} <ArrowRight className="h-4 w-4" />
+                  {step.link.label} <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
                 </Link>
               )}
               {step.tip && (
@@ -281,11 +281,11 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
       <nav aria-label="Chapter navigation" className="mt-16 flex justify-between gap-4 border-t border-gray-200 pt-6 dark:border-gray-700">
         {prev ? (
           <Link to={`/guide/${prev.slug}`} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 min-h-[38px] text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800">
-            <ArrowLeft className="h-4 w-4" /> {prev.title}
+            <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" /> {prev.title}
           </Link>
         ) : (
           <Link to="/guide" className="inline-flex items-center gap-2 rounded-lg px-4 py-2 min-h-[38px] text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800">
-            <ArrowLeft className="h-4 w-4" /> Guide overview
+            <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" /> Guide overview
           </Link>
         )}
         {next && (
@@ -293,7 +293,7 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
             to={`/guide/${next.slug}`}
             className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 min-h-[38px] font-medium text-white shadow hover:shadow-lg"
           >
-            {next.title} <ArrowRight className="h-4 w-4" />
+            {next.title} <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
           </Link>
         )}
       </nav>

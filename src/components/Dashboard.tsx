@@ -431,14 +431,14 @@ const Dashboard: React.FC = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-1 mb-1 -ml-2">
+                <div className="flex items-center gap-1 mb-1 -ms-2">
                   <button
                     onClick={() => shiftDashboardMonth(-1)}
                     disabled={!canGoToPrevMonth}
                     aria-label="Previous month"
                     className="p-1 rounded-full text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   >
-                    <ChevronLeft className="h-6 w-6" />
+                    <ChevronLeft className="h-6 w-6 rtl:-scale-x-100" />
                   </button>
                   <h1 className={`text-3xl font-bold ${getHeadingColor('purple')}`}>
                     {dashboardMonthDate.toLocaleDateString(getUserLocale(), { month: 'long' })} '{String(dashboardMonthDate.getFullYear()).slice(2)} Dashboard
@@ -449,17 +449,17 @@ const Dashboard: React.FC = () => {
                     aria-label="Next month"
                     className="p-1 rounded-full text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   >
-                    <ChevronRight className="h-6 w-6" />
+                    <ChevronRight className="h-6 w-6 rtl:-scale-x-100" />
                   </button>
                   {isProjectedMonth && (
-                    <span className="ml-1 px-2 py-0.5 text-xs font-medium rounded-full border border-dashed border-purple-400 text-purple-700 dark:text-purple-300">
+                    <span className="ms-1 px-2 py-0.5 text-xs font-medium rounded-full border border-dashed border-purple-400 text-purple-700 dark:text-purple-300">
                       Projected
                     </span>
                   )}
                   {!isViewingCurrentMonth && (
                     <button
                       onClick={() => setDashboardMonth(currentMonthStart)}
-                      className="ml-2 px-2.5 py-0.5 text-xs font-medium rounded-full bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                      className="ms-2 px-2.5 py-0.5 text-xs font-medium rounded-full bg-purple-600 text-white hover:bg-purple-700 transition-colors"
                     >
                       Today
                     </button>
@@ -520,7 +520,7 @@ const Dashboard: React.FC = () => {
               {/* Layout toggle — development only (production is always 'auto') */}
               {SHOW_LAYOUT_PICKER && (
                 <div className="flex items-center justify-end mb-4 gap-1">
-                  <span className="text-xs text-gray-400 mr-2">Layout:</span>
+                  <span className="text-xs text-gray-400 me-2">Layout:</span>
                   {(
                     [
                       { id: 'auto', label: 'Auto (prod)' },

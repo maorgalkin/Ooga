@@ -214,7 +214,7 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
                 ) : (
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {budgetName || 'Unnamed budget'}
-                    <span className="ml-2 text-xs text-gray-400">v{activeBudget?.version}</span>
+                    <span className="ms-2 text-xs text-gray-400">v{activeBudget?.version}</span>
                   </p>
                 )}
               </div>

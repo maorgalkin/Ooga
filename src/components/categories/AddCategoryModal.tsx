@@ -168,7 +168,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
                 Monthly limit
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
+                <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                 <input
                   type="number"
                   value={monthlyLimit}
@@ -176,7 +176,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
                   placeholder="0"
                   min="0"
                   step="50"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full ps-8 pe-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -197,7 +197,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
                 step="5"
                 className="flex-1"
               />
-              <span className="text-sm text-gray-600 dark:text-gray-400 w-12 text-right">
+              <span className="text-sm text-gray-600 dark:text-gray-400 w-12 text-end">
                 {warningThreshold}%
               </span>
             </div>
@@ -225,7 +225,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  scheduleForNextMonth ? 'translate-x-6' : 'translate-x-1'
+                  scheduleForNextMonth ? 'translate-x-6 rtl:-translate-x-6' : 'translate-x-1 rtl:-translate-x-1'
                 }`}
               />
             </button>

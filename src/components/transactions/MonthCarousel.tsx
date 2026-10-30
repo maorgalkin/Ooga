@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { isRtl } from '../../i18n';
 
 interface MonthData {
   label: string;
@@ -145,7 +146,8 @@ export const MonthCarousel: React.FC<MonthCarouselProps> = ({
                       onDrag={(_event, info) => {
                         // Calculate which dot we're over based on drag position
                         const dotWidth = 8 + 8; // width (8px) + gap (8px)
-                        const offset = info.offset.x;
+                        // The dots run right to left in RTL, so a drag to the right means earlier months
+                        const offset = isRtl() ? -info.offset.x : info.offset.x;
                         
                         // How many dots away from current position
                         const deltaIndex = Math.round(offset / dotWidth);

@@ -310,7 +310,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                   type: 'income',
                   category: prev.type !== 'income' ? '' : prev.category // Reset category only if type changes
                 }))}
-                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors focus:outline-none border-l border-gray-300 ${
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors focus:outline-none border-s border-gray-300 ${
                   formData.type === 'income' 
                     ? 'bg-green-500 text-white' 
                     : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -332,14 +332,14 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                 value={formData.category}
                 readOnly
                 placeholder={formData.type === 'income' ? 'Select income source' : 'Select expense category'}
-                className="w-full px-3 py-2 pr-24 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                className="w-full px-3 py-2 pe-24 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 onClick={() => setShowCategorySelector(true)}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowCategorySelector(true)}
-                className="absolute right-2 top-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                className="absolute end-2 top-2 px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
               >
                 Choose
               </button>
@@ -440,8 +440,8 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
           {/* Installments Section - Reserve space to keep modal height consistent */}
           <div className="border-t border-gray-200 pt-4" style={{ minHeight: '52px' }}>
             {formData.type === 'expense' && (
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 flex-shrink-0">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse flex-shrink-0">
                   <input
                     id="installments-checkbox"
                     type="checkbox"
@@ -453,7 +453,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                     className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="installments-checkbox" className="flex items-center text-sm font-medium text-gray-700 whitespace-nowrap">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="h-4 w-4 me-1" />
                     Create as installments
                   </label>
                 </div>
@@ -474,7 +474,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
                 
                 <div className="relative group flex-shrink-0">
                   <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
-                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                  <div className="absolute start-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
                     Amount will be divided equally across installments (rounded to the cent; any leftover goes on the first). The first installment keeps the selected date, the rest fall on the 1st of each following month (2-36 months).
                   </div>
                 </div>
@@ -482,7 +482,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
             )}
           </div>
 
-          <div className="flex space-x-3 pt-4">
+          <div className="flex space-x-3 rtl:space-x-reverse pt-4">
             <button
               type="button"
               onClick={onClose}

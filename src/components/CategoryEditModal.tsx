@@ -126,7 +126,7 @@ const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isActive ? 'translate-x-5' : 'translate-x-1'
+                  isActive ? 'translate-x-5 rtl:-translate-x-5' : 'translate-x-1 rtl:-translate-x-1'
                 }`}
               />
             </button>
@@ -138,14 +138,14 @@ const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               Monthly Budget Limit
             </label>
             <div className="relative flex items-center">
-              <span className="absolute left-3 text-gray-500 pointer-events-none">
+              <span className="absolute start-3 text-gray-500 pointer-events-none">
                 {getCurrencySymbol(currency)}
               </span>
               <input
                 type="number"
                 value={monthlyLimit || ''}
                 onChange={handleMonthlyLimitChange}
-                className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="block w-full ps-8 pe-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="0"
                 min="0"
               />

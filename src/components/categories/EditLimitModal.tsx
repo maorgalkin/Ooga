@@ -98,7 +98,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
               Monthly limit
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                 <DollarSign className="h-4 w-4 text-gray-400" />
               </div>
               <input
@@ -108,7 +108,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
                 placeholder="0"
                 min="0"
                 step="0.01"
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full ps-9 pe-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -122,7 +122,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
               Warning threshold
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                 <AlertTriangle className="h-4 w-4 text-gray-400" />
               </div>
               <input
@@ -132,9 +132,9 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
                 placeholder="80"
                 min="0"
                 max="100"
-                className="w-full pl-9 pr-12 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full ps-9 pe-12 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <div className="absolute inset-y-0 end-0 flex items-center pe-3 pointer-events-none">
                 <span className="text-gray-400">%</span>
               </div>
             </div>

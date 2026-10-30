@@ -51,6 +51,9 @@ export function applyLanguage(language: Language) {
   if (i18n.language !== language) void i18n.changeLanguage(language);
 }
 
+/** True while the page is right-to-left, for the few things CSS can't mirror (drag offsets, slide-ins). */
+export const isRtl = () => typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
+
 /** The language this browser chose while signed out, if any, for carrying over to the account. */
 export const browserLanguage = storedLanguage;
 

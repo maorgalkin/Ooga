@@ -348,8 +348,8 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {/* Convert to installments (regular expenses only) */}
           {canConvertToInstallments && (
             <div className="border-t border-gray-200 pt-4 space-y-2">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 flex-shrink-0">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse flex-shrink-0">
                   <input
                     id="edit-installments-checkbox"
                     type="checkbox"
@@ -361,7 +361,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                     className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="edit-installments-checkbox" className="flex items-center text-sm font-medium text-gray-700 whitespace-nowrap">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="h-4 w-4 me-1" />
                     Convert to installments
                   </label>
                 </div>
@@ -430,7 +430,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                     
                     {/* Installment deletion options */}
                     <div className="space-y-2">
-                      <label className="flex items-start space-x-2 cursor-pointer">
+                      <label className="flex items-start space-x-2 rtl:space-x-reverse cursor-pointer">
                         <input
                           type="radio"
                           name="deleteOption"
@@ -444,7 +444,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                         </span>
                       </label>
                       
-                      <label className="flex items-start space-x-2 cursor-pointer">
+                      <label className="flex items-start space-x-2 rtl:space-x-reverse cursor-pointer">
                         <input
                           type="radio"
                           name="deleteOption"
@@ -458,7 +458,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                         </span>
                       </label>
                       
-                      <label className="flex items-start space-x-2 cursor-pointer">
+                      <label className="flex items-start space-x-2 rtl:space-x-reverse cursor-pointer">
                         <input
                           type="radio"
                           name="deleteOption"

@@ -158,7 +158,7 @@ export const BudgetAdjustmentScheduler: React.FC<BudgetAdjustmentSchedulerProps>
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          <span className="ml-3 text-gray-600 dark:text-gray-300">Loading adjustments...</span>
+          <span className="ms-3 text-gray-600 dark:text-gray-300">Loading adjustments...</span>
         </div>
       </div>
     );
@@ -171,7 +171,7 @@ export const BudgetAdjustmentScheduler: React.FC<BudgetAdjustmentSchedulerProps>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           {nextMonthSummary && (
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex items-center">
-              <Calendar className="inline h-4 w-4 mr-1 flex-shrink-0" />
+              <Calendar className="inline h-4 w-4 me-1 flex-shrink-0" />
               <span>{nextMonthSummary.effectiveDate}</span>
             </p>
           )}
@@ -181,12 +181,12 @@ export const BudgetAdjustmentScheduler: React.FC<BudgetAdjustmentSchedulerProps>
           >
             {isScheduling ? (
               <>
-                <X className="h-4 w-4 mr-2 flex-shrink-0" />
+                <X className="h-4 w-4 me-2 flex-shrink-0" />
                 <span>Cancel</span>
               </>
             ) : (
               <>
-                <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
+                <Plus className="h-4 w-4 me-2 flex-shrink-0" />
                 <span>Schedule</span>
               </>
             )}
@@ -394,7 +394,7 @@ export const BudgetAdjustmentScheduler: React.FC<BudgetAdjustmentSchedulerProps>
                 key={adjustment.id}
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 px-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                <div className="flex items-start sm:items-center space-x-3 flex-1 min-w-0">
+                <div className="flex items-start sm:items-center space-x-3 rtl:space-x-reverse flex-1 min-w-0">
                   <div className="flex-shrink-0 mt-0.5 sm:mt-0">
                     {adjustment.adjustment_type === 'increase' ? (
                       <TrendingUp className="h-5 w-5 text-green-500" />

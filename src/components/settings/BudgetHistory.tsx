@@ -83,7 +83,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
       <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-          <span className="ml-2 text-gray-500 dark:text-gray-400">Loading history...</span>
+          <span className="ms-2 text-gray-500 dark:text-gray-400">Loading history...</span>
         </div>
       </div>
     );
@@ -140,7 +140,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                         </h4>
                         {budget.is_active && (
                           <span className="flex items-center text-xs bg-green-600 text-white px-2 py-0.5 rounded">
-                            <CheckCircle className="h-3 w-3 mr-1" />
+                            <CheckCircle className="h-3 w-3 me-1" />
                             Active
                           </span>
                         )}
@@ -157,13 +157,13 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
                         </p>
                       )}
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        <Clock className="inline h-3 w-3 mr-1" />
+                        <Clock className="inline h-3 w-3 me-1" />
                         {new Date(budget.updated_at).toLocaleDateString(getUserLocale())} at {new Date(budget.updated_at).toLocaleTimeString(getUserLocale(), { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                    <div className="flex items-center gap-1 ms-2 flex-shrink-0">
                       {!budget.is_active && (
                         <button
                           onClick={() => handleSetActive(budget.id)}

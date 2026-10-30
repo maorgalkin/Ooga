@@ -136,7 +136,7 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
               {reassignTo && (
                 <div className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
                   <span>{category.name}</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
                   <span>{otherCategories.find(c => c.id === reassignTo)?.name}</span>
                   <span className="text-gray-400">({transactionCount} transactions)</span>
                 </div>

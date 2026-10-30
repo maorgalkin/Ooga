@@ -41,7 +41,7 @@ export default function AboutPage() {
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-5 py-3 font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 {user ? 'Open Ooga' : 'Create account'}
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-5 w-5 rtl:-scale-x-100" />
               </Link>
             </div>
           </motion.div>
@@ -84,7 +84,7 @@ export default function AboutPage() {
             className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white/20 backdrop-blur border border-white/40 px-5 py-3 font-medium hover:bg-white/30 transition-colors"
           >
             Start the guide
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-5 w-5 rtl:-scale-x-100" />
           </Link>
         </div>
       </section>

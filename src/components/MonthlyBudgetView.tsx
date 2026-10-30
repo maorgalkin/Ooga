@@ -113,7 +113,7 @@ export const MonthlyBudgetView: React.FC<MonthlyBudgetViewProps> = ({
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          <span className="ml-3 text-gray-600 dark:text-gray-300">Loading budget...</span>
+          <span className="ms-3 text-gray-600 dark:text-gray-300">Loading budget...</span>
         </div>
       </div>
     );
@@ -161,7 +161,7 @@ export const MonthlyBudgetView: React.FC<MonthlyBudgetViewProps> = ({
           </div>
         ) : (
           <div className="flex items-center justify-center py-12 text-red-600 dark:text-red-400">
-            <AlertCircle className="h-8 w-8 mr-3" />
+            <AlertCircle className="h-8 w-8 me-3" />
             <span>Error loading budget: {error.message}</span>
           </div>
         )}
@@ -173,7 +173,7 @@ export const MonthlyBudgetView: React.FC<MonthlyBudgetViewProps> = ({
     return (
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
         <div className="flex items-center justify-center py-12 text-gray-600 dark:text-gray-400">
-          <AlertCircle className="h-8 w-8 mr-3" />
+          <AlertCircle className="h-8 w-8 me-3" />
           <span>No budget found for this month</span>
         </div>
       </div>
@@ -332,7 +332,7 @@ export const MonthlyBudgetView: React.FC<MonthlyBudgetViewProps> = ({
                     </>
                   ) : (
                     <>
-                      <span className="text-lg font-semibold text-gray-900 dark:text-gray-100 min-w-[100px] text-right">
+                      <span className="text-lg font-semibold text-gray-900 dark:text-gray-100 min-w-[100px] text-end">
                         {formatCurrency(category.monthlyLimit)}
                       </span>
                       {!budget.is_locked && (

@@ -6,9 +6,9 @@ import { GUIDE_CHAPTERS } from '../../content/guide';
 import { GuideClip } from './GuideClip';
 
 const BLOBS = [
-  { className: 'left-[-6rem] top-[-4rem] h-72 w-72 bg-purple-400/30', drift: { x: [0, 30, 0], y: [0, 20, 0] } },
-  { className: 'right-[-5rem] top-24 h-80 w-80 bg-green-400/25', drift: { x: [0, -25, 0], y: [0, 30, 0] } },
-  { className: 'left-1/3 bottom-[-6rem] h-72 w-72 bg-blue-400/25', drift: { x: [0, 20, 0], y: [0, -25, 0] } },
+  { className: 'start-[-6rem] top-[-4rem] h-72 w-72 bg-purple-400/30', drift: { x: [0, 30, 0], y: [0, 20, 0] } },
+  { className: 'end-[-5rem] top-24 h-80 w-80 bg-green-400/25', drift: { x: [0, -25, 0], y: [0, 30, 0] } },
+  { className: 'start-1/3 bottom-[-6rem] h-72 w-72 bg-blue-400/25', drift: { x: [0, 20, 0], y: [0, -25, 0] } },
 ];
 
 /** Slowly drifting brand-colored blobs behind the landing hero. */
@@ -77,7 +77,7 @@ export function LandingSections() {
                         to={`/guide/${chapter.slug}`}
                         className="mt-4 inline-flex items-center gap-1 font-medium text-purple-700 hover:text-purple-600 dark:text-purple-300"
                       >
-                        See how <ArrowRight className="h-4 w-4" />
+                        See how <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
                       </Link>
                     </div>
                     {step?.clip && <GuideClip frames={step.clip.frames} mobileFrames={step.clip.mobileFrames} alt={step.clip.alt} />}

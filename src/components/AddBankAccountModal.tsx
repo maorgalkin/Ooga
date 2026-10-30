@@ -173,7 +173,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                   key={p.id}
                   onClick={() => handleSelectProvider(p)}
                   disabled={!p.available}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 enabled:hover:border-blue-400 enabled:hover:bg-blue-50 dark:enabled:hover:bg-blue-900/20 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 enabled:hover:border-blue-400 enabled:hover:bg-blue-50 dark:enabled:hover:bg-blue-900/20 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-start"
                 >
                   {p.icon === 'bank'
                     ? <Building2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
@@ -181,7 +181,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                   }
                   <span className="text-sm font-medium text-gray-900 dark:text-white">{p.label}</span>
                   {!p.available && (
-                    <span className="ml-auto text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
+                    <span className="ms-auto text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
                       Coming soon
                     </span>
                   )}

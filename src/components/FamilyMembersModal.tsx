@@ -94,7 +94,7 @@ const FamilyMembersModal: React.FC<FamilyMembersModalProps> = ({ isOpen, onClose
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center">
-            <Users className="h-6 w-6 text-blue-600 mr-2" />
+            <Users className="h-6 w-6 text-blue-600 me-2" />
             <h2 className="text-xl font-bold text-gray-900">Family Members</h2>
           </div>
           <button
@@ -145,7 +145,7 @@ const FamilyMembersModal: React.FC<FamilyMembersModalProps> = ({ isOpen, onClose
             {availableHouseholdMembers.length > 0 && (
               <div className="mb-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <LinkIcon className="h-4 w-4 mr-1" />
+                  <LinkIcon className="h-4 w-4 me-1" />
                   Link to App User (Optional)
                 </label>
                 <select
@@ -172,7 +172,7 @@ const FamilyMembersModal: React.FC<FamilyMembersModalProps> = ({ isOpen, onClose
               disabled={isAdding || !newMemberName.trim()}
               className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {isAdding ? 'Adding...' : 'Add Member'}
             </button>
           </div>
@@ -201,14 +201,14 @@ const FamilyMembersModal: React.FC<FamilyMembersModalProps> = ({ isOpen, onClose
                     >
                       <div className="flex items-center flex-1">
                         <div
-                          className="w-8 h-8 rounded-full mr-3 flex-shrink-0"
+                          className="w-8 h-8 rounded-full me-3 flex-shrink-0"
                           style={{ backgroundColor: member.color }}
                         />
                         <div className="flex-1">
                           <span className="font-medium text-gray-900">{member.name}</span>
                           {linkedHouseholdMember && (
                             <div className="flex items-center text-xs text-gray-500 mt-1">
-                              <LinkIcon className="h-3 w-3 mr-1" />
+                              <LinkIcon className="h-3 w-3 me-1" />
                               Linked to {linkedHouseholdMember.email || 'user'}
                             </div>
                           )}
