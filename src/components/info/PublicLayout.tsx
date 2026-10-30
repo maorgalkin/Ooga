@@ -1,0 +1,53 @@
+import type { ReactNode } from 'react';
+import { Link, NavLink } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { BrandBackdrop, BrandLogo } from './BrandBar';
+
+const navLink = ({ isActive }: { isActive: boolean }) =>
+  `px-3 py-2 rounded-lg text-sm font-medium text-white transition-all min-h-[38px] flex items-center ${
+    isActive ? 'bg-white/30' : 'hover:bg-white/20'
+  }`;
+
+/** Frame for the pages anyone can read, signed in or not: brand bar, page, footer. */
+export function PublicLayout({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+      <nav className="relative overflow-hidden shadow-md border-b border-gray-200/20">
+        <BrandBackdrop />
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 relative z-10">
+          <div className="h-16 flex items-center justify-between gap-2">
+            <BrandLogo />
+            <div className="flex items-center gap-1 sm:gap-2">
+              <NavLink to="/about" className={navLink}>
+                About
+              </NavLink>
+              <NavLink to="/guide" className={navLink}>
+                Guide
+              </NavLink>
+              <Link
+                to={user ? '/' : '/login'}
+                className="px-3 py-2 min-h-[38px] flex items-center bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium shadow-lg"
+              >
+                {user ? 'Open Ooga' : 'Sign in'}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="flex-1">{children}</main>
+
+      <footer className="border-t border-gray-200 dark:border-gray-800 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <nav aria-label="Footer" className="flex justify-center gap-4">
+          <Link to="/about" className="hover:text-gray-700 dark:hover:text-gray-200">About</Link>
+          <Link to="/guide" className="hover:text-gray-700 dark:hover:text-gray-200">Guide</Link>
+          <Link to={user ? '/' : '/login'} className="hover:text-gray-700 dark:hover:text-gray-200">
+            {user ? 'Open Ooga' : 'Sign in'}
+          </Link>
+        </nav>
+      </footer>
+    </div>
+  );
+}

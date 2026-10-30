@@ -39,7 +39,7 @@ Before calling a change done, run `npm run typecheck && npm run test:run` (plus 
 ### Screen map (update when you change navigation)
 
 ```
-App (nav bar: Add Transaction → AddTransaction modal → BankImportModal; Sign Out)
+App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → BankImportModal; Sign Out)
 ├── / Dashboard — tabs:
 │   ├── Dashboard: tiled layout on desktop, wide on phones; empty state; projected months
 │   ├── Transactions → pages/Transactions (MonthCarousel, filter tree, list, EditTransactionModal)
@@ -49,9 +49,15 @@ App (nav bar: Add Transaction → AddTransaction modal → BankImportModal; Sign
 │   │   └── Settings: BudgetSettings (currency, notifications, ConnectedAccountsSettings,
 │   │                 HouseholdSettingsModal, BudgetHistory)
 │   └── Insights → pages/InsightsPage (date range, budget vs actual, accuracy, pacing, member spend)
-├── /login, /register
-└── /forgot-password → pages/auth/ForgotPassword (sends the reset email);
-    /reset-password → pages/auth/ResetPassword (the email's link lands here, signed in)
+├── /login — landing page: hero, sign-in card, feature cards, "How it works" clips
+│            (components/info/LandingSections)
+├── /register
+├── /forgot-password → pages/auth/ForgotPassword (sends the reset email)
+├── /reset-password → pages/auth/ResetPassword (the email's link lands here, signed in)
+└── Public, signed in or out:
+    ├── /about → pages/info/AboutPage
+    └── /guide, /guide/:chapter → pages/info/GuidePage (household, budget, transactions,
+                                  update-budget, insights; text in src/content/guide.ts)
 ```
 
 ## Conventions
