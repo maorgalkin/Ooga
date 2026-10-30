@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -16,8 +16,9 @@ vi.stubGlobal(
 );
 
 const signIn = vi.hoisted(() => vi.fn());
+const auth = vi.hoisted(() => ({ user: null as { id: string } | null }));
 vi.mock('../../../src/contexts/AuthContext', () => ({
-  useAuth: () => ({ user: null, loading: false, signIn }),
+  useAuth: () => ({ user: auth.user, loading: false, signIn }),
 }));
 
 function Landed() {
@@ -65,5 +66,25 @@ describe('Login page', () => {
     renderLogin('//evil.example/phish');
     await submit();
     expect(await screen.findByText('landed on /')).toBeInTheDocument();
+  });
+});
+
+describe('Login when already signed in', () => {
+  beforeEach(() => {
+    auth.user = { id: 'user-1' };
+  });
+  afterEach(() => {
+    auth.user = null;
+  });
+
+  it('skips the form and goes to the app', () => {
+    renderLogin();
+    expect(screen.getByText('landed on /')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Password')).toBeNull();
+  });
+
+  it('goes where they were heading', () => {
+    renderLogin('/?tab=budget');
+    expect(screen.getByText('landed on /?tab=budget')).toBeInTheDocument();
   });
 });

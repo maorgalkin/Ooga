@@ -56,6 +56,23 @@ describe('About page', () => {
 });
 
 describe('Guide page', () => {
+  beforeEach(() => {
+    auth.user = null;
+  });
+
+  it('shows the Create your account step only to people who are signed out', () => {
+    renderAt('/guide/household');
+    expect(screen.getByRole('heading', { level: 2, name: 'Create your account' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Create account/ })).toHaveAttribute('href', '/register');
+  });
+
+  it('leaves out the Create your account step for signed-in people', () => {
+    auth.user = { id: 'test-user-123' };
+    renderAt('/guide/household');
+    expect(screen.queryByRole('heading', { level: 2, name: 'Create your account' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Create account/ })).toBeNull();
+  });
+
   it('opens with a welcome page that lays out the four parts', () => {
     renderAt('/guide');
     expect(screen.getByRole('heading', { level: 1, name: 'Less to learn than it looks' })).toBeInTheDocument();

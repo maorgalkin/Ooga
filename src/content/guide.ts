@@ -13,6 +13,8 @@ export interface GuideStep {
   link?: { label: string; to: string };
   /** The step "How it works" on the sign-in page shows for this chapter. */
   featured?: boolean;
+  /** Only for people who aren't signed in yet, such as creating an account. */
+  signedOutOnly?: boolean;
 }
 
 export interface GuideChapter {
@@ -70,6 +72,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
           "Ooga creates your household straight away, named after you (for example \"Dana's Household\"), and makes you its owner.",
         ],
         link: { label: 'Create account', to: '/register' },
+        signedOutOnly: true,
       },
       {
         title: "Name it and add the family",
