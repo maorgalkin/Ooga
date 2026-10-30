@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useT } from '../../hooks/useT';
 import { CalendarRange, TrendingDown } from 'lucide-react';
 import type { Transaction } from '../../types';
 import type { PersonalBudget } from '../../types/budget';
@@ -23,8 +24,10 @@ interface MonthBucket {
 
 interface CheckpointConfig {
   id: string;
+  /** Translation key */
   label: string;
   day: number;
+  /** Translation key */
   description: string;
 }
 
@@ -41,24 +44,25 @@ interface CheckpointRow {
   description: string;
 }
 
+// label and description are translation keys
 const BASE_CHECKPOINTS: CheckpointConfig[] = [
   {
     id: 'week1',
-    label: 'End of week 1',
+    label: 'insights.pace.checkpoints.week1.label',
     day: 7,
-    description: 'First-week pace check after seven days.'
+    description: 'insights.pace.checkpoints.week1.description'
   },
   {
     id: 'mid',
-    label: 'Mid-month',
+    label: 'insights.pace.checkpoints.mid.label',
     day: 15,
-    description: 'Halfway checkpoint for quick course correction.'
+    description: 'insights.pace.checkpoints.mid.description'
   },
   {
     id: 'week4',
-    label: 'End of week 4',
+    label: 'insights.pace.checkpoints.week4.label',
     day: 28,
-    description: 'Late-month snapshot before the month closes.'
+    description: 'insights.pace.checkpoints.week4.description'
   }
 ];
 
@@ -150,11 +154,11 @@ const calculateCheckpointRows = (
     ...BASE_CHECKPOINTS,
     {
       id: 'current',
-      label: `Current pace`,
+      label: 'insights.pace.checkpoints.current.label',
       day: currentDayTarget,
       description: isLatestMonthCurrent
-        ? 'Where you stand as of today.'
-        : 'Final position for the most recent month in range.'
+        ? 'insights.pace.checkpoints.current.today'
+        : 'insights.pace.checkpoints.current.final'
     }
   ];
 
@@ -237,6 +241,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
   personalBudget,
   selectedRange,
 }) => {
+  const t = useT();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   const categoryOptions = useMemo(() => getCategoryOptions(personalBudget), [personalBudget]);
@@ -314,10 +319,10 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
           </div>
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Category pace tracker
+              {t('insights.pace.title')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Monitor how a category is tracking toward its monthly budget checkpoints.
+              {t('insights.pace.subtitle')}
             </p>
           </div>
         </div>
@@ -326,13 +331,13 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
       <div className="p-4 sm:p-6 space-y-4">
         {!personalBudget && (
           <div className="rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 p-4 text-sm text-indigo-800 dark:text-indigo-200">
-            Connect a personal budget to analyse pacing against category limits.
+            {t('insights.pace.noBudget')}
           </div>
         )}
 
         {personalBudget && categoryOptions.length === 0 && (
           <div className="rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 text-sm text-gray-600 dark:text-gray-300">
-            No active expense categories found in the current budget configuration.
+            {t('insights.pace.noCategories')}
           </div>
         )}
 
@@ -340,7 +345,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
           <>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex flex-col">
-                <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Category</span>
+                <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('insights.pace.category')}</span>
                 <div className="flex items-center gap-2">
                   <select
                     value={selectedCategory}
@@ -355,18 +360,18 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                   </select>
                   {budgetLimit > 0 ? (
                     <span className="text-xs font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-2.5 py-1 rounded-full">
-                      Monthly limit: {formatCurrency(budgetLimit)}
+                      {t('insights.pace.monthlyLimit', { amount: formatCurrency(budgetLimit) })}
                     </span>
                   ) : (
                     <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      No limit configured
+                      {t('insights.pace.noLimit')}
                     </span>
                   )}
                 </div>
               </div>
               {latestMonthLabel && (
                 <div className="text-sm text-end text-gray-500 dark:text-gray-400">
-                  Tracking {selectedCategory} through {latestMonthLabel}
+                  {t('insights.pace.tracking', { category: selectedCategory, month: latestMonthLabel })}
                 </div>
               )}
             </div>
@@ -376,17 +381,17 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                 <thead>
                   {/* On each th: a th ignores an inherited text-align: start and centres itself */}
                   <tr className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    <th className="py-2 text-start">Checkpoint</th>
-                    <th className="py-2 text-start">Spent</th>
-                    <th className="py-2 text-start">Remaining</th>
-                    {hasHistoricalSample && <th className="py-2 text-start">Historical avg</th>}
+                    <th className="py-2 text-start">{t('insights.pace.checkpoint')}</th>
+                    <th className="py-2 text-start">{t('insights.pace.spent')}</th>
+                    <th className="py-2 text-start">{t('insights.pace.remaining')}</th>
+                    {hasHistoricalSample && <th className="py-2 text-start">{t('insights.pace.historicalAvg')}</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {pacingRows.length === 0 && (
                     <tr>
                       <td className="py-3 text-gray-500 dark:text-gray-400" colSpan={hasHistoricalSample ? 4 : 3}>
-                        No spending activity recorded for this category in the selected range.
+                        {t('insights.pace.noActivity')}
                       </td>
                     </tr>
                   )}
@@ -401,7 +406,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                       }
                       const rounded = Math.round(value);
                       if (rounded === 0) {
-                        return 'On pace';
+                        return t('insights.pace.onPace');
                       }
                       return `${rounded > 0 ? '+' : ''}${rounded}%`;
                     };
@@ -426,15 +431,15 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                       <tr key={row.id}>
                         <td className="py-3">
                           <div className="font-medium text-gray-900 dark:text-gray-100">
-                            {row.label}
+                            {t(row.label)}
                             {row.id === 'current' && latestBucket && (
                               <span className="ms-2 text-xs font-normal text-indigo-600 dark:text-indigo-300">
-                                Day {row.day}
+                                {t('insights.pace.day', { day: row.day })}
                               </span>
                             )}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {row.description}
+                            {t(row.description)}
                           </div>
                         </td>
                         <td className="py-3">
@@ -442,7 +447,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                             {formatCurrency(row.currentAmount)}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {percentageFormatter(row.currentPercentage)} of budget
+                            {t('insights.pace.ofBudget', { percent: percentageFormatter(row.currentPercentage) })}
                           </div>
                         </td>
                         <td className="py-3">
@@ -452,11 +457,11 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                                 {formatCurrency(remainingAmount)}
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {percentageFormatter(remainingPercentage)} remaining
+                                {t('insights.pace.remainingPercent', { percent: percentageFormatter(remainingPercentage) })}
                               </div>
                             </>
                           ) : (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">No budget target</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{t('insights.pace.noTarget')}</div>
                           )}
                         </td>
                         {hasHistoricalSample && (
@@ -467,10 +472,10 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                                   {formatCurrency(row.averageAmount)}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Avg {percentageFormatter(row.averagePercentage)}
+                                  {t('insights.pace.avg', { percent: percentageFormatter(row.averagePercentage) })}
                                 </div>
                                 <div className={`text-xs font-medium ${varianceTone}`}>
-                                  {varianceFormatter(row.variancePercentage)} vs avg
+                                  {t('insights.pace.vsAvg', { value: varianceFormatter(row.variancePercentage) })}
                                 </div>
                               </>
                             ) : (
@@ -489,7 +494,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
               <div className="flex items-start gap-2 rounded-lg border border-indigo-100 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-900/30 p-3 text-xs text-indigo-700 dark:text-indigo-200">
                 <TrendingDown className="h-4 w-4 mt-0.5" />
                 <p>
-                  Historical averages use each month in the selected range except the most recent month. This highlights how current spending compares to typical pacing.
+                  {t('insights.pace.historicalNote')}
                 </p>
               </div>
             )}

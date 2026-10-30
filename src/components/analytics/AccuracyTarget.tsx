@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { useT } from '../../hooks/useT';
 import type { CategoryAccuracy } from '../../types/analytics';
 import { ACCURACY_ZONE_STYLES } from '../../types/analytics';
-import { categoryAccuracyService } from '../../services/categoryAccuracyService';
 import { formatCurrencyFromSettings, type CurrencySettings } from '../../utils/formatCurrency';
 
 interface AccuracyTargetProps {
@@ -19,6 +19,7 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
   size = 180,
   globalSettings,
 }) => {
+  const t = useT();
   const [showTooltip, setShowTooltip] = useState(false);
   
   const center = size / 2;
@@ -55,7 +56,7 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
 
   const hitPos = hitMarkerPosition();
   const zoneStyle = ACCURACY_ZONE_STYLES[accuracy.accuracyZone];
-  const performanceLabel = categoryAccuracyService.getPerformanceLabel(accuracy.accuracyZone);
+  const performanceLabel = t(`insights.accuracy.zones.${accuracy.accuracyZone}`);
 
   const formatCurrency = (value: number) => formatCurrencyFromSettings(value, globalSettings);
 
@@ -150,7 +151,7 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
             className="text-xs font-medium fill-gray-500 dark:fill-gray-400"
             style={{ fontSize: size * 0.08 }}
           >
-            Unused
+            {t('insights.accuracy.unused')}
           </text>
         )}
       </svg>
@@ -166,7 +167,7 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
         >
           {accuracy.accuracyPercentage > 0 
             ? `${accuracy.accuracyPercentage.toFixed(0)}%` 
-            : 'No activity'}
+            : t('insights.accuracy.noActivity')}
         </div>
       </div>
 
@@ -180,7 +181,7 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
             
             <div className="space-y-1 text-gray-700 dark:text-gray-300">
               <div className="flex justify-between">
-                <span>Status:</span>
+                <span>{t('insights.accuracy.statusLabel')}</span>
                 <span className="font-medium" style={{ color: zoneStyle.color }}>
                   {performanceLabel}
                 </span>
@@ -189,24 +190,24 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
               {!accuracy.isUnused && (
                 <>
                   <div className="flex justify-between">
-                    <span>Avg budget:</span>
+                    <span>{t('insights.accuracy.avgBudget')}</span>
                     <span className="font-medium">{formatCurrency(accuracy.budgetAverage)}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span>Avg actual:</span>
+                    <span>{t('insights.accuracy.avgActual')}</span>
                     <span className="font-medium">{formatCurrency(accuracy.actualAverage)}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span>Variance:</span>
+                    <span>{t('insights.accuracy.variance')}</span>
                     <span className={`font-medium ${accuracy.isOverBudget ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                       {accuracy.isOverBudget ? '+' : ''}{formatCurrency(accuracy.variance)}
                     </span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span>Accuracy:</span>
+                    <span>{t('insights.accuracy.accuracyLabel')}</span>
                     <span className="font-medium">{accuracy.accuracyPercentage.toFixed(1)}%</span>
                   </div>
                 </>
@@ -214,9 +215,8 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
               
               <div className="pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
                 {accuracy.isUnused 
-                  ? categoryAccuracyService.getSuggestionMessage(accuracy.category, accuracy.monthsInRange)
-                  : `Based on ${accuracy.monthsInRange} month${accuracy.monthsInRange !== 1 ? 's' : ''} of data`
-                }
+                  ? t('insights.accuracy.suggestion', { count: accuracy.monthsInRange })
+                  : t('insights.accuracy.basedOn', { count: accuracy.monthsInRange })}
               </div>
             </div>
           </div>

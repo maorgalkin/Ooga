@@ -1020,5 +1020,178 @@
       "remove": "Remove connection",
       "confirmRemove": "Remove this account connection? You can re-add it later."
     }
+  },
+  "insights": {
+    "loading": "Loading insights...",
+    "loadError": "Error loading budget data: {{message}}",
+    "subtitle": "Analyze your spending patterns and budget accuracy",
+    "summaryTitle": "Budget summary",
+    "summarySubtitle": "Overview of planned vs actual spending",
+    "performanceTitle": "Original vs current budget performance by category",
+    "performanceSubtitle": "Compare budgeted amounts with actual spending across categories",
+    "accuracyTitle": "Category accuracy",
+    "accuracySubtitle": "How well are you hitting your budget targets?",
+    "membersTitle": "Household member expenses",
+    "membersSubtitle": "See who's spending what in your household",
+    "trendsTitle": "Coming soon: spending trends",
+    "trendsSubtitle": "Track how your spending evolves over time with trend analysis",
+    "ranges": {
+      "mtd": "Current month",
+      "ytd": "Year to date",
+      "qtd": "Quarter to date",
+      "lastQuarter": "Last quarter",
+      "lastYear": "Last 12 months"
+    },
+    "customRange": {
+      "title": "Custom date range",
+      "from": "From",
+      "to": "To",
+      "type": "Type",
+      "all": "All",
+      "search": "Search",
+      "searchPlaceholder": "Search...",
+      "net": "Net",
+      "none": "No transactions found",
+      "noneHint": "Try adjusting your date range or filters",
+      "found_one": "{{count}} transaction found",
+      "found_other": "{{count}} transactions found"
+    },
+    "bva": {
+      "loading": "Loading budget data...",
+      "noBudget": "No personal budget configured. Please set up your budget first.",
+      "creating": "Creating monthly budgets for the selected period...",
+      "title": "Budget vs actual",
+      "subtitle": "Compare budgeted amounts with actual spending across categories",
+      "avgOriginal": "Avg original budget",
+      "avgOriginalHint": "Average planned at month start",
+      "avgCurrent": "Avg current budget",
+      "avgAdjusted": "Avg adjusted {{amount}}",
+      "noAdjustments": "No adjustments on average",
+      "totalSpending": "Total spending",
+      "ofAvgBudget": "{{percent}}% of avg budget",
+      "noBudgetSet": "No budget set",
+      "noCategories": "No budget categories configured",
+      "original": "Original budget",
+      "current": "Current budget",
+      "actual": "Actual spending (good / warning / over)",
+      "max": "Max",
+      "mid": "Mid",
+      "min": "Min",
+      "logScale": "Logarithmic scale for better visibility",
+      "barOriginal": "{{category}} - Original: {{amount}}",
+      "barCurrent": "{{category}} - Current: {{amount}}",
+      "barActual": "{{category}} - Actual: {{amount}}"
+    },
+    "pace": {
+      "title": "Category pace tracker",
+      "subtitle": "Monitor how a category is tracking toward its monthly budget checkpoints.",
+      "noBudget": "Connect a personal budget to analyse pacing against category limits.",
+      "noCategories": "No active expense categories found in the current budget configuration.",
+      "category": "Category",
+      "monthlyLimit": "Monthly limit: {{amount}}",
+      "noLimit": "No limit configured",
+      "tracking": "Tracking {{category}} through {{month}}",
+      "checkpoint": "Checkpoint",
+      "spent": "Spent",
+      "remaining": "Remaining",
+      "historicalAvg": "Historical avg",
+      "noActivity": "No spending activity recorded for this category in the selected range.",
+      "day": "Day {{day}}",
+      "ofBudget": "{{percent}} of budget",
+      "remainingPercent": "{{percent}} remaining",
+      "noTarget": "No budget target",
+      "avg": "Avg {{percent}}",
+      "vsAvg": "{{value}} vs avg",
+      "onPace": "On pace",
+      "historicalNote": "Historical averages use each month in the selected range except the most recent month. This highlights how current spending compares to typical pacing.",
+      "checkpoints": {
+        "week1": {
+          "label": "End of week 1",
+          "description": "First-week pace check after seven days."
+        },
+        "mid": {
+          "label": "Mid-month",
+          "description": "Halfway checkpoint for quick course correction."
+        },
+        "week4": {
+          "label": "End of week 4",
+          "description": "Late-month snapshot before the month closes."
+        },
+        "current": {
+          "label": "Current pace",
+          "today": "Where you stand as of today.",
+          "final": "Final position for the most recent month in range."
+        }
+      }
+    },
+    "accuracy": {
+      "calculating": "Calculating accuracy...",
+      "failed": "Failed to calculate accuracy data. Please try again.",
+      "exceededDay": "⚠️ Exceeded day {{day}}",
+      "noSpending": "No spending",
+      "txns_one": "{{count}} txn",
+      "txns_other": "{{count}} txns",
+      "category": "Category",
+      "range": "Range",
+      "status": "Status",
+      "budgeted": "Budgeted",
+      "actual": "Actual",
+      "accuracy": "Accuracy",
+      "noData": "No category data available for the selected date range.",
+      "unused": "Unused",
+      "noActivity": "No activity",
+      "statusLabel": "Status:",
+      "avgBudget": "Avg budget:",
+      "avgActual": "Avg actual:",
+      "variance": "Variance:",
+      "accuracyLabel": "Accuracy:",
+      "basedOn_one": "Based on {{count}} month of data",
+      "basedOn_other": "Based on {{count}} months of data",
+      "suggestion_one": "This budget wasn't used throughout month. Consider reallocating to other categories?",
+      "suggestion_other": "This budget wasn't used throughout {{count}} months. Consider reallocating to other categories?",
+      "zones": {
+        "bullseye": "Perfect tracking",
+        "ring1": "Excellent budgeting",
+        "ring2": "Good control",
+        "ring3": "Needs attention",
+        "ring4": "Poor accuracy",
+        "ring5": "Significantly under",
+        "bust": "Over budget",
+        "unused": "No activity"
+      }
+    },
+    "members": {
+      "unassigned": "Unassigned",
+      "unknown": "Unknown",
+      "noData": "No expense data available for the selected period",
+      "transactions_one": "{{count}} transaction",
+      "transactions_other": "{{count}} transactions",
+      "totalExpenses": "Total expenses",
+      "ofTotal": "{{percent}}% of total",
+      "averagePerTransaction": "Average per transaction",
+      "topCategories": "Top categories",
+      "member": "Member",
+      "transactionsColumn": "Transactions",
+      "total": "Total",
+      "average": "Average",
+      "percentOfTotal": "% of Total"
+    }
+  },
+  "errorScreen": {
+    "criticalTitle": "Critical error detected",
+    "title": "Something went wrong",
+    "criticalBody": "The application encountered a critical error and needs to reload.",
+    "body": "The application encountered an unexpected error.",
+    "autoReload_one": "Auto-reloading in {{count}} second...",
+    "autoReload_other": "Auto-reloading in {{count}} seconds...",
+    "details": "Error details:",
+    "reload": "Reload page now",
+    "tryAgain": "Try again",
+    "persists": "If this problem persists, please contact support or check the browser console for more details."
+  },
+  "buildInfo": {
+    "commit": "Commit:",
+    "built": "Built:",
+    "scrollToTop": "Click to scroll to top"
   }
 }

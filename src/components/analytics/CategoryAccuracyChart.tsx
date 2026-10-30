@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useT } from '../../hooks/useT';
 import { ChevronDown } from 'lucide-react';
 import { AccuracyTarget } from './AccuracyTarget';
 import { categoryAccuracyService } from '../../services/categoryAccuracyService';
@@ -126,9 +127,11 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
   selectedRange,
   onScrollToDateRange,
 }) => {
+  const t = useT();
   const [accuracyData, setAccuracyData] = useState<CategoryAccuracy[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  // A translation key, so the message follows the language without re-running the calculation
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -178,7 +181,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
         }
       } catch (err) {
         console.error('Error calculating category accuracy:', err);
-        setError('Failed to calculate accuracy data. Please try again.');
+        setError('insights.accuracy.failed');
         setAccuracyData([]);
       } finally {
         setIsLoading(false);
@@ -224,13 +227,13 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ms-3 text-gray-600 dark:text-gray-300">Calculating accuracy...</span>
+          <span className="ms-3 text-gray-600 dark:text-gray-300">{t('insights.accuracy.calculating')}</span>
         </div>
       )}
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-          <p className="text-red-800 dark:text-red-200">{error}</p>
+          <p className="text-red-800 dark:text-red-200">{t(error)}</p>
         </div>
       )}
 
@@ -268,18 +271,18 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                   <div className="text-center p-3">
                     {selectedAccuracy.dayExceeded && (
                       <p className="text-red-600 dark:text-red-400 text-sm font-medium mb-1">
-                        ⚠️ Exceeded day {selectedAccuracy.dayExceeded}
+                        {t('insights.accuracy.exceededDay', { day: selectedAccuracy.dayExceeded })}
                       </p>
                     )}
                     {selectedAccuracy.isUnused ? (
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">No spending</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">{t('insights.accuracy.noSpending')}</p>
                     ) : selectedAccuracy.variance !== 0 && (
                       <p className={`text-lg font-bold ${selectedAccuracy.variance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                         {selectedAccuracy.variance > 0 ? '+' : ''}{formatCurrencyFromSettings(selectedAccuracy.variance, personalBudget?.global_settings)}
                       </p>
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {selectedAccuracy.transactionCount} txn{selectedAccuracy.transactionCount !== 1 ? 's' : ''}
+                      {t('insights.accuracy.txns', { count: selectedAccuracy.transactionCount })}
                     </p>
                   </div>
                 </div>
@@ -292,7 +295,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                   className="relative p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg overflow-visible"
                   ref={dropdownRef}
                 >
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Category</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('insights.accuracy.category')}</div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -339,7 +342,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                   className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg
                            hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-start"
                 >
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Range</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('insights.accuracy.range')}</div>
                   <div className="text-base font-bold text-gray-800 dark:text-white">
                     {dateRangeInfo.startDate.toLocaleDateString(getUserLocale(), { month: 'short', day: 'numeric' })}
                     {' – '}
@@ -349,15 +352,15 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
 
                 {/* Tile 3: Status */}
                 <div className={`p-3 rounded-lg ${colors.badge}`}>
-                  <div className="text-xs opacity-70 mb-1">Status</div>
+                  <div className="text-xs opacity-70 mb-1">{t('insights.accuracy.status')}</div>
                   <div className="text-base font-bold truncate">
-                    {categoryAccuracyService.getPerformanceLabel(selectedAccuracy.accuracyZone)}
+                    {t(`insights.accuracy.zones.${selectedAccuracy.accuracyZone}`)}
                   </div>
                 </div>
 
                 {/* Tile 4: Budgeted */}
                 <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Budgeted</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('insights.accuracy.budgeted')}</div>
                   <div className="text-base font-bold text-gray-800 dark:text-white">
                     {formatCurrencyFromSettings(selectedAccuracy.budgetAverage, personalBudget?.global_settings)}
                   </div>
@@ -365,7 +368,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                 
                 {/* Tile 5: Actual */}
                 <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Actual</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('insights.accuracy.actual')}</div>
                   <div className="text-base font-bold text-gray-800 dark:text-white">
                     {formatCurrencyFromSettings(selectedAccuracy.actualAverage, personalBudget?.global_settings)}
                   </div>
@@ -373,7 +376,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                 
                 {/* Tile 6: Accuracy */}
                 <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Accuracy</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('insights.accuracy.accuracy')}</div>
                   <div className={`text-base font-bold ${colors.text}`}>
                     {selectedAccuracy.accuracyPercentage.toFixed(0)}%
                   </div>
@@ -386,7 +389,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
 
       {!isLoading && !error && accuracyData.length === 0 && (
         <div className="text-center py-12 text-gray-600 dark:text-gray-400">
-          No category data available for the selected date range.
+          {t('insights.accuracy.noData')}
         </div>
       )}
     </div>

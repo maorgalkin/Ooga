@@ -1,5 +1,7 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+// A class component can't use hooks; i18n.t reads the current language when the fallback renders
+import i18n from '../i18n';
 
 interface Props {
   children: ReactNode;
@@ -143,12 +145,10 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
               <div className="ms-4">
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {isCritical ? 'Critical error detected' : 'Something went wrong'}
+                  {i18n.t(isCritical ? 'errorScreen.criticalTitle' : 'errorScreen.title')}
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {isCritical 
-                    ? 'The application encountered a critical error and needs to reload.'
-                    : 'The application encountered an unexpected error.'}
+                  {i18n.t(isCritical ? 'errorScreen.criticalBody' : 'errorScreen.body')}
                 </p>
               </div>
             </div>
@@ -170,7 +170,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     />
                   </svg>
                   <p className="text-blue-800 font-medium">
-                    Auto-reloading in {countdown} second{countdown !== 1 ? 's' : ''}...
+                    {i18n.t('errorScreen.autoReload', { count: countdown })}
                   </p>
                 </div>
               </div>
@@ -178,7 +178,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
             {error && (
               <div className="mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Error details:</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">{i18n.t('errorScreen.details')}</h2>
                 <div className="bg-red-50 border border-red-200 rounded-md p-4">
                   <p className="text-red-800 font-mono text-sm break-all">
                     {error.toString()}
@@ -203,20 +203,20 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleReload}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
               >
-                Reload page now
+                {i18n.t('errorScreen.reload')}
               </button>
               {!isCritical && (
                 <button
                   onClick={this.handleReset}
                   className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
                 >
-                  Try again
+                  {i18n.t('errorScreen.tryAgain')}
                 </button>
               )}
             </div>
 
             <p className="text-sm text-gray-500 mt-4 text-center">
-              If this problem persists, please contact support or check the browser console for more details.
+              {i18n.t('errorScreen.persists')}
             </p>
           </div>
         </div>

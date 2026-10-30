@@ -1,4 +1,5 @@
 import React from 'react';
+import { useT } from '../../hooks/useT';
 import type { DateRangeType } from '../../utils/dateRangeFilters';
 import { getDateRange, formatDateRange } from '../../utils/dateRangeFilters';
 
@@ -13,6 +14,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   onRangeChange,
   oldestTransactionDate,
 }) => {
+  const t = useT();
   const { startDate, endDate } = getDateRange(selectedRange);
 
   // Calculate months of actual data (from oldest transaction to now)
@@ -20,12 +22,13 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
     ? Math.max(1, Math.ceil((new Date().getTime() - oldestTransactionDate.getTime()) / (1000 * 60 * 60 * 24 * 30)))
     : 12; // Default to 12 if no transactions
 
-  const filters: { id: DateRangeType; label: string; requiredMonths: number }[] = [
-    { id: 'mtd', label: 'Current month', requiredMonths: 1 },
-    { id: 'ytd', label: 'Year to date', requiredMonths: 3 }, // Show if at least 3 months of data
-    { id: 'qtd', label: 'Quarter to date', requiredMonths: 2 }, // Show if at least 2 months of data
-    { id: 'lastQuarter', label: 'Last quarter', requiredMonths: 3 },
-    { id: 'lastYear', label: 'Last 12 months', requiredMonths: 6 }, // Show if at least 6 months of data
+  // Labels are under insights.ranges.<id>
+  const filters: { id: DateRangeType; requiredMonths: number }[] = [
+    { id: 'mtd', requiredMonths: 1 },
+    { id: 'ytd', requiredMonths: 3 }, // Show if at least 3 months of data
+    { id: 'qtd', requiredMonths: 2 }, // Show if at least 2 months of data
+    { id: 'lastQuarter', requiredMonths: 3 },
+    { id: 'lastYear', requiredMonths: 6 }, // Show if at least 6 months of data
   ];
 
   // Filter out ranges that require more months than available data
@@ -44,7 +47,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            {filter.label}
+            {t(`insights.ranges.${filter.id}`)}
           </button>
         ))}
       </div>
