@@ -20,8 +20,7 @@ export function BrandLogo({ children }: { children?: ReactNode }) {
   return (
     <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
       <img src={wordmark} alt="Ooga" width={92} height={56} className="h-14 w-auto" />
-      {/* pre-line: the Hebrew tagline breaks onto two lines at its colon */}
-      <span className="hidden sm:inline whitespace-pre-line text-xs text-white/90 drop-shadow leading-tight">{t('brand.tagline')}</span>
+      <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">{t('brand.tagline')}</span>
       {children}
     </Link>
   );
