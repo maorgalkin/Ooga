@@ -173,14 +173,14 @@ export const CategoryList: React.FC<CategoryListProps> = ({
   }
 
   if (error) {
+    // Once per render: errorMessage also logs
+    const cause = errorMessage(error, t, 'categories.list.loadFailed');
     return (
       <div className="text-center py-12">
         <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
         <p className="text-red-500">{t('categories.list.loadFailed')}</p>
         {/* A known cause gets its own sentence; anything else is already said by the line above */}
-        {errorMessage(error, t, 'categories.list.loadFailed') !== t('categories.list.loadFailed') && (
-          <p className="text-sm text-gray-500 mt-2">{errorMessage(error, t, 'categories.list.loadFailed')}</p>
-        )}
+        {cause !== t('categories.list.loadFailed') && <p className="text-sm text-gray-500 mt-2">{cause}</p>}
       </div>
     );
   }

@@ -25,8 +25,17 @@ const KNOWN: [RegExp, string][] = [
   [/duplicate key value/i, 'errors.duplicateName'],
 ];
 
-// Long digit runs could be an ID number, a card number or a code: keep them out of the console
-const scrub = (text: string) => text.replace(/\d{4,}/g, '[digits]');
+// Long digit runs could be an ID number, a card number or a code: keep them out of the console,
+// also when written in groups ("123-456-789", "4580 1234 …")
+const scrub = (text: string) => text.replace(/\d(?:[\s-]?\d){3,}/g, '[digits]');
+
+// Errors arrive as Error objects, strings, or plain objects with a message (Supabase, depending on version)
+const messageOf = (err: unknown): string => {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object' && typeof (err as { message?: unknown }).message === 'string') return (err as { message: string }).message;
+  return '';
+};
 
 /**
  * The sentence to show for an error a service or the import server threw: ours for known
@@ -34,7 +43,7 @@ const scrub = (text: string) => text.replace(/\d{4,}/g, '[digits]');
  * runs masked.
  */
 export function errorMessage(err: unknown, t: (key: string) => string, fallbackKey: string): string {
-  const message = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+  const message = messageOf(err);
   if (message) console.error('Shown as a translated error:', scrub(message));
   const known = KNOWN.find(([pattern]) => pattern.test(message));
   return t(known ? known[1] : fallbackKey);

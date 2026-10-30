@@ -47,4 +47,16 @@ describe('errorMessage', () => {
     expect(logged).toContain('OTP request failed');
     expect(logged).not.toMatch(/\d{4,}/);
   });
+
+  it('masks numbers written in groups, and reads plain-object errors', () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Supabase can hand back a plain object rather than an Error
+    expect(errorMessage({ message: 'duplicate key value violates unique constraint' }, en, 'import.failed')).toBe(
+      en('errors.duplicateName'),
+    );
+    errorMessage(new Error('login failed for 123-456-789, card 4580 1234 5678 9012'), en, 'import.failed');
+    const logged = log.mock.calls.flat().join(' ');
+    expect(logged).toContain('duplicate key value');
+    expect(logged).not.toMatch(/\d[\s-]?\d[\s-]?\d[\s-]?\d/);
+  });
 });
