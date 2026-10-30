@@ -12,6 +12,7 @@
 | Web hosting | `docs/CLOUDFLARE_SETUP.md` |
 | Budget model | `docs/BUDGET_ARCHITECTURE.md` |
 | Retired features | `docs/DEPRECATED_FEATURES.md` |
+| Guide screenshots (demo household, capture pipeline) | `docs/GUIDE_SCREENSHOTS.md` |
 | Tests | `docs/TEST_DOCUMENTATION.md`, `tests/integration/README.md` |
 | Learning notes | `docs/learning/` and `learning/` (two folders) |
 
@@ -29,5 +30,7 @@
 10. `src/lib/supabase.ts`: the hand-written `Database` interface is stale (old `transactions` columns). Removing it or generating types is an implementer decision; its comment should at least say it's not maintained.
 
 ## Decisions
+
+- 2026-10-30 (branch feat/about-guide-landing): AGENTS.md screen map gained Help link, /about, /guide, landing /login; new `docs/GUIDE_SCREENSHOTS.md`, linked from README docs list (the only docs index). Fixed stale phase list in `scripts/demo/capture-guide.mjs` header comment.
 
 - 2026-10-29: Hetzner guide replaced by `docs/SCRAPER_DEPLOY.md` for the Vultr server; README facts updated (Node 22, Tailwind 3.4, hosting, CI, test commands); `DEPRECATED_FEATURES.md` gained the Dev Tools page entry and the `lib/` removal.

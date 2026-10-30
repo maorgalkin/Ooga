@@ -12,6 +12,7 @@ For comprehensive documentation, please refer to:
 - **[Bank Import](docs/BANK_IMPORT.md)** - How Cal and Discount imports work, and the scraper service
 - **[Scraper Deployment](docs/SCRAPER_DEPLOY.md)** - The Vultr server behind `api.haooga.com`
 - **[Cloudflare Setup](docs/CLOUDFLARE_SETUP.md)** - Hosting for the web app (auto-deploys from `master`)
+- **[Guide Screenshots](docs/GUIDE_SCREENSHOTS.md)** - Refreshing the screenshots in the Getting started guide
 
 ## 🌟 Features
 

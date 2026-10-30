@@ -10,7 +10,7 @@ Terms marked **proposed** were inferred from the newest screens and haven't been
 | household | The shared space a family's budget, transactions and accounts belong to. Every user is in exactly one. | family account, group | `Household settings`, `Leave household` |
 | owner | The participant who manages the household (invites, removes, transfers ownership). | admin | DB role `owner` |
 | participant | Someone with an Ooga login in the household. **Proposed:** `Participant` in badges and lists (today: `Budget Participant`). | member, budget participant, user | DB role `participant` (renamed from member/admin in migration 010) |
-| family member | Who a transaction is for, or who spent it: a label, optionally linked to a participant. Kids can be family members without a login. | tag, custom tag, household member tag | `Family member (optional)` on transaction forms |
+| family member | Who a transaction is for, or who spent it: a label, optionally linked to a participant. Kids can be family members without a login. | tag, custom tag, household member tag | `Family member (optional)` on transaction forms. Verb: "pick" in instructions, "mark" in feature text (never "tag") |
 | invitation code | The code a participant shares so someone can join the household. | invite link, join code | `Paste invitation code` |
 
 ## Money in and out
