@@ -55,6 +55,18 @@ function useSectionUnderBar(bar: RefObject<HTMLElement | null>, page?: string) {
 function ChapterNav({ current, section }: { current?: string; section?: string }) {
   const reduce = useReducedMotion();
   const label = section ?? NAV_TITLE;
+  const list = useRef<HTMLOListElement>(null);
+
+  // On phones the chapters are one sideways row; centre the open one so it isn't cut off at the edge.
+  // Scrolls only the row: scrollIntoView would also move the page.
+  useEffect(() => {
+    const row = list.current;
+    const active = row?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!row || !active) return;
+    const r = row.getBoundingClientRect();
+    const a = active.getBoundingClientRect();
+    row.scrollLeft += a.left - r.left - (r.width - a.width) / 2;
+  }, [current]);
 
   return (
     <nav aria-label="Guide chapters" className="lg:sticky lg:top-6">
@@ -81,7 +93,7 @@ function ChapterNav({ current, section }: { current?: string; section?: string }
           </motion.span>
         </AnimatePresence>
       </p>
-      <ol className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-4 lg:overflow-visible lg:pb-0">
+      <ol ref={list} className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-4 lg:overflow-visible lg:pb-0">
         {GUIDE_PARTS.map((part) => (
           <li key={part.title} className="shrink-0">
             <p className="hidden px-3 pb-1 text-xs font-medium text-gray-500 dark:text-gray-400 lg:block">

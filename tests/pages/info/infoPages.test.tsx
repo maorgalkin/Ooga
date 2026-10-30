@@ -127,6 +127,24 @@ describe('Guide page', () => {
     vi.restoreAllMocks();
   });
 
+  it('scrolls the phone chapter row so the open chapter is centred', () => {
+    const last = GUIDE_CHAPTERS[GUIDE_CHAPTERS.length - 1];
+    // A 390px-wide row whose open chapter (200px wide) sits off its right edge at 900px
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.tagName === 'OL' && this.closest('nav')?.getAttribute('aria-label') === 'Guide chapters' && !this.parentElement?.closest('ol')) {
+        return { left: 0, width: 390 } as DOMRect;
+      }
+      if (this.getAttribute('aria-current') === 'page' && this.getAttribute('href') === `/guide/${last.slug}`) {
+        return { left: 900, width: 200 } as DOMRect;
+      }
+      return { left: 0, width: 0, top: 0, bottom: 0 } as DOMRect;
+    });
+    const setScroll = vi.spyOn(Element.prototype, 'scrollLeft', 'set');
+    renderAt(`/guide/${last.slug}`);
+    expect(setScroll).toHaveBeenCalledWith(900 - (390 - 200) / 2);
+    vi.restoreAllMocks();
+  });
+
   it('sends unknown chapters back to the overview', () => {
     renderAt('/guide/not-a-chapter');
     expect(screen.getByRole('heading', { level: 1, name: 'Less to learn than it looks' })).toBeInTheDocument();
