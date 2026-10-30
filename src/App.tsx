@@ -9,7 +9,10 @@ import { BuildInfo } from './components/BuildInfo';
 import { BackToTop } from './components/BackToTop';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
-import { Plus, LogOut, Loader2 } from 'lucide-react';
+import { BrandBackdrop, BrandLogo } from './components/info/BrandBar';
+import AboutPage from './pages/info/AboutPage';
+import GuidePage from './pages/info/GuidePage';
+import { Plus, LogOut, Loader2, CircleHelp } from 'lucide-react';
 import './App.css';
 
 // Create a React Query client
@@ -59,73 +62,27 @@ function AppContent() {
   return (
     <div className="min-h-screen dark:bg-gray-900 transition-colors duration-500">
       <nav className="relative overflow-hidden shadow-md border-b border-gray-200/20">
-        {/* Diagonal color sections - clean cuts between colors */}
-        <div className="absolute inset-0">
-          {/* Purple section (left) */}
-          <div 
-            className="absolute inset-0 bg-purple-600/90"
-            style={{
-              clipPath: 'polygon(0 0, 35% 0, 25% 100%, 0 100%)'
-            }}
-          ></div>
-          {/* Blue section (middle) */}
-          <div 
-            className="absolute inset-0 bg-blue-600/90"
-            style={{
-              clipPath: 'polygon(25% 0, 70% 0, 60% 100%, 15% 100%)'
-            }}
-          ></div>
-          {/* Green section (right) */}
-          <div 
-            className="absolute inset-0 bg-green-600/90"
-            style={{
-              clipPath: 'polygon(60% 0, 100% 0, 100% 100%, 50% 100%)'
-            }}
-          ></div>
-        </div>
-        
+        <BrandBackdrop />
+
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 relative z-10">
           <div className="h-16 flex items-center justify-between">
-            {/* Logo in hexagon */}
-            <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity group">
-              {/* Hexagon container for logo */}
-              <div className="relative">
-                <svg width="50" height="58" viewBox="0 0 50 58" className="drop-shadow-lg">
-                  {/* Hexagon shape */}
-                  <path 
-                    d="M25 0 L50 14.5 L50 43.5 L25 58 L0 43.5 L0 14.5 Z" 
-                    fill="rgba(255, 255, 255, 0.25)"
-                    stroke="rgba(255, 255, 255, 0.5)"
-                    strokeWidth="2"
-                    className="group-hover:fill-white/30 transition-all"
-                  />
-                  {/* Letter G in the center */}
-                  <text 
-                    x="25" 
-                    y="38" 
-                    textAnchor="middle" 
-                    fill="white" 
-                    fontSize="28" 
-                    fontWeight="bold"
-                    fontFamily="system-ui, -apple-system, sans-serif"
-                  >
-                    G
-                  </text>
-                </svg>
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-lg font-bold text-white drop-shadow-md leading-tight">Ooga</h1>
-                <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">Take the Cake</span>
-              </div>
+            <BrandLogo>
               {user && (
                 <span className="hidden md:inline ml-2 text-xs text-white/70 drop-shadow">
                   {user.email}
                 </span>
               )}
-            </Link>
+            </BrandLogo>
             
             {/* Desktop & Mobile Buttons - Glassy style */}
             <div className="flex items-center space-x-2 sm:space-x-3">
+              <Link
+                to="/guide"
+                className="flex items-center justify-center px-3 py-2 bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <CircleHelp className="h-4 w-4 flex-shrink-0" />
+                <span className="ml-2 max-md:sr-only">Help</span>
+              </Link>
               <button
                 onClick={() => setIsAddTransactionOpen(true)}
                 className="flex items-center justify-center px-3 py-2 bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"
@@ -174,6 +131,9 @@ function App() {
               {/* Public routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/guide" element={<GuidePage />} />
+              <Route path="/guide/:chapter" element={<GuidePage />} />
               
               {/* Protected routes */}
               <Route

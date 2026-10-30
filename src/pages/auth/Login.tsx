@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { PublicLayout } from '../../components/info/PublicLayout';
+import { HeroShowcase } from '../../components/info/HeroShowcase';
+import { FloatingShapes, LandingSections } from '../../components/info/LandingSections';
 
 const Login: React.FC = () => {
   const { signIn } = useAuth();
@@ -28,11 +31,29 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
+    <PublicLayout>
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800" />
+        <FloatingShapes />
+        <div className="max-w-6xl mx-auto px-4 py-12 sm:py-16 grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:items-center">
+          <div>
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+              Your family's money,{' '}
+              <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text text-transparent">finally clear</span>
+            </h1>
+            <p className="mt-5 text-lg text-gray-600 dark:text-gray-300 max-w-xl">
+              Ooga brings everyone's spending into one budget, so you know where the money goes and stay in control of the
+              bottom line every month.
+            </p>
+            <div className="mt-10 hidden sm:block pb-8">
+              <HeroShowcase />
+            </div>
+          </div>
+
+      <div className="max-w-md w-full mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to your Ooga account</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome back</h2>
+          <p className="text-gray-600 dark:text-gray-300">Sign in to your Ooga account</p>
         </div>
 
         {error && (
@@ -45,8 +66,8 @@ const Login: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+              Email
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -59,7 +80,7 @@ const Login: React.FC = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="you@example.com"
               />
             </div>
@@ -67,7 +88,7 @@ const Login: React.FC = () => {
 
           {/* Password Field */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Password
             </label>
             <div className="relative">
@@ -81,7 +102,7 @@ const Login: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="Enter your password"
               />
             </div>
@@ -92,7 +113,7 @@ const Login: React.FC = () => {
             <div className="text-sm">
               <Link
                 to="/forgot-password"
-                className="font-medium text-blue-600 hover:text-blue-500"
+                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
               >
                 Forgot your password?
               </Link>
@@ -108,28 +129,32 @@ const Login: React.FC = () => {
             {loading ? (
               <>
                 <Loader2 className="animate-spin h-5 w-5 mr-2" />
-                Signing in...
+                Signing in…
               </>
             ) : (
-              'Sign In'
+              'Sign in'
             )}
           </button>
         </form>
 
-        {/* Sign Up Link */}
+        {/* Create account link */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             Don't have an account?{' '}
             <Link
               to="/register"
-              className="font-medium text-blue-600 hover:text-blue-500"
+              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
             >
-              Sign up for free
+              Create account
             </Link>
           </p>
         </div>
       </div>
-    </div>
+        </div>
+      </section>
+
+      <LandingSections />
+    </PublicLayout>
   );
 };
 

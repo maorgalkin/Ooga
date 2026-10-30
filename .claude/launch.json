@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo-test-project",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/demo/dev-against-test.mjs"],
+      "port": 5174
+    },
+    {
+      "name": "demo-test-project-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/demo/dev-against-test.mjs", "--preview"],
+      "port": 5174
+    }
+  ]
+}
