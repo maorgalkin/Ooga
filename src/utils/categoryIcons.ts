@@ -16,6 +16,13 @@ export const categoryIcons: Record<string, string> = {
   "Digital Subscriptions": "📱",
   "Other": "📦",
   
+  // Default expense categories when a budget is created in Hebrew (budget.editor.defaults)
+  "מכולת": "🛒",
+  "תחבורה": "🚗",
+  "בילויים": "🎬",
+  "חשבונות": "💡",
+  "בית וגינה": "🏠",
+
   // Income categories
   "Salary": "💰",
   "Rent": "💵",
