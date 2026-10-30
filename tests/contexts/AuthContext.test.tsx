@@ -8,6 +8,7 @@ vi.unmock('../../src/contexts/AuthContext');
 // Import after unmocking
 import { AuthProvider, useAuth } from '../../src/contexts/AuthContext';
 import { supabase } from '../../src/lib/supabase';
+import { applyLanguage } from '../../src/i18n';
 
 // Mock Supabase
 vi.mock('../../src/lib/supabase', () => ({
@@ -155,6 +156,23 @@ describe('AuthContext', () => {
           },
         },
       });
+    });
+
+    it('saves Hebrew with the account when signing up in Hebrew (names the household, picks the email)', async () => {
+      vi.mocked(supabase.auth.signUp).mockResolvedValue({ data: { user: mockUser, session: mockSession }, error: null });
+      applyLanguage('he');
+      const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await result.current.signUp('dana@example.com', 'SecurePass123!', 'דנה', 'לוי');
+
+      expect(vi.mocked(supabase.auth.signUp).mock.calls.at(-1)?.[0].options?.data).toEqual({
+        first_name: 'דנה',
+        last_name: 'לוי',
+        full_name: 'דנה לוי',
+        language: 'he',
+      });
+      applyLanguage('en');
     });
 
     it('should handle signup errors', async () => {
