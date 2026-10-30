@@ -3,6 +3,7 @@
 // Updated: Single form with schedule toggle
 
 import React, { useState, useEffect } from 'react';
+import { useT } from '../../hooks/useT';
 import { X, AlertCircle, HelpCircle } from 'lucide-react';
 import { useCreateCategory, useCategories } from '../../hooks/useCategories';
 import { useScheduleAdjustment, useNextMonthAdjustments } from '../../hooks/useBudgets';
@@ -14,6 +15,7 @@ interface AddCategoryModalProps {
 }
 
 export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onClose }) => {
+  const t = useT();
   const { data: existingCategories } = useCategories();
   const { data: nextMonthSummary } = useNextMonthAdjustments();
   const createCategory = useCreateCategory();
@@ -55,7 +57,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
 
     // Validation
     if (!name.trim()) {
-      setError('Category name is required');
+      setError(t('categories.edit.errors.nameRequired'));
       return;
     }
 
@@ -64,13 +66,13 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
       c => c.name.toLowerCase() === name.trim().toLowerCase()
     );
     if (isDuplicate) {
-      setError('A category with this name already exists');
+      setError(t('categories.edit.errors.duplicate'));
       return;
     }
 
     // Check for duplicate in pending adjustments (for scheduled mode)
     if (scheduleForNextMonth && nameExistsInAdjustments(name.trim())) {
-      setError('A category with this name is already scheduled for next month');
+      setError(t('categories.add.errors.alreadyScheduled'));
       return;
     }
 
@@ -94,7 +96,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
       }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create category');
+      setError(err instanceof Error ? err.message : t('categories.add.errors.createFailed'));
     }
   };
 
@@ -112,10 +114,11 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Add category
+            {t('categories.list.add')}
           </h2>
           <button
             onClick={onClose}
+            aria-label={t('common.close')}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <X className="h-5 w-5 text-gray-500" />
@@ -135,13 +138,13 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Category name
+              {t('categories.add.name')}
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Groceries"
+              placeholder={t('categories.add.namePlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               autoFocus
             />
@@ -152,7 +155,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
             {/* Native Color Picker */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Color
+                {t('categories.edit.color')}
               </label>
               <input
                 type="color"
@@ -165,7 +168,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
             {/* Monthly Limit */}
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Monthly limit
+                {t('categories.edit.monthlyLimit')}
               </label>
               <div className="relative">
                 <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
@@ -185,7 +188,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
           {/* Warning Threshold */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Warning at
+              {t('categories.edit.warningAt')}
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -207,12 +210,12 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
           <div className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Schedule for next month
+                {t('categories.add.schedule')}
               </span>
               <div className="relative group">
                 <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
                 <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-48 z-10">
-                  Use this when planning ahead. The category will be created automatically when the new month starts.
+                  {t('categories.add.scheduleHint')}
                 </div>
               </div>
             </div>
@@ -238,7 +241,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -249,10 +252,9 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
                   : 'bg-purple-600 hover:bg-purple-700'
               }`}
             >
-              {isPending 
-                ? (scheduleForNextMonth ? 'Scheduling...' : 'Creating...') 
-                : (scheduleForNextMonth ? 'Schedule for next month' : 'Create category')
-              }
+              {isPending
+                ? t(scheduleForNextMonth ? 'categories.add.scheduling' : 'categories.add.creating')
+                : t(scheduleForNextMonth ? 'categories.add.schedule' : 'categories.add.create')}
             </button>
           </div>
         </form>

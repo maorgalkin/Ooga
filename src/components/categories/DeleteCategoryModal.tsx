@@ -2,6 +2,7 @@
 // Part of Category Management Restructure (Phase 4)
 
 import React, { useState } from 'react';
+import { useT } from '../../hooks/useT';
 import { X, AlertTriangle, Trash2, ArrowRight } from 'lucide-react';
 import { useDeleteCategory, useCategories } from '../../hooks/useCategories';
 import type { Category } from '../../types/category';
@@ -19,6 +20,7 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
   transactionCount,
   onClose 
 }) => {
+  const t = useT();
   const { data: allCategories } = useCategories();
   const deleteCategory = useDeleteCategory();
 
@@ -49,7 +51,7 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete category');
+      setError(err instanceof Error ? err.message : t('categories.edit.errors.deleteFailed'));
     } finally {
       setIsDeleting(false);
     }
@@ -69,11 +71,12 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Delete Category
+            {t('categories.delete.title')}
           </h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          aria-label={t('common.close')}
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>
@@ -90,7 +93,7 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
             <div>
               <p className="font-medium text-gray-900 dark:text-gray-100">{category.name}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
+                {t('categories.delete.transactions', { count: transactionCount })}
               </p>
             </div>
           </div>
@@ -101,15 +104,14 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
             <div className="text-sm text-amber-700 dark:text-amber-300">
               {hasTransactions ? (
                 <>
-                  <p className="font-medium mb-1">This category has transactions</p>
+                  <p className="font-medium mb-1">{t('categories.delete.hasTransactions')}</p>
                   <p>
-                    Deleting this category will hide it from selection, but existing transactions
-                    will keep their historical categorization.
+                    {t('categories.delete.hidesOnly')}
                   </p>
                 </>
               ) : (
                 <p>
-                  This will permanently delete the category. This action cannot be undone.
+                  {t('categories.delete.permanent')}
                 </p>
               )}
             </div>
@@ -119,14 +121,14 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
           {hasTransactions && otherCategories.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Reassign transactions to (optional):
+                {t('categories.delete.reassign')}
               </label>
               <select
                 value={reassignTo}
                 onChange={(e) => setReassignTo(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
-                <option value="">Keep original categorization</option>
+                <option value="">{t('categories.delete.keep')}</option>
                 {otherCategories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -138,7 +140,7 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
                   <span>{category.name}</span>
                   <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
                   <span>{otherCategories.find(c => c.id === reassignTo)?.name}</span>
-                  <span className="text-gray-400">({transactionCount} transactions)</span>
+                  <span className="text-gray-400">{t('categories.delete.reassignCount', { count: transactionCount })}</span>
                 </div>
               )}
             </div>
@@ -159,7 +161,7 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleDelete}
@@ -167,7 +169,7 @@ export const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Trash2 className="h-4 w-4" />
-              {isDeleting ? 'Deleting...' : 'Delete Category'}
+              {isDeleting ? t('categories.delete.deleting') : t('categories.delete.confirm')}
             </button>
           </div>
         </div>

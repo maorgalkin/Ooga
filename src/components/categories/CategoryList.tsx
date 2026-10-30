@@ -3,6 +3,7 @@
 // Updated to use unified CategoryEditModal with adjustments
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useT } from '../../hooks/useT';
 import { 
   Plus, 
   Edit3,
@@ -35,6 +36,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
   initialEditCategory,
   onInitialEditHandled,
 }) => {
+  const t = useT();
   const { data: categories, isLoading, error } = useCategories(false, 'expense');
   const { transactions } = useFinance();
   const { data: nextMonthSummary } = useNextMonthAdjustments();
@@ -111,8 +113,8 @@ export const CategoryList: React.FC<CategoryListProps> = ({
   // Calculate transaction counts for each category
   // Matches by category_id (new) or category name (legacy)
   const getTransactionCount = (categoryId: string, categoryName: string): number => {
-    return transactions.filter(t => 
-      t.category_id === categoryId || t.category === categoryName
+    return transactions.filter(tx => 
+      tx.category_id === categoryId || tx.category === categoryName
     ).length;
   };
 
@@ -173,7 +175,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
     return (
       <div className="text-center py-12">
         <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-500">Failed to load categories</p>
+        <p className="text-red-500">{t('categories.list.loadFailed')}</p>
         <p className="text-sm text-gray-500 mt-2">{error.message}</p>
       </div>
     );
@@ -185,10 +187,12 @@ export const CategoryList: React.FC<CategoryListProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Your categories
+            {t('categories.list.title')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {activeCategories.length} active{newCategoryAdjustments.length > 0 ? `, ${newCategoryAdjustments.length} scheduled` : ''}
+            {newCategoryAdjustments.length > 0
+              ? t('categories.list.activeScheduled', { count: activeCategories.length, scheduled: newCategoryAdjustments.length })
+              : t('categories.list.active', { count: activeCategories.length })}
           </p>
         </div>
         <button
@@ -196,7 +200,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Add category
+          {t('categories.list.add')}
         </button>
       </div>
 
@@ -205,17 +209,17 @@ export const CategoryList: React.FC<CategoryListProps> = ({
         <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
           <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">
-            No categories yet
+            {t('categories.list.empty')}
           </h3>
           <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">
-            Create your first category to start tracking expenses
+            {t('categories.list.emptyHint')}
           </p>
           <button
             onClick={() => setShowAddModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            Add category
+            {t('categories.list.add')}
           </button>
         </div>
       ) : (
@@ -259,7 +263,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                                     : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                 }`}
-                                title={`Next month: ${formatCurrency(adjustment.new_limit)}`}
+                                title={t('categories.list.nextMonthLimit', { amount: formatCurrency(adjustment.new_limit) })}
                               >
                                 {isIncrease ? (
                                   <TrendingUp className="h-3 w-3" />
@@ -278,19 +282,19 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                           {/* Monthly limit - shows current month's value (includes mid-month edits) */}
                           <span>
                             {formatCurrency(getCurrentMonthLimit(category.name, category.monthlyLimit))}
-                            <span className="hidden md:inline"> / month</span>
+                            <span className="hidden md:inline">{t('categories.list.perMonth')}</span>
                           </span>
                           {/* Transaction count - icon only on small, with label on medium+ */}
-                          <span className="flex items-center gap-1" title={`${transactionCount} transaction${transactionCount !== 1 ? 's' : ''}`}>
+                          <span className="flex items-center gap-1" title={t('categories.list.transactions', { count: transactionCount })}>
                             <Receipt className="h-3.5 w-3.5" />
                             <span>{transactionCount}</span>
-                            <span className="hidden md:inline">txn{transactionCount !== 1 ? 's' : ''}</span>
+                            <span className="hidden md:inline">{t('categories.list.txns', { count: transactionCount })}</span>
                           </span>
                           {/* Warning threshold - icon only on small, with label on medium+ */}
                           {category.warningThreshold < 100 && (
-                            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400" title={`Alert at ${category.warningThreshold}%`}>
+                            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400" title={t('categories.list.alertAt', { percent: category.warningThreshold })}>
                               <AlertCircle className="h-3.5 w-3.5" />
-                              <span className="hidden md:inline">Alert at </span>
+                              <span className="hidden md:inline">{t('categories.list.alertAtLabel')}</span>
                               {category.warningThreshold}%
                             </span>
                           )}
@@ -304,7 +308,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                       className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
                     >
                       <Edit3 className="h-4 w-4" />
-                      Edit
+                      {t('common.edit')}
                     </button>
                   </div>
                 );
@@ -331,16 +335,16 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                           </h4>
                           <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                             <Sparkles className="h-3 w-3" />
-                            <span className="hidden sm:inline">Next month</span>
+                            <span className="hidden sm:inline">{t('categories.list.nextMonth')}</span>
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
                           <span>
                             {formatCurrency(adj.new_limit)}
-                            <span className="hidden md:inline"> / month</span>
+                            <span className="hidden md:inline">{t('categories.list.perMonth')}</span>
                           </span>
                           <span className="text-orange-600 dark:text-orange-400 text-xs">
-                            Starts {nextMonthSummary?.effectiveDate}
+                            {t('categories.list.starts', { date: nextMonthSummary?.effectiveDate })}
                           </span>
                         </div>
                       </div>
@@ -353,7 +357,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                       className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       <X className="h-4 w-4" />
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                   </div>
                 );
@@ -372,7 +376,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 <h3 className="font-semibold text-orange-800 dark:text-orange-200">
-                  Next month summary
+                  {t('categories.list.summaryTitle')}
                 </h3>
               </div>
               <span className="text-sm text-orange-600 dark:text-orange-400">
@@ -384,15 +388,15 @@ export const CategoryList: React.FC<CategoryListProps> = ({
           {/* Summary stats - calculated dynamically from current month limits */}
           <div className="px-4 py-3 grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-xs text-orange-600 dark:text-orange-400 uppercase">Changes</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 uppercase">{t('categories.list.changes')}</p>
               <p className="text-lg font-semibold text-orange-800 dark:text-orange-200">{dynamicSummary.adjustmentCount}</p>
             </div>
             <div>
-              <p className="text-xs text-green-600 dark:text-green-400 uppercase">Increases</p>
+              <p className="text-xs text-green-600 dark:text-green-400 uppercase">{t('categories.list.increases')}</p>
               <p className="text-lg font-semibold text-green-600 dark:text-green-400">+{formatCurrency(dynamicSummary.totalIncrease)}</p>
             </div>
             <div>
-              <p className="text-xs text-red-600 dark:text-red-400 uppercase">Decreases</p>
+              <p className="text-xs text-red-600 dark:text-red-400 uppercase">{t('categories.list.decreases')}</p>
               <p className="text-lg font-semibold text-red-600 dark:text-red-400">-{formatCurrency(dynamicSummary.totalDecrease)}</p>
             </div>
           </div>
