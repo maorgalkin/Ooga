@@ -3,10 +3,11 @@ import { useFinance } from '../../context/FinanceContext';
 import type { DateRangeType } from '../../utils/dateRangeFilters';
 import { getDateRange } from '../../utils/dateRangeFilters';
 import { Users } from 'lucide-react';
+import { formatCurrencyFromSettings, type CurrencySettings } from '../../utils/formatCurrency';
 
 interface HouseholdMemberExpensesProps {
   selectedRange: DateRangeType;
-  currency?: string;
+  globalSettings?: CurrencySettings;
 }
 
 interface MemberExpenseData {
@@ -22,7 +23,7 @@ interface MemberExpenseData {
 
 export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = ({
   selectedRange,
-  currency = '₪',
+  globalSettings,
 }) => {
   const { transactions, familyMembers } = useFinance();
 
@@ -102,12 +103,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
     return allMembers.sort((a, b) => b.totalExpenses - a.totalExpenses);
   }, [transactions, familyMembers, selectedRange]);
 
-  const formatCurrency = (amount: number) => {
-    return `${currency}${amount.toLocaleString(undefined, { 
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0 
-    })}`;
-  };
+  const formatCurrency = (amount: number) => formatCurrencyFromSettings(amount, globalSettings);
 
   if (memberExpenseData.length === 0) {
     return (

@@ -31,6 +31,7 @@ export default function ConnectedAccountsSettings() {
   const [connections, setConnections] = useState<BankConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteFailedId, setDeleteFailedId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
   const loadConnections = useCallback(async () => {
@@ -51,11 +52,13 @@ export default function ConnectedAccountsSettings() {
   const handleDelete = async (id: string) => {
     if (!confirm('Remove this account connection? You can re-add it later.')) return;
     setDeletingId(id);
+    setDeleteFailedId(null);
     try {
       await deleteConnection(id);
       setConnections((prev) => prev.filter((c) => c.id !== id));
-    } catch {
-      alert('Failed to delete connection — is the scraper service running?');
+    } catch (err) {
+      console.error('Failed to delete connection:', err);
+      setDeleteFailedId(id);
     } finally {
       setDeletingId(null);
     }
@@ -126,6 +129,11 @@ export default function ConnectedAccountsSettings() {
                     {PROVIDER_LABELS[conn.provider] ?? conn.provider} · Last sync: {formatDate(conn.last_sync_at)}
                     {conn.user_id !== user?.id && ' · Added by another household member'}
                   </p>
+                  {deleteFailedId === conn.id && (
+                    <p role="alert" className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+                      Couldn't remove this account. Try again in a minute.
+                    </p>
+                  )}
                 </div>
                 {/* Everyone can import a shared connection; only whoever added it can remove it */}
                 {conn.user_id === user?.id && (

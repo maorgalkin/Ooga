@@ -49,7 +49,9 @@ App (nav bar: Add Transaction → AddTransaction modal → BankImportModal; Sign
 │   │   └── Settings: BudgetSettings (currency, notifications, ConnectedAccountsSettings,
 │   │                 HouseholdSettingsModal, BudgetHistory)
 │   └── Insights → pages/InsightsPage (date range, budget vs actual, accuracy, pacing, member spend)
-└── /login, /register
+├── /login, /register
+└── /forgot-password → pages/auth/ForgotPassword (sends the reset email);
+    /reset-password → pages/auth/ResetPassword (the email's link lands here, signed in)
 ```
 
 ## Conventions

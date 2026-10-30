@@ -59,9 +59,22 @@ export function useCreateCategory() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (input: CategoryCreateInput) => categoryService.createCategory(input),
+    mutationFn: async (input: CategoryCreateInput) => {
+      const created = await categoryService.createCategory(input);
+      // The transaction forms read categories from the active budget, not the categories table
+      if (created.type === 'expense' && created.isActive) {
+        await PersonalBudgetService.addCategoryToActiveBudget(created.name, {
+          monthlyLimit: created.monthlyLimit,
+          warningThreshold: created.warningThreshold,
+          isActive: true,
+          color: created.color,
+        });
+      }
+      return created;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: categoryKeys.list() });
+      queryClient.invalidateQueries({ queryKey: ['personalBudget'] });
     },
   });
 }

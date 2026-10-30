@@ -213,6 +213,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                       }}
                       className="text-gray-400 hover:text-blue-600 transition-colors p-1"
                       title="Edit transaction"
+                      aria-label="Edit transaction"
                     >
                       <Edit2 className="h-5 w-5" />
                     </button>

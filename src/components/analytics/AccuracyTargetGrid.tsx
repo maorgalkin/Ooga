@@ -2,10 +2,11 @@ import React from 'react';
 import { AccuracyTarget } from './AccuracyTarget';
 import type { CategoryAccuracy } from '../../types/analytics';
 import { ACCURACY_ZONE_STYLES } from '../../types/analytics';
+import type { CurrencySettings } from '../../utils/formatCurrency';
 
 interface AccuracyTargetGridProps {
   accuracyData: CategoryAccuracy[];
-  currency?: string;
+  globalSettings?: CurrencySettings;
   isLoading?: boolean;
 }
 
@@ -15,7 +16,7 @@ interface AccuracyTargetGridProps {
  */
 export const AccuracyTargetGrid: React.FC<AccuracyTargetGridProps> = ({
   accuracyData,
-  currency = '$',
+  globalSettings,
   isLoading = false,
 }) => {
   if (isLoading) {
@@ -122,7 +123,7 @@ export const AccuracyTargetGrid: React.FC<AccuracyTargetGridProps> = ({
           <div key={accuracy.category} className="flex justify-center">
             <AccuracyTarget
               accuracy={accuracy}
-              currency={currency}
+              globalSettings={globalSettings}
               size={160}
             />
           </div>

@@ -335,6 +335,48 @@ describe('PersonalBudgetService', () => {
     });
   });
 
+  describe('addCategoryToActiveBudget', () => {
+    const activeBudget = { ...mockPersonalBudget, household_id: HOUSEHOLD_ID };
+    const pets: CategoryConfig = { monthlyLimit: 150, warningThreshold: 80, isActive: true, color: '#10B981' };
+
+    it('adds a new category to the active budget so the transaction forms can offer it', async () => {
+      const readChain = createMockChain({ data: activeBudget, error: null });
+      const writeChain = createMockChain({ data: null, error: null });
+      mockTables({ personal_budgets: [readChain, writeChain] });
+
+      await PersonalBudgetService.addCategoryToActiveBudget('Pets', pets);
+
+      expect(writeChain.update).toHaveBeenCalledWith({
+        categories: { ...activeBudget.categories, Pets: pets },
+        global_settings: {
+          ...activeBudget.global_settings,
+          activeExpenseCategories: ['Groceries', 'Rent', 'Entertainment', 'Pets'],
+        },
+      });
+      expect(writeChain.eq).toHaveBeenCalledWith('id', 'budget-1');
+      expect(writeChain.eq).toHaveBeenCalledWith('household_id', HOUSEHOLD_ID);
+    });
+
+    it('leaves the budget alone when it already lists the category', async () => {
+      const readChain = createMockChain({ data: activeBudget, error: null });
+      const writeChain = createMockChain({ data: null, error: null });
+      mockTables({ personal_budgets: [readChain, writeChain] });
+
+      await PersonalBudgetService.addCategoryToActiveBudget('Groceries', pets);
+
+      expect(writeChain.update).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the household has no active budget', async () => {
+      const readChain = createMockChain({ data: null, error: { code: 'PGRST116' } });
+      mockTables({ personal_budgets: readChain });
+
+      await PersonalBudgetService.addCategoryToActiveBudget('Pets', pets);
+
+      expect(readChain.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('helper methods', () => {
     it('getTotalMonthlyLimit should calculate total of active categories', () => {
       const total = PersonalBudgetService.getTotalMonthlyLimit(mockPersonalBudget);

@@ -8,11 +8,11 @@ import type { PersonalBudget } from '../../types/budget';
 import type { DateRangeType } from '../../utils/dateRangeFilters';
 import { getDateRange } from '../../utils/dateRangeFilters';
 import { getUserLocale } from '../../utils/locale';
+import { formatCurrencyFromSettings } from '../../utils/formatCurrency';
 
 interface CategoryAccuracyChartProps {
   transactions: Transaction[];
   personalBudget: PersonalBudget | null | undefined;
-  currency?: string;
   selectedRange: DateRangeType;
   onScrollToDateRange?: () => void;
 }
@@ -123,7 +123,6 @@ const getAccuracyColors = (accuracy: CategoryAccuracy) => {
 export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
   transactions,
   personalBudget,
-  currency = '$',
   selectedRange,
   onScrollToDateRange,
 }) => {
@@ -255,7 +254,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                 <div className={`transition-opacity duration-200 ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
                   <AccuracyTarget
                     accuracy={selectedAccuracy}
-                    currency={currency}
+                    globalSettings={personalBudget?.global_settings}
                     size={160}
                   />
                 </div>
@@ -276,7 +275,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                       <p className="text-gray-500 dark:text-gray-400 text-sm">No spending</p>
                     ) : selectedAccuracy.variance !== 0 && (
                       <p className={`text-lg font-bold ${selectedAccuracy.variance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                        {selectedAccuracy.variance > 0 ? '+' : ''}{currency}{selectedAccuracy.variance.toFixed(0)}
+                        {selectedAccuracy.variance > 0 ? '+' : ''}{formatCurrencyFromSettings(selectedAccuracy.variance, personalBudget?.global_settings)}
                       </p>
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -360,7 +359,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                 <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Budgeted</div>
                   <div className="text-base font-bold text-gray-800 dark:text-white">
-                    {currency}{selectedAccuracy.budgetAverage.toFixed(0)}
+                    {formatCurrencyFromSettings(selectedAccuracy.budgetAverage, personalBudget?.global_settings)}
                   </div>
                 </div>
                 
@@ -368,7 +367,7 @@ export const CategoryAccuracyChart: React.FC<CategoryAccuracyChartProps> = ({
                 <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Actual</div>
                   <div className="text-base font-bold text-gray-800 dark:text-white">
-                    {currency}{selectedAccuracy.actualAverage.toFixed(0)}
+                    {formatCurrencyFromSettings(selectedAccuracy.actualAverage, personalBudget?.global_settings)}
                   </div>
                 </div>
                 
