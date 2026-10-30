@@ -3,39 +3,39 @@
     "src": "/guide/household/register-1.webp",
     "size": {
       "w": 496,
-      "h": 800
+      "h": 695
     },
     "pointer": {
-      "x": 50,
-      "y": 23.9
+      "x": 29.7,
+      "y": 30.2
     }
   },
   "household/register-2": {
     "src": "/guide/household/register-2.webp",
     "size": {
       "w": 496,
-      "h": 800
+      "h": 695
     },
     "pointer": {
       "x": 50,
-      "y": 49.4
+      "y": 44.3
     }
   },
   "household/register-3": {
     "src": "/guide/household/register-3.webp",
     "size": {
       "w": 496,
-      "h": 800
+      "h": 695
     },
     "pointer": {
       "x": 50,
-      "y": 86.6
+      "y": 85.5
     },
     "highlight": {
-      "x": 10.5,
-      "y": 83,
-      "w": 79,
-      "h": 7.3
+      "x": 10.7,
+      "y": 81.3,
+      "w": 78.6,
+      "h": 8.3
     }
   },
   "household/dashboard-empty": {
