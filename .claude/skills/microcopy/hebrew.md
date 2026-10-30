@@ -46,7 +46,7 @@ Text from banks stays as the bank wrote it, with `dir="auto"`.
 | English | Hebrew | Notes |
 |---|---|---|
 | Ooga | Ooga | Stays Latin; with a prefix: `ב־Ooga` |
-| Take the Cake (logo tagline) | מפסיקים לשאול: איפה העוגה? | A line of its own, not a translation of the pun |
+| Take the Cake (logo tagline) | איפה העוגה? | A line of its own, not a translation of the pun |
 | household | משק בית | `הגדרות משק הבית`, `יציאה ממשק הבית` |
 | owner | בעלים | Same for any gender |
 | participant | משתתף/ת; plural משתתפים | Prefer the plural |
