@@ -44,9 +44,10 @@ describe('i18n', () => {
   });
 
   it('has a Hebrew text for every English key, and no keys English lacks', () => {
-    // Gendered variants (_female/_male) are Hebrew-only; their neutral key must exist in both
-    const hebrew = keys(he).map((k) => k.replace(/_(female|male)$/, ''));
-    expect(new Set(hebrew)).toEqual(new Set(keys(en)));
+    // Gendered variants (_female/_male) are Hebrew-only, and each language has its own plural forms
+    // (Hebrew has _two): compare what's left once those suffixes are off
+    const base = (k: string) => k.replace(/_(female|male)$/, '').replace(/_(zero|one|two|few|many|other)$/, '');
+    expect(new Set(keys(he).map(base))).toEqual(new Set(keys(en).map(base)));
   });
 
   it('has the guide in Hebrew in the same shape, paragraph for paragraph', () => {

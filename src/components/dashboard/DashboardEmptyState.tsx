@@ -4,6 +4,8 @@
 import React, { useMemo, useState } from 'react';
 import { Plus, TrendingUp, TrendingDown, CheckCircle, AlertTriangle, Target, Sparkles, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Trans } from 'react-i18next';
+import { useT } from '../../hooks/useT';
 import type { Transaction } from '../../types';
 import type { PersonalBudget } from '../../types/budget';
 import type { BudgetConfiguration } from '../../types';
@@ -23,46 +25,17 @@ interface DashboardEmptyStateProps {
 
 interface MonthMessage {
   emoji: string;
-  title: string;
-  subtitle: string;
+  /** Under dashboard.empty in the translation files: a title and a subtitle. */
+  stage: 'freshStart' | 'week1' | 'twoWeeks' | 'halfway' | 'homeStretch' | 'almostOver' | 'pastMonth';
 }
 
-function getMonthMessage(day: number, monthName: string): MonthMessage {
-  if (day <= 3)
-    return {
-      emoji: '🌱',
-      title: `Fresh start to ${monthName}!`,
-      subtitle: 'Set the tone early — log your first transaction of the month.',
-    };
-  if (day <= 7)
-    return {
-      emoji: '📝',
-      title: `Week 1 of ${monthName}`,
-      subtitle: "A great time to capture this week's spending before it slips away.",
-    };
-  if (day <= 14)
-    return {
-      emoji: '⏰',
-      title: `Two weeks into ${monthName}`,
-      subtitle: "You're halfway through the first half. Start tracking now for the full picture.",
-    };
-  if (day <= 20)
-    return {
-      emoji: '📊',
-      title: `Halfway through ${monthName}`,
-      subtitle: 'Plenty of month left — catching up now still gives you a great view.',
-    };
-  if (day <= 25)
-    return {
-      emoji: '🏃',
-      title: `Home stretch — ${monthName} is winding down`,
-      subtitle: "Don't let the last stretch go untracked.",
-    };
-  return {
-    emoji: '⚡',
-    title: `${monthName} is almost over`,
-    subtitle: 'Final days — lock in your records before the month closes.',
-  };
+function getMonthMessage(day: number): MonthMessage {
+  if (day <= 3) return { emoji: '🌱', stage: 'freshStart' };
+  if (day <= 7) return { emoji: '📝', stage: 'week1' };
+  if (day <= 14) return { emoji: '⏰', stage: 'twoWeeks' };
+  if (day <= 20) return { emoji: '📊', stage: 'halfway' };
+  if (day <= 25) return { emoji: '🏃', stage: 'homeStretch' };
+  return { emoji: '⚡', stage: 'almostOver' };
 }
 
 interface PrevMonthSummary {
@@ -145,20 +118,15 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
   isPastMonth = false,
 }) => {
   const navigate = useNavigate();
+  const t = useT();
   const { refreshTransactions } = useFinance();
   const [showImportModal, setShowImportModal] = useState(false);
 
   const day = monthDate.getDate();
   const monthName = monthDate.toLocaleDateString(getUserLocale(), { month: 'long' });
   const message = useMemo<MonthMessage>(
-    () => isPastMonth
-      ? {
-          emoji: '🗓️',
-          title: `No transactions in ${monthName}`,
-          subtitle: 'Nothing was logged for this month. Add or import transactions to fill it in.',
-        }
-      : getMonthMessage(day, monthName),
-    [isPastMonth, day, monthName]
+    () => (isPastMonth ? { emoji: '🗓️', stage: 'pastMonth' } : getMonthMessage(day)),
+    [isPastMonth, day]
   );
 
   // Previous month data (keyed by year/month so a fresh Date each render doesn't recompute)
@@ -195,9 +163,9 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
         <div className="max-w-lg mx-auto">
           <div className="text-5xl mb-4">{message.emoji}</div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            {message.title}
+            {t(`dashboard.empty.${message.stage}.title`, { month: monthName })}
           </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-6 text-base">{message.subtitle}</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-6 text-base">{t(`dashboard.empty.${message.stage}.subtitle`)}</p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
@@ -205,14 +173,14 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
               className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-md"
             >
               <Plus className="h-4 w-4" />
-              Add transaction
+              {t('nav.addTransaction')}
             </button>
             <button
               onClick={() => setShowImportModal(true)}
               className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors font-medium"
             >
               <Upload className="h-4 w-4" />
-              Import transactions
+              {t('dashboard.empty.importTransactions')}
             </button>
             {!personalBudget && (
               <button
@@ -220,7 +188,7 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
                 className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors font-medium"
               >
                 <Sparkles className="h-4 w-4" />
-                Set up budget
+                {t('dashboard.empty.setUpBudget')}
               </button>
             )}
           </div>
@@ -232,7 +200,7 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="px-5 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Last month — {prevSummary.monthLabel}
+              {t('dashboard.empty.lastMonth', { month: prevSummary.monthLabel })}
             </h4>
           </div>
           <div className="p-5">
@@ -240,7 +208,7 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
               {/* Income */}
               <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400 mx-auto mb-1" />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Income</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('common.income')}</p>
                 <p className="text-base font-bold text-green-700 dark:text-green-400 truncate">
                   {formatCurrency(prevSummary.income)}
                 </p>
@@ -248,7 +216,7 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
               {/* Expenses */}
               <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                 <TrendingDown className="h-4 w-4 text-red-500 dark:text-red-400 mx-auto mb-1" />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Expenses</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('common.expenses')}</p>
                 <p className="text-base font-bold text-red-600 dark:text-red-400 truncate">
                   {formatCurrency(prevSummary.expenses)}
                 </p>
@@ -266,7 +234,7 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
                 ) : (
                   <AlertTriangle className="h-4 w-4 text-orange-500 mx-auto mb-1" />
                 )}
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Balance</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('common.balance')}</p>
                 <p
                   className={`text-base font-bold truncate ${
                     prevSummary.balance >= 0
@@ -285,19 +253,19 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
                 {prevSummary.overBudgetCount > 0 && (
                   <span className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-full border border-red-200 dark:border-red-800">
                     <AlertTriangle className="h-3 w-3" />
-                    {prevSummary.overBudgetCount} categor{prevSummary.overBudgetCount === 1 ? 'y' : 'ies'} over budget
+                    {t('dashboard.empty.overBudget', { count: prevSummary.overBudgetCount })}
                   </span>
                 )}
                 {prevSummary.bestCategory && (
                   <span className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full border border-green-200 dark:border-green-800">
                     <CheckCircle className="h-3 w-3" />
-                    Best: {prevSummary.bestCategory}
+                    {t('dashboard.empty.best', { category: prevSummary.bestCategory })}
                   </span>
                 )}
                 {prevSummary.worstCategory && prevSummary.worstCategory !== prevSummary.bestCategory && (
                   <span className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 rounded-full border border-yellow-200 dark:border-yellow-800">
                     <Target className="h-3 w-3" />
-                    Watch: {prevSummary.worstCategory}
+                    {t('dashboard.empty.watch', { category: prevSummary.worstCategory })}
                   </span>
                 )}
               </div>
@@ -310,27 +278,26 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
       {!prevSummary && (
         <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800 p-5">
           <p className="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-2">
-            💡 Getting started
+            {t('dashboard.empty.tips.title')}
           </p>
           <ul className="text-sm text-purple-700 dark:text-purple-300 space-y-1.5 list-disc list-inside">
-            <li>Start with your main income source for the month</li>
-            <li>
-              Add your regular fixed expenses (rent, subscriptions, utilities)
-            </li>
+            <li>{t('dashboard.empty.tips.income')}</li>
+            <li>{t('dashboard.empty.tips.fixed')}</li>
             {!personalBudget && (
-              <li>
-                Create a budget to compare your spending against monthly targets
-              </li>
+              <li>{t('dashboard.empty.tips.budget')}</li>
             )}
             <li>
-              Use{' '}
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="underline hover:text-purple-900 dark:hover:text-purple-100"
-              >
-                Import
-              </button>{' '}
-              to bring in transactions from a connected account
+              <Trans
+                i18nKey="dashboard.empty.tips.import"
+                components={{
+                  import: (
+                    <button
+                      onClick={() => setShowImportModal(true)}
+                      className="underline hover:text-purple-900 dark:hover:text-purple-100"
+                    />
+                  ),
+                }}
+              />
             </li>
           </ul>
         </div>

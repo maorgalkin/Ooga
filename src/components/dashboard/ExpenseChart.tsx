@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useT } from '../../hooks/useT';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Sector } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCategoryColor } from '../../utils/categoryColors';
@@ -72,6 +73,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   onDeselect,
   onCategorySelect,
 }) => {
+  const t = useT();
   const [selectedDesktopCategory, setSelectedDesktopCategory] = useState<string | null>(selectedCategory || null);
 
   // Sync external selectedCategory prop (e.g. driven by tile click in DashboardTileLayout)
@@ -689,8 +691,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   if (categoryData.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Expenses by category</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-center py-12">No expense data available</p>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('dashboard.expensesByCategory')}</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-center py-12">{t('dashboard.chart.noData')}</p>
       </div>
     );
   }
@@ -699,7 +701,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
       {/* Header: title + selected category name/color */}
       <div className="max-md:hidden flex items-center gap-2 mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0">Expenses by category</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0">{t('dashboard.expensesByCategory')}</h2>
         {selectedDesktopCategory && (() => {
           const catColor = getCategoryColor(selectedDesktopCategory, 'expense', personalBudget).hexColor;
           return (
@@ -827,16 +829,16 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                           {formatCurrency(spent)}
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          of {formatCurrency(budget)}
+                          {t('dashboard.chart.ofBudget', { amount: formatCurrency(budget) })}
                         </span>
                       </div>
                       <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                         <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
                       </div>
                       <div className="flex justify-between mt-1">
-                        <span className="text-xs text-gray-400">{Math.round(pct)}% used</span>
+                        <span className="text-xs text-gray-400">{t('dashboard.chart.percentUsed', { percent: Math.round(pct) })}</span>
                         <span className="text-xs text-gray-400">
-                          {formatCurrency(Math.max(0, budget - spent))} remaining
+                          {t('dashboard.chart.remaining', { amount: formatCurrency(Math.max(0, budget - spent)) })}
                         </span>
                       </div>
                     </div>
@@ -846,7 +848,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 {/* Header: title + small X (visible on mobile, hidden on desktop where block-level X is used) */}
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Transactions
+                    {t('tabs.transactions')}
                   </h3>
                   <button
                     onClick={() => {
@@ -854,7 +856,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                       onDeselect?.();
                     }}
                     className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded"
-                    aria-label="Close"
+                    aria-label={t('common.close')}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -896,7 +898,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                             onClick={() => onViewAllTransactions(selectedDesktopCategory)}
                             className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                           >
-                            See all {selectedDesktopCategory} expenses ({totalTransactions})
+                            {t('dashboard.chart.seeAll', { category: selectedDesktopCategory, count: totalTransactions })}
                           </button>
                         </div>
                       )}
@@ -994,7 +996,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                   {focusedCategory.category}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {focusedCategory.percentage}% of expenses • {formatCurrency(focusedCategory.amount)}
+                  {t('dashboard.chart.share', { percent: focusedCategory.percentage, amount: formatCurrency(focusedCategory.amount) })}
                 </p>
               </div>
               <button
@@ -1038,7 +1040,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                   
                   {categoryTransactions.length === 0 && (
                     <p className="text-center text-gray-500 dark:text-gray-400 py-4">
-                      No transactions in this category
+                      {t('dashboard.chart.noneInCategory')}
                     </p>
                   )}
 
@@ -1047,7 +1049,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                       onClick={() => setFocusedCategory(null)}
                       className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                     >
-                      Tap another category or click here to close
+                      {t('dashboard.chart.closeHint')}
                     </button>
                   </div>
                 </>
@@ -1056,7 +1058,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
           </div>
         ) : (
           <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 text-center text-sm text-gray-500 dark:text-gray-400">
-            Tap on a category above to see all transactions. Hold to activate the magnifier lens.
+            {t('dashboard.chart.hint')}
           </div>
         )}
       </div>

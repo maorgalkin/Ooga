@@ -46,18 +46,41 @@ function reachable(entry) {
 
 const isText = (s) => WORDS.test(s) && !KEEP_AS_IS.has(s.trim());
 
+// Developer tools never reach users, so their English stays: JSX behind these conditions
+// (`{import.meta.env.DEV && …}`, the layout picker and its side-by-side 'both' view, the switched-off
+// magnifier playground), and whole files
+const DEV_ONLY_CONDITION = /import\.meta\.env\.DEV|SHOW_LAYOUT_PICKER|layout === 'both'|showMagnifierPlayground/;
+const DEV_ONLY_FILES = new Set(['src/components/dashboard/DummyDataControls.tsx']);
+
 function untranslated(path) {
   const source = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const found = [];
   const add = (node, text) => found.push({ line: source.getLineAndCharacterOfPosition(node.getStart()).line + 1, text: text.trim().replace(/\s+/g, ' ') });
 
-  // Inside a JSX child expression, strings are shown unless they're keys or arguments of a call (t('…'), cn('…'))
+  // A call's string arguments are keys or class names (t('…'), cn('…')), but JSX returned by its
+  // callbacks is shown: items.map((item) => <li>…</li>), and immediately-called (() => …)()
+  const visitCall = (call) => {
+    for (const arg of call.arguments) {
+      if (ts.isArrowFunction(arg) || ts.isFunctionExpression(arg)) visit(arg.body);
+    }
+    let callee = call.expression;
+    while (ts.isParenthesizedExpression(callee) || ts.isPropertyAccessExpression(callee)) callee = callee.expression;
+    if (ts.isArrowFunction(callee) || ts.isFunctionExpression(callee)) visit(callee.body);
+    else if (ts.isCallExpression(callee)) visitCall(callee);
+  };
+
+  // Inside a JSX child expression, strings are shown
   const visitChild = (node) => {
-    if (ts.isCallExpression(node) || ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) {
-      if (!ts.isCallExpression(node)) visit(node);
+    if (ts.isCallExpression(node)) {
+      visitCall(node);
+      return;
+    }
+    if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) {
+      visit(node);
       return;
     }
     if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && isText(node.text)) add(node, node.text);
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken && DEV_ONLY_CONDITION.test(node.left.getText(source))) return;
     if (ts.isBinaryExpression(node) && node.operatorToken.kind !== ts.SyntaxKind.AmpersandAmpersandToken && node.operatorToken.kind !== ts.SyntaxKind.BarBarToken && node.operatorToken.kind !== ts.SyntaxKind.QuestionQuestionToken && node.operatorToken.kind !== ts.SyntaxKind.PlusToken) return;
     ts.forEachChild(node, visitChild);
   };
@@ -80,6 +103,7 @@ function untranslated(path) {
 }
 
 const results = reachable('src/main.tsx')
+  .filter((path) => !DEV_ONLY_FILES.has(relative(process.cwd(), path)))
   .map((path) => ({ path: relative(process.cwd(), path), strings: untranslated(path) }))
   .filter((r) => r.strings.length > 0);
 const total = results.reduce((sum, r) => sum + r.strings.length, 0);
