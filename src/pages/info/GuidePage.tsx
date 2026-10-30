@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Clock, Lightbulb, Repeat } from 'lucide-react';
 import { PublicLayout } from '../../components/info/PublicLayout';
 import { GuideClip } from '../../components/info/GuideClip';
@@ -10,16 +10,77 @@ import { GUIDE_CHAPTERS, GUIDE_PARTS, partOf, type GuideChapter } from '../../co
 const chapterBySlug = (slug: string) => GUIDE_CHAPTERS.find((c) => c.slug === slug)!;
 const minutesFor = (slugs: string[]) => slugs.reduce((sum, s) => sum + chapterBySlug(s).minutes, 0);
 
-function ChapterNav({ current }: { current?: string }) {
+const NAV_TITLE = 'Getting started';
+
+/**
+ * Title of the section the reader has scrolled to: the last `[data-guide-section]` whose top
+ * has reached the bottom of the pinned bar. `undefined` while the page is still above the first one.
+ */
+function useSectionUnderBar(bar: RefObject<HTMLElement | null>, page?: string) {
+  const [title, setTitle] = useState<string>();
+
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      // Sections near the end can't scroll up to the bar, so over the last half screen of scrolling
+      // the line slides down to the bottom of the screen and still passes each of them in turn
+      const top = (bar.current?.getBoundingClientRect().bottom ?? 0) + 24;
+      const left = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      const slide = Math.min(1, Math.max(0, 1 - left / (window.innerHeight / 2)));
+      const line = top + (window.innerHeight - top) * slide;
+      let current: string | undefined;
+      for (const el of document.querySelectorAll<HTMLElement>('[data-guide-section]')) {
+        if (el.getBoundingClientRect().top > line) break;
+        current = el.dataset.guideSection;
+      }
+      setTitle(current);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [bar, page]);
+
+  return title;
+}
+
+function ChapterNav({ current, section }: { current?: string; section?: string }) {
+  const reduce = useReducedMotion();
+  const label = section ?? NAV_TITLE;
+
   return (
     <nav aria-label="Guide chapters" className="lg:sticky lg:top-6">
       <Link
         to="/guide"
         aria-current={current ? undefined : 'page'}
-        className="mb-3 block text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-purple-700 dark:text-gray-400 dark:hover:text-purple-300"
+        className="mb-3 hidden text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-purple-700 dark:text-gray-400 dark:hover:text-purple-300 lg:block"
       >
-        Getting started
+        {NAV_TITLE}
       </Link>
+      {/* Phones see only one row of chapters, so the title follows the section on screen instead.
+          Decorative: the headings it repeats are already in the page. */}
+      <p aria-hidden className="mb-2 grid text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 lg:hidden">
+        <AnimatePresence initial={false}>
+          <motion.span
+            key={label}
+            className="truncate [grid-area:1/1]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0 : 0.25 }}
+          >
+            {label}
+          </motion.span>
+        </AnimatePresence>
+      </p>
       <ol className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-4 lg:overflow-visible lg:pb-0">
         {GUIDE_PARTS.map((part) => (
           <li key={part.title} className="shrink-0">
@@ -86,6 +147,7 @@ function Welcome() {
         {GUIDE_PARTS.map((part, p) => (
           <motion.li
             key={part.title}
+            data-guide-section={part.title}
             className="relative flex gap-4"
             initial={reduce ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -167,7 +229,7 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
 
       <ol className="mt-10 space-y-14">
         {steps.map((step, i) => (
-          <li key={step.title} className="grid gap-6 md:grid-cols-5 md:items-start">
+          <li key={step.title} data-guide-section={step.title} className="grid gap-6 md:grid-cols-5 md:items-start">
             <div className="md:col-span-2">
               <div className="flex items-center gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-blue-600 text-sm font-bold text-white">
@@ -231,6 +293,8 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
 export default function GuidePage() {
   const { chapter: slug } = useParams();
   const index = slug ? GUIDE_CHAPTERS.findIndex((c) => c.slug === slug) : -1;
+  const bar = useRef<HTMLElement>(null);
+  const section = useSectionUnderBar(bar, slug);
 
   // Next/Previous land at the top of the new chapter, not where the old one was scrolled to
   useEffect(() => {
@@ -242,8 +306,12 @@ export default function GuidePage() {
   return (
     <PublicLayout>
       <div className="max-w-6xl mx-auto px-4 py-10 grid gap-10 lg:grid-cols-[14rem_1fr]">
-        <aside className="min-w-0">
-          <ChapterNav current={slug} />
+        {/* Pinned on phones, where the chapter list would otherwise scroll away; a sidebar on desktop */}
+        <aside
+          ref={bar}
+          className="sticky top-0 z-20 -mx-4 min-w-0 border-b border-gray-200 bg-gray-50/90 px-4 pt-3 backdrop-blur dark:border-gray-800 dark:bg-gray-900/90 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none dark:lg:bg-transparent"
+        >
+          <ChapterNav current={slug} section={section} />
         </aside>
         <div className="min-w-0">{index === -1 ? <Welcome /> : <Chapter key={slug} chapter={GUIDE_CHAPTERS[index]} index={index} />}</div>
       </div>
