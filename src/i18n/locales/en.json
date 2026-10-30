@@ -521,7 +521,7 @@
       "editCategoryTitle": "Edit {{name}}",
       "categoryName": "Category name *",
       "categoryNamePlaceholder": "e.g., Groceries",
-      "monthlyLimitRequired": "Monthly limit ($) *",
+      "monthlyLimitRequired": "Monthly limit ({{symbol}}) *",
       "color": "Color",
       "colorAuto": "(auto-selected for distinction)",
       "preview": "Preview",
@@ -829,7 +829,7 @@
       "warnHousehold": "Warning: household will be deleted",
       "soleOwner": "Since you are the only member, your current household and <strong>all its data will be permanently deleted</strong>:",
       "ownerAll": "As the owner, the entire household will be deleted for <strong>all members</strong>. This includes:",
-      "transferTip": "💡 Tip: You can transfer ownership to another member instead of deleting the household. Go to Household settings → App Users → \"Make owner\" button.",
+      "transferTip": "💡 Tip: Instead of deleting the household, you can make another participant its owner: in Household settings, click \"Make owner\" next to them.",
       "memberNote": "You'll leave the shared household and lose access to its data. You can always be re-invited later.",
       "nameLabel": "New household name",
       "namePlaceholder": "Enter household name",
@@ -1187,7 +1187,7 @@
     "details": "Error details:",
     "reload": "Reload page now",
     "tryAgain": "Try again",
-    "persists": "If this problem persists, please contact support or check the browser console for more details."
+    "persists": "If this keeps happening, try again in a few minutes."
   },
   "buildInfo": {
     "commit": "Commit:",
