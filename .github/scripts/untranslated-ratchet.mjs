@@ -16,8 +16,7 @@ import ts from 'typescript';
 const VISIBLE_ATTRIBUTES = new Set(['placeholder', 'title', 'alt', 'aria-label', 'label', 'aria-description']);
 // Text worth translating has a letter in it; brand names and symbols on their own don't
 const WORDS = /[A-Za-z]{2,}/;
-// 'Take the Cake' is the logo's tagline; what Hebrew shows instead is an open question (microcopy/hebrew.md)
-const KEEP_AS_IS = new Set(['Ooga', 'Take the Cake', 'ILS', 'USD', 'EUR', 'GBP', 'JPY', 'Visa Cal', 'Max', 'Isracard']);
+const KEEP_AS_IS = new Set(['Ooga', 'ILS', 'USD', 'EUR', 'GBP', 'JPY', 'Visa Cal', 'Max', 'Isracard']);
 
 // Only what the app can show: files reachable from src/main.tsx. Unused legacy components don't count.
 function reachable(entry) {

@@ -2,7 +2,7 @@
 
 The English rules in `SKILL.md` still apply (plain, specific, calm, no internals). This file adds what's different in Hebrew. How the text is stored and shown: `docs/I18N.md`.
 
-Every term below is **proposed** until the owner reviews it; if they change one, update this file and the strings together.
+The owner reviewed these rules and terms on 2026-10-30. If a term changes, update this file and the strings together.
 
 ## Addressing the reader
 
@@ -29,7 +29,7 @@ Other people (participants, family members) have unknown gender too: prefer plur
 | Amounts and dates go through the formatters; never type `₪` | `{formatCurrencyFromSettings(x, settings)}` | `₪500` in a string |
 | Plurals through i18next (`_one`, `_two`, `_other`) | `3 כפילויות דולגו` / `כפילות אחת דולגה` | `1 כפילויות` |
 | Plain double quotes around a quoted name | `למחוק את "מכולת"?` | gershayim (״) as quotes |
-| No English words in Hebrew text, except names below | `לוח בקרה` | `דשבורד` |
+| No English words in Hebrew text, except names below | `תמונת מצב` | `דשבורד` |
 
 Text from banks stays as the bank wrote it, with `dir="auto"`.
 
@@ -46,12 +46,13 @@ Text from banks stays as the bank wrote it, with `dir="auto"`.
 | English | Hebrew | Notes |
 |---|---|---|
 | Ooga | Ooga | Stays Latin; with a prefix: `ב־Ooga` |
+| Take the Cake (logo tagline) | מפסיקים לשאול: איפה העוגה? | A line of its own, not a translation of the pun |
 | household | משק בית | `הגדרות משק הבית`, `יציאה ממשק הבית` |
 | owner | בעלים | Same for any gender |
 | participant | משתתף/ת; plural משתתפים | Prefer the plural |
 | family member | בן/בת משפחה; plural בני משפחה | Field: `בן/בת משפחה (לא חובה)` |
 | invitation code | קוד הזמנה | |
-| transaction | תנועה; plural תנועות | As in banking apps; covers income and expenses |
+| transaction | תנועה; plural תנועות | As in banking apps; covers income and expenses. Not `עסקה`, which reads as a card purchase |
 | expense / income | הוצאה / הכנסה | Filters: `הוצאות`, `הכנסות` |
 | category / Uncategorized | קטגוריה / ללא קטגוריה | |
 | installments | תשלומים | `תשלום 3 מתוך 12` |
@@ -68,7 +69,7 @@ Text from banks stays as the bank wrote it, with `dir="auto"`.
 | duplicate | כפילות | |
 | merge | מיזוג | |
 | verification code | קוד אימות | `שליחת קוד` |
-| Dashboard / Transactions / Budget / Insights | לוח בקרה / תנועות / תקציב / תובנות | The four tabs |
+| Dashboard / Transactions / Budget / Insights | תמונת מצב / תנועות / תקציב / תובנות | The four tabs |
 | Settings / Categories / Overview | הגדרות / קטגוריות / סקירה | Budget sub-tabs |
 | Sign in / Sign out | התחברות / התנתקות | |
 | Create account | יצירת חשבון | |
@@ -77,9 +78,3 @@ Text from banks stays as the bank wrote it, with `dir="auto"`.
 | Cancel / Close / Save | ביטול / סגירה / שמירה | |
 
 Banks and cards by their Hebrew names: ויזה כאל, מקס, ישראכרט, אמריקן אקספרס, בנק דיסקונט, בנק הפועלים, בנק לאומי.
-
-## Open questions for the owner
-
-- `Take the Cake` (the logo's tagline) is a pun with no Hebrew equivalent: keep it in English, drop it in Hebrew, or write a Hebrew line?
-- `תנועה` vs `עסקה` for transaction: `עסקה` reads as a card purchase and doesn't fit income.
-- `לוח בקרה` vs `סקירה כללית` for the Dashboard tab.

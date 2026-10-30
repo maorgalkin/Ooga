@@ -114,5 +114,8 @@
         "saveFailed": "Couldn't save your new password. Try again, or request a new reset link."
       }
     }
+  },
+  "brand": {
+    "tagline": "Take the Cake"
   }
 }

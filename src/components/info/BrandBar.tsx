@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import wordmark from '../../assets/ooga-wordmark.svg';
 
 /** The diagonal purple/blue/green band behind the nav bar, shared by the app and the public pages. */
@@ -15,10 +16,12 @@ export function BrandBackdrop() {
 
 /** The cake wordmark (the cake is the O, its slice the A) with the tagline, linking home. */
 export function BrandLogo({ children }: { children?: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
       <img src={wordmark} alt="Ooga" width={92} height={56} className="h-14 w-auto" />
-      <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">Take the Cake</span>
+      {/* pre-line: the Hebrew tagline breaks onto two lines at its colon */}
+      <span className="hidden sm:inline whitespace-pre-line text-xs text-white/90 drop-shadow leading-tight">{t('brand.tagline')}</span>
       {children}
     </Link>
   );
