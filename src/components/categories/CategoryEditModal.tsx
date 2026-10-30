@@ -3,6 +3,8 @@
 // Updated: Fixed size modal, compact color picker
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { Trans } from 'react-i18next';
+import { useT } from '../../hooks/useT';
 import { 
   X, 
   Edit3, 
@@ -49,6 +51,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   onClose,
   initialTab = 'edit',
 }) => {
+  const t = useT();
   const { data: allCategories } = useCategories(false, 'expense');
   const { transactions, refreshTransactions } = useFinance();
   const { data: nextMonthSummary } = useNextMonthAdjustments();
@@ -86,7 +89,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   // Calculate transaction count
   const transactionCount = useMemo(() => {
     if (!category) return 0;
-    return transactions.filter(t => t.category_id === category.id).length;
+    return transactions.filter(tx => tx.category_id === category.id).length;
   }, [transactions, category]);
 
   // Get other categories for merge/reassign
@@ -100,7 +103,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   // Target transaction count for merge preview
   const targetTransactionCount = useMemo(() => {
     if (!targetCategoryId) return 0;
-    return transactions.filter(t => t.category_id === targetCategoryId).length;
+    return transactions.filter(tx => tx.category_id === targetCategoryId).length;
   }, [transactions, targetCategoryId]);
 
   // Combined budget for merge preview
@@ -173,7 +176,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
 
     // Validate name
     if (!newName.trim()) {
-      setError('Category name is required');
+      setError(t('categories.edit.errors.nameRequired'));
       return;
     }
 
@@ -184,7 +187,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         c => c.id !== category.id && c.name.toLowerCase() === newName.trim().toLowerCase()
       );
       if (isDuplicate) {
-        setError('A category with this name already exists');
+        setError(t('categories.edit.errors.duplicate'));
         return;
       }
     }
@@ -232,7 +235,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update category');
+      setError(err instanceof Error ? err.message : t('categories.edit.errors.updateFailed'));
     }
   };
 
@@ -250,7 +253,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       await refreshTransactions();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to merge categories');
+      setError(err instanceof Error ? err.message : t('categories.edit.errors.mergeFailed'));
     }
   };
 
@@ -260,7 +263,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
 
     const newLimitNum = parseFloat(nextMonthLimit);
     if (isNaN(newLimitNum) || newLimitNum < 0) {
-      setError('Please enter a valid amount (0 or greater)');
+      setError(t('categories.edit.errors.invalidAmount'));
       return;
     }
 
@@ -269,7 +272,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       try {
         await cancelAdjustment.mutateAsync(categoryAdjustment.id);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to update adjustment');
+        setError(err instanceof Error ? err.message : t('categories.edit.errors.adjustmentUpdateFailed'));
         return;
       }
     }
@@ -292,7 +295,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to schedule adjustment');
+      setError(err instanceof Error ? err.message : t('categories.edit.errors.scheduleFailed'));
     }
   };
 
@@ -306,7 +309,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       const currentLimitValue = currentMonthBudget?.categories?.[category?.name || '']?.monthlyLimit ?? category?.monthlyLimit;
       setNextMonthLimit(currentLimitValue?.toString() || '');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to cancel adjustment');
+      setError(err instanceof Error ? err.message : t('categories.edit.errors.cancelFailed'));
     }
   };
 
@@ -321,7 +324,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete category');
+      setError(err instanceof Error ? err.message : t('categories.edit.errors.deleteFailed'));
     }
   };
 
@@ -335,9 +338,9 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   if (!isOpen || !category) return null;
 
   const tabs = [
-    { id: 'edit' as TabType, label: 'Details', icon: Edit3 },
-    { id: 'merge' as TabType, label: 'Merge', icon: GitMerge },
-    { id: 'adjustment' as TabType, label: 'Adjust', icon: Sliders },
+    { id: 'edit' as TabType, label: t('categories.edit.tabs.edit'), icon: Edit3 },
+    { id: 'merge' as TabType, label: t('categories.edit.tabs.merge'), icon: GitMerge },
+    { id: 'adjustment' as TabType, label: t('categories.edit.tabs.adjustment'), icon: Sliders },
   ];
 
   return (
@@ -351,17 +354,17 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Edit category
+              {t('categories.edit.title')}
             </h2>
             {/* Help tooltip */}
             <div className="relative group">
               <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
               <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-64 z-50">
-                <p className="font-medium mb-1">What do these tabs do?</p>
+                <p className="font-medium mb-1">{t('categories.edit.help.title')}</p>
                 <ul className="space-y-1 text-gray-300">
-                  <li><strong className="text-white">Details:</strong> Quick fix for this month only (resets next month)</li>
-                  <li><strong className="text-white">Merge:</strong> Combine with another category</li>
-                  <li><strong className="text-white">Adjust:</strong> Change your planned budget permanently</li>
+                  <li><strong className="text-white">{t('categories.edit.help.detailsLabel')}</strong> {t('categories.edit.help.details')}</li>
+                  <li><strong className="text-white">{t('categories.edit.help.mergeLabel')}</strong> {t('categories.edit.help.merge')}</li>
+                  <li><strong className="text-white">{t('categories.edit.help.adjustLabel')}</strong> {t('categories.edit.help.adjust')}</li>
                 </ul>
               </div>
             </div>
@@ -369,6 +372,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
           <button
             onClick={handleClose}
             disabled={isPending}
+            aria-label={t('common.close')}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
           >
             <X className="h-5 w-5 text-gray-500" />
@@ -427,7 +431,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                 {/* Name */}
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Name
+                    {t('categories.edit.name')}
                   </label>
                   <input
                     type="text"
@@ -439,7 +443,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                 {/* Native Color Picker */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Color
+                    {t('categories.edit.color')}
                   </label>
                   <input
                     type="color"
@@ -453,7 +457,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* Monthly Limit */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Monthly limit
+                  {t('categories.edit.monthlyLimit')}
                 </label>
                 <div className="relative">
                   <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
@@ -472,7 +476,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* Warning Threshold */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Warning at
+                  {t('categories.edit.warningAt')}
                 </label>
                 <div className="flex items-center gap-3">
                   <input
@@ -498,7 +502,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* Source category */}
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                  Merge from:
+                  {t('categories.edit.mergeFrom')}
                 </label>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div
@@ -508,7 +512,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   <div className="flex-1">
                     <p className="font-medium text-gray-900 dark:text-gray-100">{category.name}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      ₪{category.monthlyLimit.toLocaleString()} budget • {transactionCount} transactions
+                      {t('categories.edit.sourceStats', { amount: `₪${category.monthlyLimit.toLocaleString()}`, count: transactionCount })}
                     </p>
                   </div>
                 </div>
@@ -522,14 +526,14 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* Target selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                  Merge into:
+                  {t('categories.edit.mergeInto')}
                 </label>
                 <select
                   value={targetCategoryId}
                   onChange={(e) => setTargetCategoryId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
-                  <option value="">Select a category...</option>
+                  <option value="">{t('categories.edit.selectCategory')}</option>
                   {otherCategories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} (₪{c.monthlyLimit.toLocaleString()})
@@ -543,20 +547,20 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-2">
                   <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-medium">
                     <Info className="h-4 w-4" />
-                    After merge:
+                    {t('categories.edit.afterMerge')}
                   </div>
                   <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1 ms-6">
                     <li className="flex items-center gap-2">
                       <Check className="h-3 w-3" />
-                      New budget: ₪{combinedBudget.toLocaleString()} / month
+                      {t('categories.edit.newBudget', { amount: `₪${combinedBudget.toLocaleString()}` })}
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-3 w-3" />
-                      {transactionCount + targetTransactionCount} total transactions
+                      {t('categories.edit.totalTransactions', { count: transactionCount + targetTransactionCount })}
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-3 w-3" />
-                      "{category.name}" will be archived
+                      {t('categories.edit.willArchive', { name: category.name })}
                     </li>
                   </ul>
                 </div>
@@ -566,8 +570,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               <div className="flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 rounded-lg text-sm">
                 <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
                 <p>
-                  Merging combines two categories. All transactions from "{category.name}" 
-                  will be moved to the target category.
+                  {t('categories.edit.mergeInfo', { name: category.name })}
                 </p>
               </div>
             </div>
@@ -579,14 +582,14 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* Current vs Next Month - Compact */}
               <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <div className="flex-1">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Current</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('categories.edit.current')}</p>
                   <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     {formatCurrency(currentMonthLimit)}
                   </p>
                 </div>
                 <ArrowRight className="h-5 w-5 text-gray-400 rtl:-scale-x-100" />
                 <div className="flex-1 text-end">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">New planned</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('categories.edit.newPlanned')}</p>
                   {categoryAdjustment ? (
                     <p className={`text-lg font-semibold ${
                       categoryAdjustment.new_limit === 0
@@ -595,10 +598,10 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                           ? 'text-green-600 dark:text-green-400'
                           : 'text-red-600 dark:text-red-400'
                     }`}>
-                      {categoryAdjustment.new_limit === 0 ? 'Deactivated' : formatCurrency(categoryAdjustment.new_limit)}
+                      {categoryAdjustment.new_limit === 0 ? t('categories.edit.deactivated') : formatCurrency(categoryAdjustment.new_limit)}
                     </p>
                   ) : (
-                    <p className="text-lg font-semibold text-gray-400 dark:text-gray-500">No change</p>
+                    <p className="text-lg font-semibold text-gray-400 dark:text-gray-500">{t('categories.edit.noChange')}</p>
                   )}
                 </div>
               </div>
@@ -606,13 +609,13 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* Pending adjustment info */}
               {categoryAdjustment && (
                 <div className="flex items-center justify-between p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm">
-                  <span className="text-orange-700 dark:text-orange-300">Pending adjustment (takes effect next month)</span>
+                  <span className="text-orange-700 dark:text-orange-300">{t('categories.edit.pending')}</span>
                   <button
                     onClick={handleCancelAdjustment}
                     disabled={isPending}
                     className="text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200 font-medium"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               )}
@@ -620,7 +623,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* New limit input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  New limit
+                  {t('categories.edit.newLimit')}
                 </label>
                 <div className="relative">
                   <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
@@ -639,13 +642,13 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* Reason - single line */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Reason (optional)
+                  {t('categories.edit.reason')}
                 </label>
                 <input
                   type="text"
                   value={adjustmentReason}
                   onChange={(e) => setAdjustmentReason(e.target.value)}
-                  placeholder="e.g., Holiday spending"
+                  placeholder={t('categories.edit.reasonPlaceholder')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
@@ -656,11 +659,11 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   type="button"
                   onClick={() => {
                     setNextMonthLimit('0');
-                    setAdjustmentReason('Deactivating category');
+                    setAdjustmentReason(t('categories.edit.deactivateReason'));
                   }}
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 >
-                  Or click to <span className="underline">deactivate permanently</span>
+                  <Trans i18nKey="categories.edit.deactivate" components={{ u: <span className="underline" /> }} />
                 </button>
               )}
             </div>
@@ -677,7 +680,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                 className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />
-                Delete this category
+                {t('categories.edit.deleteCategory')}
               </button>
               
               {/* Tab-specific action button - Uniform style: no icons, consistent text */}
@@ -687,7 +690,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   disabled={isPending || !editHasChanges}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {(updateCategory.isPending || renameCategory.isPending) ? 'Saving...' : 'Save'}
+                  {(updateCategory.isPending || renameCategory.isPending) ? t('categories.edit.saving') : t('categories.edit.save')}
                 </button>
               )}
               {activeTab === 'merge' && (
@@ -696,7 +699,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   disabled={isPending || !targetCategoryId}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {mergeCategories.isPending ? 'Merging...' : 'Merge'}
+                  {mergeCategories.isPending ? t('categories.edit.merging') : t('categories.edit.merge')}
                 </button>
               )}
               {activeTab === 'adjustment' && (
@@ -705,17 +708,14 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   disabled={isPending || nextMonthLimit === '' || parseFloat(nextMonthLimit) === category.monthlyLimit}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {scheduleAdjustment.isPending ? 'Saving...' : 'Save'}
+                  {scheduleAdjustment.isPending ? t('categories.edit.saving') : t('categories.edit.save')}
                 </button>
               )}
             </div>
           ) : (
             <div className="flex items-center justify-between">
               <p className="text-sm text-red-600 dark:text-red-400">
-                {transactionCount > 0 
-                  ? `Delete? (${transactionCount} transactions will keep their categorization)`
-                  : 'Delete this category permanently?'
-                }
+                {transactionCount > 0 ? t('categories.edit.deleteKeepsTransactions', { count: transactionCount }) : t('categories.edit.deleteForever')}
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -723,7 +723,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   disabled={isPending}
                   className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleDelete}
@@ -731,7 +731,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   className="flex items-center gap-1 px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
                 >
                   <Trash2 className="h-3 w-3" />
-                  {deleteCategory.isPending ? 'Deleting...' : 'Delete'}
+                  {deleteCategory.isPending ? t('categories.edit.deleting') : t('common.delete')}
                 </button>
               </div>
             </div>

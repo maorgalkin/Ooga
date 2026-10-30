@@ -562,5 +562,142 @@
       "resetFailed": "Failed to reset configuration: {{error}}",
       "unknownError": "Unknown error"
     }
+  },
+  "categories": {
+    "list": {
+      "loadFailed": "Failed to load categories",
+      "title": "Your categories",
+      "active": "{{count}} active",
+      "activeScheduled": "{{count}} active, {{scheduled}} scheduled",
+      "add": "Add category",
+      "empty": "No categories yet",
+      "emptyHint": "Create your first category to start tracking expenses",
+      "nextMonthLimit": "Next month: {{amount}}",
+      "perMonth": " / month",
+      "transactions_one": "{{count}} transaction",
+      "transactions_other": "{{count}} transactions",
+      "txns_one": "txn",
+      "txns_other": "txns",
+      "alertAt": "Alert at {{percent}}%",
+      "alertAtLabel": "Alert at ",
+      "nextMonth": "Next month",
+      "starts": "Starts {{date}}",
+      "summaryTitle": "Next month summary",
+      "changes": "Changes",
+      "increases": "Increases",
+      "decreases": "Decreases"
+    },
+    "edit": {
+      "title": "Edit category",
+      "tabs": {
+        "edit": "Details",
+        "merge": "Merge",
+        "adjustment": "Adjust"
+      },
+      "help": {
+        "title": "What do these tabs do?",
+        "detailsLabel": "Details:",
+        "details": "Quick fix for this month only (resets next month)",
+        "mergeLabel": "Merge:",
+        "merge": "Combine with another category",
+        "adjustLabel": "Adjust:",
+        "adjust": "Change your planned budget permanently"
+      },
+      "name": "Name",
+      "color": "Color",
+      "monthlyLimit": "Monthly limit",
+      "warningAt": "Warning at",
+      "mergeFrom": "Merge from:",
+      "sourceStats": "{{amount}} budget • {{count}} transactions",
+      "mergeInto": "Merge into:",
+      "selectCategory": "Select a category...",
+      "afterMerge": "After merge:",
+      "newBudget": "New budget: {{amount}} / month",
+      "totalTransactions": "{{count}} total transactions",
+      "willArchive": "\"{{name}}\" will be archived",
+      "mergeInfo": "Merging combines two categories. All transactions from \"{{name}}\" will be moved to the target category.",
+      "current": "Current",
+      "newPlanned": "New planned",
+      "deactivated": "Deactivated",
+      "noChange": "No change",
+      "pending": "Pending adjustment (takes effect next month)",
+      "newLimit": "New limit",
+      "reason": "Reason (optional)",
+      "reasonPlaceholder": "e.g., Holiday spending",
+      "deactivateReason": "Deactivating category",
+      "deactivate": "Or click to <u>deactivate permanently</u>",
+      "deleteCategory": "Delete this category",
+      "save": "Save",
+      "saving": "Saving...",
+      "merge": "Merge",
+      "merging": "Merging...",
+      "deleteKeepsTransactions": "Delete? ({{count}} transactions will keep their categorization)",
+      "deleteForever": "Delete this category permanently?",
+      "deleting": "Deleting...",
+      "errors": {
+        "nameRequired": "Category name is required",
+        "duplicate": "A category with this name already exists",
+        "updateFailed": "Failed to update category",
+        "mergeFailed": "Failed to merge categories",
+        "invalidAmount": "Please enter a valid amount (0 or greater)",
+        "adjustmentUpdateFailed": "Failed to update adjustment",
+        "scheduleFailed": "Failed to schedule adjustment",
+        "cancelFailed": "Failed to cancel adjustment",
+        "deleteFailed": "Failed to delete category"
+      }
+    },
+    "add": {
+      "name": "Category name",
+      "namePlaceholder": "e.g., Groceries",
+      "schedule": "Schedule for next month",
+      "scheduleHint": "Use this when planning ahead. The category will be created automatically when the new month starts.",
+      "scheduling": "Scheduling...",
+      "creating": "Creating...",
+      "create": "Create category",
+      "errors": {
+        "alreadyScheduled": "A category with this name is already scheduled for next month",
+        "createFailed": "Failed to create category"
+      }
+    },
+    "limit": {
+      "title": "Edit limit: {{name}}",
+      "unlimitedHint": "Set to 0 for unlimited spending",
+      "threshold": "Warning threshold",
+      "thresholdHint": "Show warning when spending reaches this percentage of the limit",
+      "preview": "Preview",
+      "limitChange": "Limit: {{from}} → {{to}}",
+      "warningChange": "Warning: {{from}}% → {{to}}%",
+      "failed": "Failed to update category. Please try again.",
+      "saving": "Saving...",
+      "saveChanges": "Save changes"
+    },
+    "delete": {
+      "title": "Delete Category",
+      "transactions": "{{count}} transaction",
+      "transactions_other": "{{count}} transactions",
+      "hasTransactions": "This category has transactions",
+      "hidesOnly": "Deleting this category will hide it from selection, but existing transactions will keep their historical categorization.",
+      "permanent": "This will permanently delete the category. This action cannot be undone.",
+      "reassign": "Reassign transactions to (optional):",
+      "keep": "Keep original categorization",
+      "reassignCount": "({{count}} transactions)",
+      "deleting": "Deleting...",
+      "confirm": "Delete Category"
+    },
+    "merge": {
+      "title": "Merge Category",
+      "info": "Merging combines two categories into one. All transactions from \"{{name}}\" will be moved to the target category. This action can be undone from the merge history.",
+      "confirm": "Merge Categories"
+    },
+    "rename": {
+      "title": "Rename Category",
+      "currentName": "Current name:",
+      "newName": "New Name",
+      "newNamePlaceholder": "Enter new name",
+      "info": "Renaming a category updates its name everywhere. All your transactions and budget history will automatically show the new name.",
+      "renaming": "Renaming...",
+      "confirm": "Rename",
+      "failed": "Failed to rename category"
+    }
   }
 }

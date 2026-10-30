@@ -2,6 +2,7 @@
 // Part of Category Management Restructure (Phase 4)
 
 import React, { useState, useMemo } from 'react';
+import { useT } from '../../hooks/useT';
 import { X, AlertCircle, GitMerge, ArrowRight, Check, Info } from 'lucide-react';
 import { useMergeCategories } from '../../hooks/useCategories';
 import { useFinance } from '../../context/FinanceContext';
@@ -20,6 +21,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
   allCategories,
   onClose 
 }) => {
+  const t = useT();
   const { transactions } = useFinance();
   const mergeCategories = useMergeCategories();
   
@@ -32,14 +34,14 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
   // Calculate transaction counts
   const sourceTransactionCount = useMemo(() => {
     if (!sourceCategory) return 0;
-    return transactions.filter(t => t.category_id === sourceCategory.id).length;
+    return transactions.filter(tx => tx.category_id === sourceCategory.id).length;
   }, [transactions, sourceCategory]);
 
   const targetCategory = targetOptions.find(c => c.id === targetCategoryId);
   
   const targetTransactionCount = useMemo(() => {
     if (!targetCategoryId) return 0;
-    return transactions.filter(t => t.category_id === targetCategoryId).length;
+    return transactions.filter(tx => tx.category_id === targetCategoryId).length;
   }, [transactions, targetCategoryId]);
 
   // Calculate combined budget
@@ -61,7 +63,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to merge categories');
+      setError(err instanceof Error ? err.message : t('categories.edit.errors.mergeFailed'));
     }
   };
 
@@ -87,12 +89,13 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
           <div className="flex items-center gap-2">
             <GitMerge className="h-5 w-5 text-green-600" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Merge Category
+              {t('categories.merge.title')}
             </h2>
           </div>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          aria-label={t('common.close')}
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>
@@ -103,7 +106,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
           {/* Source category */}
           <div>
             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Merge from:
+              {t('categories.edit.mergeFrom')}
             </label>
             <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <div
@@ -113,7 +116,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
               <div className="flex-1">
                 <p className="font-medium text-gray-900 dark:text-gray-100">{sourceCategory.name}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  ₪{sourceCategory.monthlyLimit.toLocaleString()} budget • {sourceTransactionCount} transactions
+                  {t('categories.edit.sourceStats', { amount: `₪${sourceCategory.monthlyLimit.toLocaleString()}`, count: sourceTransactionCount })}
                 </p>
               </div>
             </div>
@@ -127,14 +130,14 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
           {/* Target category selector */}
           <div>
             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Merge into:
+              {t('categories.edit.mergeInto')}
             </label>
             <select
               value={targetCategoryId}
               onChange={(e) => setTargetCategoryId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
-              <option value="">Select a category...</option>
+              <option value="">{t('categories.edit.selectCategory')}</option>
               {targetOptions.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} (₪{c.monthlyLimit.toLocaleString()})
@@ -154,7 +157,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
                 <div className="flex-1">
                   <p className="font-medium text-gray-900 dark:text-gray-100">{targetCategory.name}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    ₪{targetCategory.monthlyLimit.toLocaleString()} budget • {targetTransactionCount} transactions
+                    {t('categories.edit.sourceStats', { amount: `₪${targetCategory.monthlyLimit.toLocaleString()}`, count: targetTransactionCount })}
                   </p>
                 </div>
               </div>
@@ -163,20 +166,20 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-2">
                 <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-medium">
                   <Info className="h-4 w-4" />
-                  After merge:
+                  {t('categories.edit.afterMerge')}
                 </div>
                 <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1 ms-6">
                   <li className="flex items-center gap-2">
                     <Check className="h-3 w-3" />
-                    New budget: ₪{combinedBudget.toLocaleString()} / month
+                    {t('categories.edit.newBudget', { amount: `₪${combinedBudget.toLocaleString()}` })}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3 w-3" />
-                    {sourceTransactionCount + targetTransactionCount} total transactions
+                    {t('categories.edit.totalTransactions', { count: sourceTransactionCount + targetTransactionCount })}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3 w-3" />
-                    "{sourceCategory.name}" will be archived
+                    {t('categories.edit.willArchive', { name: sourceCategory.name })}
                   </li>
                 </ul>
               </div>
@@ -187,9 +190,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
           <div className="flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 rounded-lg text-sm">
             <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
             <p>
-              Merging combines two categories into one. All transactions from 
-              "{sourceCategory.name}" will be moved to the target category. 
-              This action can be undone from the merge history.
+              {t('categories.merge.info', { name: sourceCategory.name })}
             </p>
           </div>
 
@@ -208,7 +209,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleMerge}
@@ -216,7 +217,7 @@ export const MergeCategoryModal: React.FC<MergeCategoryModalProps> = ({
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <GitMerge className="h-4 w-4" />
-              {mergeCategories.isPending ? 'Merging...' : 'Merge Categories'}
+              {mergeCategories.isPending ? t('categories.edit.merging') : t('categories.merge.confirm')}
             </button>
           </div>
         </div>

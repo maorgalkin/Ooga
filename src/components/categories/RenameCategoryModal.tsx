@@ -2,6 +2,7 @@
 // Part of Category Management Restructure (Phase 4)
 
 import React, { useState, useEffect } from 'react';
+import { useT } from '../../hooks/useT';
 import { X, AlertCircle, Check } from 'lucide-react';
 import { useRenameCategory, useCategories } from '../../hooks/useCategories';
 import { useFinance } from '../../context/FinanceContext';
@@ -18,6 +19,7 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
   category, 
   onClose 
 }) => {
+  const t = useT();
   const { data: existingCategories } = useCategories();
   const renameCategory = useRenameCategory();
   const { refreshTransactions } = useFinance();
@@ -41,7 +43,7 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
 
     // Validation
     if (!newName.trim()) {
-      setError('Category name is required');
+      setError(t('categories.edit.errors.nameRequired'));
       return;
     }
 
@@ -55,7 +57,7 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
       c => c.id !== category.id && c.name.toLowerCase() === newName.trim().toLowerCase()
     );
     if (isDuplicate) {
-      setError('A category with this name already exists');
+      setError(t('categories.edit.errors.duplicate'));
       return;
     }
 
@@ -69,7 +71,7 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
       await refreshTransactions();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to rename category');
+      setError(err instanceof Error ? err.message : t('categories.rename.failed'));
     }
   };
 
@@ -85,11 +87,12 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Rename Category
+            {t('categories.rename.title')}
           </h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          aria-label={t('common.close')}
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>
@@ -104,7 +107,7 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
               style={{ backgroundColor: category.color }}
             />
             <div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Current name:</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t('categories.rename.currentName')}</span>
               <p className="font-medium text-gray-900 dark:text-gray-100">{category.name}</p>
             </div>
           </div>
@@ -120,13 +123,13 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
           {/* New name input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              New Name
+              {t('categories.rename.newName')}
             </label>
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Enter new name"
+              placeholder={t('categories.rename.newNamePlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
               autoFocus
             />
@@ -136,8 +139,7 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
           <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
             <Check className="h-4 w-4 flex-shrink-0 mt-0.5" />
             <p>
-              Renaming a category updates its name everywhere. All your transactions 
-              and budget history will automatically show the new name.
+              {t('categories.rename.info')}
             </p>
           </div>
 
@@ -148,14 +150,14 @@ export const RenameCategoryModal: React.FC<RenameCategoryModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={renameCategory.isPending || newName.trim() === category.name}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {renameCategory.isPending ? 'Renaming...' : 'Rename'}
+              {renameCategory.isPending ? t('categories.rename.renaming') : t('categories.rename.confirm')}
             </button>
           </div>
         </form>

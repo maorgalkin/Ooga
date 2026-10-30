@@ -2,6 +2,7 @@
 // Part of Category Management Restructure (Phase 4)
 
 import React, { useState, useEffect } from 'react';
+import { useT } from '../../hooks/useT';
 import { X, DollarSign, AlertTriangle } from 'lucide-react';
 import { useUpdateCategory } from '../../hooks/useCategories';
 import type { Category } from '../../types/category';
@@ -17,6 +18,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
   category,
   onClose,
 }) => {
+  const t = useT();
   const [monthlyLimit, setMonthlyLimit] = useState('');
   const [warningThreshold, setWarningThreshold] = useState('80');
   
@@ -78,13 +80,14 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
               style={{ backgroundColor: category.color }}
             />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Edit limit: {category.name}
+              {t('categories.limit.title', { name: category.name })}
             </h2>
           </div>
           <button
             onClick={handleClose}
             disabled={updateCategory.isPending}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+          aria-label={t('common.close')}
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>
@@ -95,7 +98,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
           {/* Monthly Limit */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Monthly limit
+              {t('categories.edit.monthlyLimit')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
@@ -112,14 +115,14 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
               />
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Set to 0 for unlimited spending
+              {t('categories.limit.unlimitedHint')}
             </p>
           </div>
 
           {/* Warning Threshold */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Warning threshold
+              {t('categories.limit.threshold')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
@@ -139,7 +142,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
               </div>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Show warning when spending reaches this percentage of the limit
+              {t('categories.limit.thresholdHint')}
             </p>
           </div>
 
@@ -147,17 +150,17 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
           {hasChanges && (
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
               <h4 className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">
-                Preview
+                {t('categories.limit.preview')}
               </h4>
               <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
                 {limitChanged && (
                   <li>
-                    Limit: ₪{category.monthlyLimit} → ₪{parseFloat(monthlyLimit) || 0}
+                    {t('categories.limit.limitChange', { from: `₪${category.monthlyLimit}`, to: `₪${parseFloat(monthlyLimit) || 0}` })}
                   </li>
                 )}
                 {thresholdChanged && (
                   <li>
-                    Warning: {category.warningThreshold}% → {parseInt(warningThreshold) || 80}%
+                    {t('categories.limit.warningChange', { from: category.warningThreshold, to: parseInt(warningThreshold) || 80 })}
                   </li>
                 )}
               </ul>
@@ -168,7 +171,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
           {updateCategory.isError && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
               <p className="text-sm text-red-600 dark:text-red-400">
-                Failed to update category. Please try again.
+                {t('categories.limit.failed')}
               </p>
             </div>
           )}
@@ -181,7 +184,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
               disabled={updateCategory.isPending}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -191,10 +194,10 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
               {updateCategory.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                  Saving...
+                  {t('categories.limit.saving')}
                 </>
               ) : (
-                'Save changes'
+                t('categories.limit.saveChanges')
               )}
             </button>
           </div>
