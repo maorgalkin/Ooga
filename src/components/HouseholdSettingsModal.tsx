@@ -9,6 +9,7 @@ import type { FamilyMember } from '../types';
 import { JoinHouseholdModal } from './JoinHouseholdModal';
 import { LeaveHouseholdModal } from './LeaveHouseholdModal';
 import { getUserLocale } from '../utils/locale';
+import { useT } from '../hooks/useT';
 
 interface HouseholdSettingsModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ interface HouseholdSettingsModalProps {
 
 const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
+  const t = useT();
   const [household, setHousehold] = useState<Household | null>(null);
   const [members, setMembers] = useState<HouseholdMember[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -95,24 +97,24 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
       setIsEditingHouseholdName(false);
     } catch (error) {
       console.error('Error updating household name:', error);
-      alert('Failed to update household name');
+      alert(t('household.updateNameFailed'));
     }
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Are you sure you want to remove this member?')) return;
+    if (!confirm(t('household.confirmRemove'))) return;
 
     try {
       await HouseholdService.removeMember(memberId);
       await loadHouseholdData();  // Reload both members and family members
     } catch (error) {
       console.error('Error removing member:', error);
-      alert('Failed to remove member');
+      alert(t('household.removeFailed'));
     }
   };
 
   const handleAddCustomTag = async () => {
-    const tagName = prompt('Enter name for new household member tag:');
+    const tagName = prompt(t('household.addTagPrompt'));
     if (!tagName || !tagName.trim()) return;
 
     const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
@@ -127,7 +129,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
       await loadHouseholdData();
     } catch (error) {
       console.error('Error adding custom tag:', error);
-      alert('Failed to add custom tag');
+      alert(t('household.addTagFailed'));
     }
   };
 
@@ -151,13 +153,13 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
       setEditingTag(null);
     } catch (error) {
       console.error('Error updating tag:', error);
-      alert('Failed to update tag');
+      alert(t('household.updateTagFailed'));
     }
   };
 
   const handleDeleteTagFromModal = async () => {
     if (!editingTag) return;
-    if (!confirm('Are you sure you want to delete this tag?')) return;
+    if (!confirm(t('household.confirmDeleteTag', { name: editingTag.name }))) return;
 
     try {
       await SupabaseDataService.deleteFamilyMember(editingTag.id);
@@ -165,26 +167,22 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
       setEditingTag(null);
     } catch (error) {
       console.error('Error deleting tag:', error);
-      alert('Failed to delete tag');
+      alert(t('household.deleteTagFailed'));
     }
   };
 
   const handleTransferOwnership = async (memberId: string, memberName: string) => {
-    const confirmed = confirm(
-      `Transfer ownership to ${memberName}?\n\n` +
-      `You will become a budget participant and ${memberName} will become the owner. ` +
-      `This action cannot be undone.`
-    );
+    const confirmed = confirm(t('household.confirmTransfer', { name: memberName }));
     
     if (!confirmed) return;
 
     try {
       await HouseholdService.transferOwnership(memberId);
       await loadHouseholdData();
-      alert(`Ownership successfully transferred to ${memberName}`);
+      alert(t('household.transferred', { name: memberName }));
     } catch (error: any) {
       console.error('Error transferring ownership:', error);
-      alert(error.message || 'Failed to transfer ownership');
+      alert(error.message || t('household.transferFailed'));
     }
   };
 
@@ -210,11 +208,11 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'owner':
-        return 'Owner';
+        return t('household.owner');
       case 'participant':
-        return 'Budget participant';
+        return t('household.participant');
       default:
-        return 'Budget participant';
+        return t('household.participant');
     }
   };
 
@@ -236,10 +234,11 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <Home className="h-5 w-5 sm:h-6 sm:w-6 text-white flex-shrink-0" />
-              <h2 className="text-lg sm:text-xl font-semibold text-white truncate">Household settings</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-white truncate">{t('household.title')}</h2>
             </div>
             <button
               onClick={onClose}
+              aria-label={t('common.close')}
               className="text-white hover:bg-white/20 rounded-lg p-1.5 sm:p-2 transition-colors flex-shrink-0"
             >
               <X className="h-5 w-5" />
@@ -249,7 +248,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
             {isLoading ? (
-              <div className="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</div>
+              <div className="text-center py-8 text-gray-600 dark:text-gray-400">{t('settings.loading')}</div>
             ) : (
               <>
                 {/* Household Members Section - Using actual household name */}
@@ -276,7 +275,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                             onClick={handleUpdateName}
                             className="flex-1 sm:flex-none px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
                           >
-                            Save
+                            {t('common.save')}
                           </button>
                           <button
                             onClick={() => {
@@ -285,7 +284,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                             }}
                             className="flex-1 sm:flex-none px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </button>
                         </div>
                       </div>
@@ -300,7 +299,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                             onClick={() => setIsEditingHouseholdName(true)}
                             className="text-sm text-purple-600 dark:text-purple-400 hover:underline self-start sm:self-auto"
                           >
-                            Edit
+                            {t('common.edit')}
                           </button>
                         )}
                       </>
@@ -328,13 +327,13 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                               <div 
                                 className="w-4 h-4 rounded-full flex-shrink-0" 
                                 style={{ backgroundColor: memberTag.color }}
-                                title={`Transaction tag: ${memberTag.name}`}
+                                title={t('household.transactionTag', { name: memberTag.name })}
                               />
                             )}
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-medium text-gray-900 dark:text-gray-100 break-words">
-                                  {isCurrentUser ? 'You' : (member.email || member.user_id.substring(0, 8))}
+                                  {isCurrentUser ? t('household.you') : (member.email || member.user_id.substring(0, 8))}
                                   {memberTag && ` (${memberTag.name})`}
                                 </span>
                                 <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${getRoleBadge(member.role)}`}>
@@ -342,7 +341,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                                 </span>
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Joined {new Date(member.joined_at).toLocaleDateString(getUserLocale())}
+                                {t('household.joined', { date: new Date(member.joined_at).toLocaleDateString(getUserLocale()) })}
                               </div>
                             </div>
                           </div>
@@ -351,20 +350,21 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                             <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
                               {canTransferToThisMember && (
                                 <button
-                                  onClick={() => handleTransferOwnership(member.id, member.email || 'this user')}
+                                  onClick={() => handleTransferOwnership(member.id, member.email || t('household.thisUser'))}
                                   className="flex items-center gap-1 text-xs px-2 sm:px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors font-medium border border-yellow-300 dark:border-yellow-700 whitespace-nowrap"
-                                  title="Transfer ownership to this member"
+                                  title={t('household.transferTitle')}
                                 >
                                   <Crown className="h-3 w-3 flex-shrink-0" />
-                                  <span className="hidden sm:inline">Make owner</span>
-                                  <span className="sm:hidden">Owner</span>
+                                  <span className="hidden sm:inline">{t('household.makeOwner')}</span>
+                                  <span className="sm:hidden">{t('household.owner')}</span>
                                 </button>
                               )}
                               {canManageThisMember && (
                                 <button
                                   onClick={() => handleRemoveMember(member.id)}
                                   className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors flex-shrink-0"
-                                  title="Remove participant"
+                                  title={t('household.removeParticipant')}
+                                  aria-label={t('household.removeParticipant')}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -393,11 +393,11 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                                 {fm.name}
                               </span>
                               <span className="text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-full">
-                                Custom tag
+                                {t('household.customTag')}
                               </span>
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              For transaction labeling only
+                              {t('household.customTagHint')}
                             </div>
                           </div>
                         </div>
@@ -406,7 +406,8 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                           <button
                             onClick={() => handleEditTag(fm)}
                             className="p-2 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors"
-                            title="Edit tag"
+                            title={t('household.editTag')}
+                            aria-label={t('household.editTag')}
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
@@ -422,7 +423,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                       className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors flex items-center justify-center gap-2 mb-4"
                     >
                       <Plus className="h-4 w-4" />
-                      Add member
+                      {t('household.addMember')}
                     </button>
                   )}
                 </div>
@@ -432,12 +433,12 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-4">
                       <UserPlus className="h-5 w-5 me-2" />
-                      Invite budget participants
+                      {t('household.inviteTitle')}
                     </h3>
                     
                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                       <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-3">
-                        Share this code to invite others as budget participants:
+                        {t('household.inviteShare')}
                       </p>
                       <div className="flex gap-2">
                         <input
@@ -457,18 +458,18 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                           {copiedCode ? (
                             <>
                               <Check className="h-4 w-4" />
-                              Copied!
+                              {t('household.copied')}
                             </>
                           ) : (
                             <>
                               <Copy className="h-4 w-4" />
-                              Copy
+                              {t('household.copy')}
                             </>
                           )}
                         </button>
                       </div>
                       <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-                        Anyone with this code can join your household as a budget participant. They'll automatically get a household member tag for transactions.
+                        {t('household.inviteHint')}
                       </p>
                     </div>
                   </div>
@@ -477,7 +478,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                 {/* Leaving the Household Section */}
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Leaving the household?
+                    {t('household.leavingTitle')}
                   </h3>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
@@ -485,7 +486,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                       className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                     >
                       <UserCheck className="h-4 w-4 flex-shrink-0" />
-                      <span className="whitespace-nowrap">Switch households</span>
+                      <span className="whitespace-nowrap">{t('household.switch')}</span>
                     </button>
                     
                     <button
@@ -493,7 +494,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                       className="flex-1 px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                     >
                       <LogOut className="h-4 w-4 flex-shrink-0 rtl:-scale-x-100" />
-                      <span className="whitespace-nowrap">New household</span>
+                      <span className="whitespace-nowrap">{t('household.newHousehold')}</span>
                     </button>
                   </div>
                 </div>
@@ -518,28 +519,28 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-2 sm:p-4" onClick={() => setEditingTag(null)}>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Edit household member tag
+              {t('household.tagModal.title')}
             </h3>
             
             <div className="space-y-4">
               {/* Tag Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tag name
+                  {t('household.tagModal.name')}
                 </label>
                 <input
                   type="text"
                   value={editedTagName}
                   onChange={(e) => setEditedTagName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="Enter tag name"
+                  placeholder={t('household.tagModal.namePlaceholder')}
                 />
               </div>
 
               {/* Tag Color */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Color
+                  {t('household.tagModal.color')}
                 </label>
                 <div className="flex gap-2 items-center">
                   <input
@@ -561,25 +562,23 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
               {/* Link to Participant */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Link to budget participant (optional)
+                  {t('household.tagModal.link')}
                 </label>
                 <select
                   value={editedTagLinkedMember}
                   onChange={(e) => setEditedTagLinkedMember(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="">Unlinked (custom tag)</option>
+                  <option value="">{t('household.tagModal.unlinked')}</option>
                   {members.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.email || member.user_id}
-                      {member.role === 'owner' && ' (Owner)'}
+                      {member.role === 'owner' && t('household.ownerSuffix')}
                     </option>
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {editedTagLinkedMember 
-                    ? 'This tag is linked to a participant and will be updated when they change' 
-                    : 'This is a custom tag that can be used independently'}
+                  {editedTagLinkedMember ? t('household.tagModal.linkedHint') : t('household.tagModal.unlinkedHint')}
                 </p>
               </div>
 
@@ -589,21 +588,21 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                   onClick={handleSaveTagEdit}
                   className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-sm"
                 >
-                  Save changes
+                  {t('settings.saveChanges')}
                 </button>
                 <button
                   onClick={handleDeleteTagFromModal}
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2 text-sm"
-                  title="Delete this tag"
+                  title={t('household.tagModal.deleteTitle')}
                 >
                   <Trash2 className="h-4 w-4 flex-shrink-0" />
-                  <span>Delete</span>
+                  <span>{t('common.delete')}</span>
                 </button>
                 <button
                   onClick={() => setEditingTag(null)}
                   className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle, Home, Loader2, CheckCircle } from 'lucide-react';
 import * as HouseholdService from '../services/householdService';
+import { Trans } from 'react-i18next';
+import { useT } from '../hooks/useT';
+import i18n from '../i18n';
 
 interface LeaveHouseholdModalProps {
   isOpen: boolean;
@@ -8,6 +11,7 @@ interface LeaveHouseholdModalProps {
 }
 
 export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen, onClose }) => {
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -32,14 +36,14 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
       
       setIsOwner(role === 'owner');
       setIsSoleOwner(sole);
-      setCurrentHouseholdName(household?.name || 'your household');
+      // i18n.t, not the hook's t: this runs from the open effect, and these strings have no gendered forms
+      setCurrentHouseholdName(household?.name || i18n.t('household.leave.yourHousehold'));
       
       // Auto-suggest name
       const { data: { user } } = await (await import('../lib/supabase')).supabase.auth.getUser();
-      const firstName = user?.user_metadata?.first_name || 
-                       user?.user_metadata?.full_name?.split(' ')[0] || 
-                       'My';
-      setNewHouseholdName(`${firstName}'s New Household`);
+      const firstName = user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0];
+      // Without a name the old fallback read "My's New Household"
+      setNewHouseholdName(firstName ? i18n.t('household.leave.suggestedName', { name: firstName }) : i18n.t('household.leave.suggestedNameNoName'));
     } catch (err) {
       console.error('Error loading household info:', err);
     }
@@ -56,7 +60,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
         window.location.reload(); // Reload to refresh all household data
       }, 2000);
     } catch (err: any) {
-      setError(err.message || 'Failed to leave and create new household');
+      setError(err.message || t('household.leave.failed'));
       setLoading(false);
     }
   };
@@ -81,10 +85,10 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              New household created
+              {t('household.leave.createdTitle')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Welcome to your new household. Redirecting...
+              {t('household.welcomeRedirect')}
             </p>
           </div>
         </div>
@@ -100,10 +104,11 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Home className="h-6 w-6 text-white" />
-              <h2 className="text-xl font-semibold text-white">Leave & create new household</h2>
+              <h2 className="text-xl font-semibold text-white">{t('household.leave.title')}</h2>
             </div>
             <button
               onClick={handleCancel}
+              aria-label={t('common.close')}
               className="text-white hover:bg-white/20 rounded-lg p-1 transition-colors"
             >
               <X className="h-5 w-5" />
@@ -114,7 +119,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Leave <strong>{currentHouseholdName}</strong> and start fresh with your own household.
+            <Trans i18nKey="household.leave.intro" values={{ name: currentHouseholdName }} components={{ strong: <strong /> }} />
           </p>
 
           {/* Warning for owners */}
@@ -124,29 +129,29 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
                 <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-orange-800 dark:text-orange-200 font-medium mb-2">
-                    {isSoleOwner ? 'Warning: all data will be deleted' : 'Warning: household will be deleted'}
+                    {isSoleOwner ? t('household.leave.warnAll') : t('household.leave.warnHousehold')}
                   </p>
                   <p className="text-orange-700 dark:text-orange-300 text-sm">
                     {isSoleOwner ? (
                       <>
-                        Since you are the only member, your current household and <strong>all its data will be permanently deleted</strong>:
+                        <Trans i18nKey="household.leave.soleOwner" components={{ strong: <strong /> }} />
                       </>
                     ) : (
                       <>
-                        As the owner, the entire household will be deleted for <strong>all members</strong>. This includes:
+                        <Trans i18nKey="household.leave.ownerAll" components={{ strong: <strong /> }} />
                       </>
                     )}
                   </p>
                   <ul className="mt-2 text-sm text-orange-700 dark:text-orange-300 space-y-1 list-disc list-inside">
-                    <li>All transactions</li>
-                    <li>Budget configurations</li>
-                    <li>Monthly budgets and adjustments</li>
-                    <li>Family members</li>
-                    <li>All household settings</li>
+                    <li>{t('household.dataList.transactions')}</li>
+                    <li>{t('household.dataList.budgets')}</li>
+                    <li>{t('household.dataList.monthly')}</li>
+                    <li>{t('household.dataList.familyMembers')}</li>
+                    <li>{t('household.dataList.settings')}</li>
                   </ul>
                   {!isSoleOwner && (
                     <p className="mt-2 text-sm text-orange-800 dark:text-orange-200 font-medium">
-                      💡 Tip: You can transfer ownership to another member instead of deleting the household. Go to Household settings → App Users → "Make owner" button.
+                      {t('household.leave.transferTip')}
                     </p>
                   )}
                 </div>
@@ -158,7 +163,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
           {!isOwner && (
             <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <p className="text-blue-800 dark:text-blue-200 text-sm">
-                You'll leave the shared household and lose access to its data. You can always be re-invited later.
+                {t('household.leave.memberNote')}
               </p>
             </div>
           )}
@@ -172,13 +177,13 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
           {/* New Household Name */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              New household name
+              {t('household.leave.nameLabel')}
             </label>
             <input
               type="text"
               value={newHouseholdName}
               onChange={(e) => setNewHouseholdName(e.target.value)}
-              placeholder="Enter household name"
+              placeholder={t('household.leave.namePlaceholder')}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
               disabled={loading}
             />
@@ -191,7 +196,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
               className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleLeaveAndCreate}
@@ -201,19 +206,19 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing...
+                  {t('household.leave.processing')}
                 </>
               ) : (
                 <>
                   <Home className="h-4 w-4" />
-                  {isOwner ? 'Delete & create new' : 'Leave & create new'}
+                  {isOwner ? t('household.leave.deleteAndCreate') : t('household.leave.leaveAndCreate')}
                 </>
               )}
             </button>
           </div>
 
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-            This action cannot be undone. Your new household will be created immediately.
+            {t('household.leave.footer')}
           </p>
         </div>
       </div>
