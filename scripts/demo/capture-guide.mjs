@@ -210,7 +210,7 @@ const phases = {
     await markPanel('input[type=color]');
     await type(`${PANEL} input[type=number]`, 3200);
     await shot('budget', 'edit-category', { area: PANEL, target: `${PANEL} input[type=number]`, pad: 0 });
-    await click(`${PANEL} ::-p-text(Save Changes)`);
+    await click(`${PANEL} ::-p-text(Save changes)`);
 
     for (const [name, limit] of [['Kids', 1200], ['Dining out', 900]]) {
       await click(text('Click to create new'));
@@ -239,7 +239,7 @@ const phases = {
     await shot('transactions', 'modal', { area: PANEL, target: text('Choose'), pad: 0 });
     await click(text('Choose'));
     await pause(500);
-    await markPanel(text('Select expense category'));
+    await markPanel(`h3${text('Select expense category')}`);
     await shot('transactions', 'categories', { area: PANEL, target: `${PANEL} ${text('Groceries')}`, pad: 0 });
     await click(`${PANEL} ${text('Groceries')}`);
     await markPanel(text('Choose'));
@@ -251,7 +251,7 @@ const phases = {
     await shot('transactions', 'income', { area: PANEL, target: `${PANEL} ${text('Income')}`, pad: 0 });
     await click(`${PANEL} button::-p-text(Expense)`);
     await click(`${PANEL} ${text('Choose')}`);
-    await markPanel(text('Select expense category'));
+    await markPanel(`h3${text('Select expense category')}`);
     await click(`${PANEL} ${text('Groceries')}`);
     await markPanel(text('Choose'));
     await type('input[placeholder="0.00"]', 412);
