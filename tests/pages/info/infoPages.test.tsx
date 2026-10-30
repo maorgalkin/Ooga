@@ -111,6 +111,22 @@ describe('Guide page', () => {
     expect(screen.getByRole('link', { name: 'Create budget' })).toHaveAttribute('href', '/?tab=budget&create=true');
   });
 
+  it('titles the pinned phone bar after the part scrolled under it', () => {
+    // Parts 1 and 2 have reached the bar's bottom edge; parts 3 and 4 are still below it
+    const tops: Record<string, number> = { [GUIDE_PARTS[0].title]: -400, [GUIDE_PARTS[1].title]: 60 };
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const section = this.dataset.guideSection;
+      const top = section ? (tops[section] ?? 900) : 0;
+      return { top, bottom: this.tagName === 'ASIDE' ? 80 : top + 200 } as DOMRect;
+    });
+    renderAt('/guide');
+    // The title is aria-hidden (it repeats a heading), so find it by markup; while the old title
+    // fades out, the new one is the last child
+    const title = screen.getByRole('navigation', { name: 'Guide chapters' }).querySelector('p[aria-hidden]');
+    expect(title?.lastElementChild).toHaveTextContent(GUIDE_PARTS[1].title);
+    vi.restoreAllMocks();
+  });
+
   it('sends unknown chapters back to the overview', () => {
     renderAt('/guide/not-a-chapter');
     expect(screen.getByRole('heading', { level: 1, name: 'Less to learn than it looks' })).toBeInTheDocument();
