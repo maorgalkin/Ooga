@@ -1,8 +1,8 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Register from '../../../src/pages/auth/Register';
 
 // jsdom has no IntersectionObserver, which framer-motion's whileInView needs
@@ -16,8 +16,9 @@ vi.stubGlobal(
 );
 
 const signUp = vi.hoisted(() => vi.fn());
+const auth = vi.hoisted(() => ({ user: null as { id: string } | null }));
 vi.mock('../../../src/contexts/AuthContext', () => ({
-  useAuth: () => ({ user: null, loading: false, signUp }),
+  useAuth: () => ({ user: auth.user, loading: false, signUp }),
 }));
 
 function renderRegister() {
@@ -83,5 +84,25 @@ describe('Register page', () => {
     await fillForm();
     expect(await screen.findByRole('alert')).toHaveTextContent('User already registered');
     expect(screen.getByRole('button', { name: 'Create account' })).toBeEnabled();
+  });
+});
+
+describe('Register when already signed in', () => {
+  afterEach(() => {
+    auth.user = null;
+  });
+
+  it('skips the form and goes to the app', () => {
+    auth.user = { id: 'user-1' };
+    render(
+      <MemoryRouter initialEntries={['/register']}>
+        <Routes>
+          <Route path="/register" element={<Register />} />
+          <Route path="/" element={<p>the app</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('the app')).toBeInTheDocument();
+    expect(screen.queryByLabelText('First name')).toBeNull();
   });
 });

@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Clock, Lightbulb, Repeat } from 'lucide-react';
 import { PublicLayout } from '../../components/info/PublicLayout';
 import { GuideClip } from '../../components/info/GuideClip';
+import { useAuth } from '../../contexts/AuthContext';
 import { GUIDE_CHAPTERS, GUIDE_PARTS, partOf, type GuideChapter } from '../../content/guide';
 
 const chapterBySlug = (slug: string) => GUIDE_CHAPTERS.find((c) => c.slug === slug)!;
@@ -143,6 +144,8 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
   const next = GUIDE_CHAPTERS[index + 1];
   const Icon = chapter.icon;
   const part = partOf(chapter.slug);
+  const { user } = useAuth();
+  const steps = user ? chapter.steps.filter((s) => !s.signedOutOnly) : chapter.steps;
 
   return (
     <article>
@@ -163,7 +166,7 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
       <p className="mt-3 text-lg text-gray-600 dark:text-gray-300">{chapter.intro}</p>
 
       <ol className="mt-10 space-y-14">
-        {chapter.steps.map((step, i) => (
+        {steps.map((step, i) => (
           <li key={step.title} className="grid gap-6 md:grid-cols-5 md:items-start">
             <div className="md:col-span-2">
               <div className="flex items-center gap-3">

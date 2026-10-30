@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Lock, AlertCircle, Loader2, CheckCircle, User } from 'lucide-react';
 import { PublicLayout } from '../../components/info/PublicLayout';
@@ -23,7 +23,7 @@ function AuthBackdrop({ children }: { children: React.ReactNode }) {
 }
 
 const Register: React.FC = () => {
-  const { signUp } = useAuth();
+  const { signUp, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [firstName, setFirstName] = useState('');
@@ -34,6 +34,9 @@ const Register: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Already signed in: they have an account, so take them to the app
+  if (user && !authLoading) return <Navigate to="/" replace />;
 
   const validateForm = () => {
     if (!firstName.trim()) {

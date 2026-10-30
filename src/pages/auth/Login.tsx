@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { safeReturnPath } from '../../utils/returnPath';
 import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
@@ -8,7 +8,7 @@ import { HeroShowcase } from '../../components/info/HeroShowcase';
 import { FloatingShapes, LandingSections } from '../../components/info/LandingSections';
 
 const Login: React.FC = () => {
-  const { signIn } = useAuth();
+  const { signIn, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -16,6 +16,10 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const returnPath = safeReturnPath((location.state as { from?: unknown } | null)?.from);
+
+  // Already signed in: there's nothing to do here, so go where they were heading
+  if (user && !authLoading) return <Navigate to={returnPath} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +32,7 @@ const Login: React.FC = () => {
       setError(error.message);
       setLoading(false);
     } else {
-      navigate(safeReturnPath((location.state as { from?: unknown } | null)?.from), { replace: true });
+      navigate(returnPath, { replace: true });
     }
   };
 
