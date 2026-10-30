@@ -3,6 +3,8 @@ import { PlusCircle, Trash2, RefreshCw, Building2, CreditCard, Loader2 } from 'l
 import { listConnections, deleteConnection, type BankConnection } from '../services/bankImportService';
 import AddBankAccountModal from './AddBankAccountModal';
 import { useAuth } from '../contexts/AuthContext';
+import { useT } from '../hooks/useT';
+import { getUserLocale } from '../utils/locale';
 
 const PROVIDER_LABELS: Record<string, string> = {
   discount: 'Discount Bank',
@@ -22,13 +24,13 @@ const PROVIDER_LABELS: Record<string, string> = {
 
 const BANK_PROVIDERS = ['discount', 'hapoalim', 'leumi', 'mizrahi', 'beinleumi', 'union', 'massad', 'mercantile'];
 
-function formatDate(iso: string | null) {
-  if (!iso) return 'Never';
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(getUserLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export default function ConnectedAccountsSettings() {
   const { user } = useAuth();
+  const t = useT();
   const [connections, setConnections] = useState<BankConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function ConnectedAccountsSettings() {
   useEffect(() => { loadConnections(); }, [loadConnections]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Remove this account connection? You can re-add it later.')) return;
+    if (!confirm(t('import.accounts.confirmRemove'))) return;
     setDeletingId(id);
     setDeleteFailedId(null);
     try {
@@ -69,16 +71,17 @@ export default function ConnectedAccountsSettings() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Connected accounts</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('import.accounts.title')}</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Banks and credit cards to include when importing transactions
+            {t('import.accounts.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={loadConnections}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            title="Refresh"
+            title={t('import.accounts.refresh')}
+            aria-label={t('import.accounts.refresh')}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -87,7 +90,7 @@ export default function ConnectedAccountsSettings() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            Add account
+            {t('transactions.form.addAccount')}
           </button>
         </div>
       </div>
@@ -99,12 +102,12 @@ export default function ConnectedAccountsSettings() {
       ) : connections.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-6 text-center">
           <CreditCard className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">No accounts connected yet</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('import.accounts.none')}</p>
           <button
             onClick={() => setShowAddModal(true)}
             className="mt-3 text-xs text-blue-600 hover:text-blue-700 font-medium"
           >
-            + Add your first account
+            {t('import.accounts.addFirst')}
           </button>
         </div>
       ) : (
@@ -123,16 +126,19 @@ export default function ConnectedAccountsSettings() {
                   }
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <p dir="auto" className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {conn.display_name}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {PROVIDER_LABELS[conn.provider] ?? conn.provider} · Last sync: {formatDate(conn.last_sync_at)}
-                    {conn.user_id !== user?.id && ' · Added by another household member'}
+                    {t('import.accounts.meta', {
+                      provider: t(`import.providerNames.${conn.provider}`, { defaultValue: PROVIDER_LABELS[conn.provider] ?? conn.provider }),
+                      date: conn.last_sync_at ? formatDate(conn.last_sync_at) : t('import.accounts.never'),
+                    })}
+                    {conn.user_id !== user?.id && t('import.accounts.addedByOther')}
                   </p>
                   {deleteFailedId === conn.id && (
                     <p role="alert" className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-                      Couldn't remove this account. Try again in a minute.
+                      {t('import.accounts.removeFailed')}
                     </p>
                   )}
                 </div>
@@ -142,7 +148,8 @@ export default function ConnectedAccountsSettings() {
                     onClick={() => handleDelete(conn.id)}
                     disabled={deletingId === conn.id}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
-                    title="Remove connection"
+                    title={t('import.accounts.remove')}
+                    aria-label={t('import.accounts.remove')}
                   >
                     {deletingId === conn.id
                       ? <Loader2 className="w-4 h-4 animate-spin" />

@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ImportReviewStep from '../../src/components/ImportReviewStep';
 import * as reconcile from '../../src/services/reconcileService';
 import * as bankImport from '../../src/services/bankImportService';
+import { applyLanguage } from '../../src/i18n';
 
 vi.mock('../../src/hooks/useCategories', () => ({ useCategories: () => ({ data: [] }) }));
 vi.mock('../../src/services/reconcileService', () => ({
@@ -80,5 +81,26 @@ describe('ImportReviewStep matching', () => {
     const undoOrder = vi.mocked(reconcile.undoMergesForSession).mock.invocationCallOrder[0];
     const deleteOrder = vi.mocked(bankImport.deleteTransactions).mock.invocationCallOrder[0];
     expect(undoOrder).toBeLessThan(deleteOrder);
+  });
+});
+
+describe('ImportReviewStep in Hebrew', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(reconcile.reconcileImport).mockResolvedValue({ merged: [merged], suggestions: [suggestion] });
+    vi.mocked(bankImport.fetchImportedTransactions).mockResolvedValue([reviewRow('b2', 'CAFE LANDWER'), reviewRow('b3', 'Bookshop')]);
+  });
+
+  it('reviews the import in Hebrew, with the guide\'s "אישור" and only bank data left in English', async () => {
+    applyLanguage('he');
+    render(<ImportReviewStep dbSessionId="s1" result={{ imported: 3, skipped: 2 }} onDone={vi.fn()} onCancel={vi.fn()} />);
+    expect(await screen.findByText('שויכו לתנועות שהוזנו ידנית (1)')).toBeInTheDocument();
+    expect(screen.getByText('כפילויות אפשריות (1)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'מיזוג' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^אישור \d+ תנועות$/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2 כפילויות דולגו' })).toBeInTheDocument();
+    const data = new Set(['Weekly', 'groceries', 'Lunch', 'CAFE', 'LANDWER', 'Bookshop']);
+    expect((document.body.textContent?.match(/[A-Za-z]{2,}/g) ?? []).filter((w) => !data.has(w))).toEqual([]);
+    applyLanguage('en');
   });
 });

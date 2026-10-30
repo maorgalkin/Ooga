@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Trans } from 'react-i18next';
+import i18n from '../i18n';
+import { useT } from '../hooks/useT';
 import { X, Building2, CreditCard, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { addConnection } from '../services/bankImportService';
 import { addSecureConnection } from '../services/scraperService';
@@ -114,7 +117,18 @@ const PROVIDERS: Provider[] = [
 type Step = 'select' | 'credentials' | 'testing' | 'success' | 'error';
 
 export default function AddBankAccountModal({ onClose, onAdded }: Props) {
+  const t = useT();
   const [step, setStep] = useState<Step>('select');
+
+  // PROVIDERS holds the English; the reader's language comes from import.providerNames and import.fields
+  const providerName = (p: Provider) => t(`import.providerNames.${p.id}`, { defaultValue: p.label });
+  const fieldText = (providerId: string, field: CredentialField, part: 'label' | 'placeholder' | 'hint') => {
+    const own = `import.fieldsByProvider.${providerId}.${field.key}.${part}`;
+    const shared = `import.fields.${field.key}.${part}`;
+    if (i18n.exists(own)) return t(own);
+    if (i18n.exists(shared)) return t(shared);
+    return field[part];
+  };
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
@@ -122,7 +136,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
 
   const handleSelectProvider = (p: Provider) => {
     setSelectedProvider(p);
-    setDisplayName(p.label);
+    setDisplayName(providerName(p));
     setFieldValues({});
     setStep('credentials');
   };
@@ -138,7 +152,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
       }
       setStep('success');
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to save connection');
+      setErrorMsg(err instanceof Error ? err.message : t('import.addAccount.saveFailed'));
       setStep('error');
     }
   };
@@ -151,10 +165,11 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {step === 'select' ? 'Add bank account' : selectedProvider?.label ?? 'Add account'}
+            {step === 'select' ? t('import.addAccount.title') : selectedProvider ? providerName(selectedProvider) : t('transactions.form.addAccount')}
           </h2>
           <button
             onClick={onClose}
+            aria-label={t('common.close')}
             className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -166,7 +181,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
           {step === 'select' && (
             <div className="space-y-2">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                Choose the bank or credit card to connect:
+                {t('import.addAccount.choose')}
               </p>
               {PROVIDERS.map((p) => (
                 <button
@@ -179,10 +194,10 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                     ? <Building2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
                     : <CreditCard className="w-5 h-5 text-purple-600 flex-shrink-0" />
                   }
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{p.label}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{providerName(p)}</span>
                   {!p.available && (
                     <span className="ms-auto text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
-                      Coming soon
+                      {t('import.addAccount.comingSoon')}
                     </span>
                   )}
                 </button>
@@ -195,7 +210,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Display name
+                  {t('import.addAccount.displayName')}
                 </label>
                 <input
                   type="text"
@@ -208,27 +223,27 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
               {selectedProvider.fields.map((field) => (
                 <div key={field.key}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {field.label}
+                    {fieldText(selectedProvider.id, field, 'label')}
                   </label>
                   <input
                     type={field.type}
                     inputMode={field.inputMode}
-                    placeholder={field.placeholder}
+                    placeholder={fieldText(selectedProvider.id, field, 'placeholder')}
                     value={fieldValues[field.key] ?? ''}
                     onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
                     autoComplete="off"
                     className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
                   />
                   {field.hint && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{field.hint}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{fieldText(selectedProvider.id, field, 'hint')}</p>
                   )}
                 </div>
               ))}
 
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {BROWSER_IMPORT_PROVIDERS.has(selectedProvider.id)
-                  ? 'Only your ID and the card’s last 4 digits are saved. Each import is confirmed with an SMS code.'
-                  : 'Sent once to Ooga’s import service and stored encrypted there. They’re never stored in your browser or shown again.'}
+                  ? t('import.addAccount.cardNote')
+                  : t('import.addAccount.serverNote')}
               </p>
 
               <div className="flex gap-3 pt-1">
@@ -236,14 +251,14 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                   onClick={() => setStep('select')}
                   className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Back
+                  {t('import.addAccount.back')}
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={!allFieldsFilled || !displayName.trim()}
                   className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
                 >
-                  Test & save
+                  {t('import.addAccount.testSave')}
                 </button>
               </div>
             </div>
@@ -254,8 +269,8 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
             <div className="flex flex-col items-center gap-4 py-6">
               <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
               <div className="text-center">
-                <p className="font-medium text-gray-900 dark:text-white">Testing connection…</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Verifying credentials with {selectedProvider?.label}</p>
+                <p className="font-medium text-gray-900 dark:text-white">{t('import.addAccount.testing')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('import.addAccount.verifying', { provider: selectedProvider ? providerName(selectedProvider) : '' })}</p>
               </div>
             </div>
           )}
@@ -265,16 +280,16 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
             <div className="flex flex-col items-center gap-4 py-4">
               <CheckCircle2 className="w-12 h-12 text-green-500" />
               <div className="text-center">
-                <p className="font-semibold text-gray-900 dark:text-white">Connected!</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{t('import.addAccount.connected')}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  <strong>{displayName}</strong> was saved and verified.
+                  <Trans i18nKey="import.addAccount.savedVerified" values={{ name: displayName }} components={{ b: <strong dir="auto" /> }} />
                 </p>
               </div>
               <button
                 onClick={() => { onAdded?.(); onClose(); }}
                 className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
               >
-                Done
+                {t('import.done')}
               </button>
             </div>
           )}
@@ -284,7 +299,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
             <div className="flex flex-col items-center gap-4 py-4">
               <AlertCircle className="w-12 h-12 text-red-500" />
               <div className="text-center">
-                <p className="font-semibold text-gray-900 dark:text-white">Connection failed</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{t('import.addAccount.failed')}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 break-words">{errorMsg}</p>
               </div>
               <div className="flex gap-3 w-full">
@@ -292,13 +307,13 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                   onClick={onClose}
                   className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Close
+                  {t('common.close')}
                 </button>
                 <button
                   onClick={() => setStep('credentials')}
                   className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
                 >
-                  Try again
+                  {t('import.tryAgain')}
                 </button>
               </div>
             </div>
