@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useT } from '../../hooks/useT';
 import { motion, useMotionValue, useAnimate } from 'framer-motion';
 import { useFinance } from '../../context/FinanceContext';
 import { useActiveBudget, useMonthlyBudgetsForDateRange } from '../../hooks/useBudgets';
@@ -25,6 +26,7 @@ const BAR_WIDTH_MOBILE = 50; // Width of individual bars on mobile (thinner)
 const BAR_OVERLAP = 30; // Reduced from 85% for better clarity
 
 export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, showSummaryOnly = false, showChartOnly = false }) => {
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const [categoriesPerView, setCategoriesPerView] = useState(8);
   const [barWidth, setBarWidth] = useState(BAR_WIDTH_DESKTOP);
@@ -182,7 +184,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        <span className="ms-3 text-gray-600 dark:text-gray-300">Loading budget data...</span>
+        <span className="ms-3 text-gray-600 dark:text-gray-300">{t('insights.bva.loading')}</span>
       </div>
     );
   }
@@ -191,7 +193,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
         <p className="text-gray-600 dark:text-gray-400">
-          No personal budget configured. Please set up your budget first.
+          {t('insights.bva.noBudget')}
         </p>
       </div>
     );
@@ -201,7 +203,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
         <p className="text-gray-600 dark:text-gray-400">
-          Creating monthly budgets for the selected period...
+          {t('insights.bva.creating')}
         </p>
       </div>
     );
@@ -213,10 +215,10 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
       {!showSummaryOnly && !showChartOnly && (
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Budget vs actual
+            {t('insights.bva.title')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Compare budgeted amounts with actual spending across categories
+            {t('insights.bva.subtitle')}
           </p>
         </div>
       )}
@@ -226,41 +228,41 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Avg original budget
+              {t('insights.bva.avgOriginal')}
             </p>
             <p className="text-2xl font-bold text-blue-900 dark:text-blue-400">
               {formatCurrency(summary.totalOriginal)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Average planned at month start
+              {t('insights.bva.avgOriginalHint')}
             </p>
           </div>
 
           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Avg current budget
+              {t('insights.bva.avgCurrent')}
             </p>
             <p className="text-2xl font-bold text-purple-900 dark:text-purple-400">
               {formatCurrency(summary.totalCurrent)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {summary.totalCurrent !== summary.totalOriginal
-                ? `Avg adjusted ${summary.totalCurrent > summary.totalOriginal ? '+' : ''}${formatCurrency(summary.totalCurrent - summary.totalOriginal)}`
-                : 'No adjustments on average'}
+                ? t('insights.bva.avgAdjusted', { amount: `${summary.totalCurrent > summary.totalOriginal ? '+' : ''}${formatCurrency(summary.totalCurrent - summary.totalOriginal)}` })
+                : t('insights.bva.noAdjustments')}
             </p>
           </div>
 
           <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Total spending
+              {t('insights.bva.totalSpending')}
             </p>
             <p className="text-2xl font-bold text-orange-900 dark:text-orange-400">
               {formatCurrency(summary.totalSpent)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {summary.totalCurrent > 0
-                ? `${((summary.totalSpent / summary.totalCurrent) * 100).toFixed(1)}% of avg budget`
-                : 'No budget set'}
+                ? t('insights.bva.ofAvgBudget', { percent: ((summary.totalSpent / summary.totalCurrent) * 100).toFixed(1) })
+                : t('insights.bva.noBudgetSet')}
             </p>
           </div>
         </div>
@@ -271,13 +273,13 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
         <div className={showChartOnly ? "" : "bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"}>
           {!showChartOnly && (
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
-              Category breakdown
+              {t('dashboard.tiles.categoryBreakdown')}
             </h3>
           )}
 
         {categoryData.length === 0 ? (
           <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-            No budget categories configured
+            {t('insights.bva.noCategories')}
           </p>
         ) : (
           <>
@@ -285,11 +287,11 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
             <div className="flex flex-wrap gap-4 mb-6 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-gray-400 dark:bg-gray-600" />
-                <span className="text-gray-700 dark:text-gray-300">Original budget</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('insights.bva.original')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-blue-400 dark:bg-blue-600" />
-                <span className="text-gray-700 dark:text-gray-300">Current budget</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('insights.bva.current')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
@@ -297,7 +299,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                   <div className="w-4 h-4 rounded bg-yellow-400 dark:bg-yellow-600" />
                   <div className="w-4 h-4 rounded bg-red-400 dark:bg-red-600" />
                 </div>
-                <span className="text-gray-700 dark:text-gray-300">Actual spending (good / warning / over)</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('insights.bva.actual')}</span>
               </div>
             </div>
 
@@ -323,19 +325,19 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                           <TrendingUp className="h-3 w-3" />
                           <span className="font-medium">{formatCurrencyRounded(maxVal)}</span>
                         </div>
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500">Max</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{t('insights.bva.max')}</span>
                       </div>
                       
                       {/* Mid - at visual middle of bar area (175px from top) */}
                       <div className="absolute end-0 flex flex-col items-end pe-2" style={{ top: '175px' }}>
                         <span className="font-medium">{formatCurrencyRounded(logMidVal)}</span>
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500">Mid</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{t('insights.bva.mid')}</span>
                       </div>
                       
                       {/* Min - aligned with bottom of bars (350px from top) */}
                       <div className="absolute end-0 flex flex-col items-end pe-2" style={{ top: '350px' }}>
                         <span className="font-medium">{formatCurrencyRounded(0)}</span>
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500">Min</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{t('insights.bva.min')}</span>
                       </div>
                     </>
                   );
@@ -447,7 +449,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                               width: `${barWidth}px`,
                               zIndex: 1
                             }}
-                            title={`${cat.category} - Original: ${formatCurrency(cat.originalBudget)}`}
+                            title={t('insights.bva.barOriginal', { category: cat.category, amount: formatCurrency(cat.originalBudget) })}
                           />
 
                           {/* Current Budget (Blue) - middle, overlaps gray */}
@@ -460,7 +462,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                               left: `${visibleWidth}px`,
                               zIndex: 2
                             }}
-                            title={`${cat.category} - Current: ${formatCurrency(cat.currentBudget)}`}
+                            title={t('insights.bva.barCurrent', { category: cat.category, amount: formatCurrency(cat.currentBudget) })}
                           />
 
                           {/* Actual Spending (Green/Yellow/Red) - rightmost */}
@@ -473,7 +475,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                               left: `${visibleWidth * 2}px`,
                               zIndex: 3
                             }}
-                            title={`${cat.category} - Actual: ${formatCurrency(cat.actualSpending)}`}
+                            title={t('insights.bva.barActual', { category: cat.category, amount: formatCurrency(cat.actualSpending) })}
                           />
                         </div>
 
@@ -493,6 +495,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                                   style={{ backgroundColor: cat.color }}
                                 />
                                 <span 
+                                  dir="auto"
                                   className="text-xs font-medium text-gray-900 dark:text-gray-100"
                                   title={cat.category}
                                 >
@@ -519,7 +522,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
             {/* Scale Note */}
             <div className="flex items-center gap-2 mt-2 text-xs italic text-gray-500 dark:text-gray-400">
               <TrendingUp className="h-3 w-3" />
-              <span>Logarithmic scale for better visibility</span>
+              <span>{t('insights.bva.logScale')}</span>
             </div>
           </>
         )}

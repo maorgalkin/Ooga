@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useFinance } from '../context/FinanceContext';
+import { useT } from '../hooks/useT';
 import { useActiveBudget } from '../hooks/useBudgets';
 import { BudgetVsActual } from '../components/analytics/BudgetVsActual';
 import { CategoryAccuracyChart } from '../components/analytics/CategoryAccuracyChart';
@@ -15,6 +16,7 @@ import { getHeadingColor, getSubheadingColor } from '../utils/themeColors';
  * Moved from Budget Management > Analytics tab
  */
 export const InsightsPage: React.FC = () => {
+  const t = useT();
   const [dateRange, setDateRange] = useState<DateRangeType>('mtd');
   const { transactions } = useFinance();
   const { data: activeBudget, isLoading, error } = useActiveBudget();
@@ -36,7 +38,7 @@ export const InsightsPage: React.FC = () => {
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-        <p className="text-gray-500 dark:text-gray-400">Loading insights...</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('insights.loading')}</p>
       </div>
     );
   }
@@ -45,7 +47,7 @@ export const InsightsPage: React.FC = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-500">Error loading budget data: {error.message}</p>
+        <p className="text-red-500">{t('insights.loadError', { message: error.message })}</p>
       </div>
     );
   }
@@ -56,10 +58,10 @@ export const InsightsPage: React.FC = () => {
       <div ref={dateRangeRef} className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className={`text-3xl font-bold ${getHeadingColor(themeColor)} mb-2`}>
-            Insights
+            {t('tabs.insights')}
           </h1>
           <p className={getSubheadingColor(themeColor)}>
-            Analyze your spending patterns and budget accuracy
+            {t('insights.subtitle')}
           </p>
         </div>
         
@@ -82,10 +84,10 @@ export const InsightsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Budget summary
+                  {t('insights.summaryTitle')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Overview of planned vs actual spending
+                  {t('insights.summarySubtitle')}
                 </p>
               </div>
             </div>
@@ -104,10 +106,10 @@ export const InsightsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Original vs current budget performance by category
+                  {t('insights.performanceTitle')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Compare budgeted amounts with actual spending across categories
+                  {t('insights.performanceSubtitle')}
                 </p>
               </div>
             </div>
@@ -126,10 +128,10 @@ export const InsightsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Category accuracy
+                  {t('insights.accuracyTitle')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  How well are you hitting your budget targets?
+                  {t('insights.accuracySubtitle')}
                 </p>
               </div>
             </div>
@@ -162,10 +164,10 @@ export const InsightsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Household member expenses
+                  {t('insights.membersTitle')}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  See who's spending what in your household
+                  {t('insights.membersSubtitle')}
                 </p>
               </div>
             </div>
@@ -182,10 +184,10 @@ export const InsightsPage: React.FC = () => {
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-8 text-center">
           <LineChart className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">
-            Coming soon: spending trends
+            {t('insights.trendsTitle')}
           </h3>
           <p className="text-sm text-gray-400 dark:text-gray-500">
-            Track how your spending evolves over time with trend analysis
+            {t('insights.trendsSubtitle')}
           </p>
         </div>
       </div>

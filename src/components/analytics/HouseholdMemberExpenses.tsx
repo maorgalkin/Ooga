@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useT } from '../../hooks/useT';
 import { useFinance } from '../../context/FinanceContext';
 import type { DateRangeType } from '../../utils/dateRangeFilters';
 import { getDateRange } from '../../utils/dateRangeFilters';
@@ -25,6 +26,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
   selectedRange,
   globalSettings,
 }) => {
+  const t = useT();
   const { transactions, familyMembers } = useFinance();
 
   const memberExpenseData = useMemo(() => {
@@ -45,7 +47,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
     // Initialize "Unassigned" category
     const unassignedData: MemberExpenseData = {
       memberId: 'unassigned',
-      memberName: 'Unassigned',
+      memberName: t('insights.members.unassigned'),
       memberColor: '#9CA3AF',
       totalExpenses: 0,
       transactionCount: 0,
@@ -67,7 +69,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
           const member = familyMembers.find(m => m.id === memberId);
           memberMap.set(memberId, {
             memberId,
-            memberName: member?.name || 'Unknown',
+            memberName: member?.name || t('insights.members.unknown'),
             memberColor: member?.color || '#6366F1',
             totalExpenses: 0,
             transactionCount: 0,
@@ -101,7 +103,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
 
     // Sort by total expenses descending
     return allMembers.sort((a, b) => b.totalExpenses - a.totalExpenses);
-  }, [transactions, familyMembers, selectedRange]);
+  }, [transactions, familyMembers, selectedRange, t]);
 
   const formatCurrency = (amount: number) => formatCurrencyFromSettings(amount, globalSettings);
 
@@ -110,7 +112,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
       <div className="text-center py-8">
         <Users className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
         <p className="text-gray-500 dark:text-gray-400">
-          No expense data available for the selected period
+          {t('insights.members.noData')}
         </p>
       </div>
     );
@@ -138,7 +140,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
                   {member.memberName}
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {member.transactionCount} transaction{member.transactionCount !== 1 ? 's' : ''}
+                  {t('insights.members.transactions', { count: member.transactionCount })}
                 </p>
               </div>
             </div>
@@ -147,7 +149,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
             <div className="space-y-3">
               <div>
                 <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Total expenses</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('insights.members.totalExpenses')}</span>
                   <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     {formatCurrency(member.totalExpenses)}
                   </span>
@@ -163,12 +165,12 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
                   />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {member.percentage.toFixed(1)}% of total
+                  {t('insights.members.ofTotal', { percent: member.percentage.toFixed(1) })}
                 </p>
               </div>
 
               <div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Average per transaction</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{t('insights.members.averagePerTransaction')}</span>
                 <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
                   {formatCurrency(member.averageTransaction)}
                 </p>
@@ -177,7 +179,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
               {/* Top Categories */}
               <div>
                 <span className="text-sm text-gray-600 dark:text-gray-400 mb-2 block">
-                  Top categories
+                  {t('insights.members.topCategories')}
                 </span>
                 <div className="space-y-1">
                   {Object.entries(member.categories)
@@ -206,19 +208,19 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th className="px-4 py-3 text-start text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                Member
+                {t('insights.members.member')}
               </th>
               <th className="px-4 py-3 text-end text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                Transactions
+                {t('insights.members.transactionsColumn')}
               </th>
               <th className="px-4 py-3 text-end text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                Total
+                {t('insights.members.total')}
               </th>
               <th className="px-4 py-3 text-end text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                Average
+                {t('insights.members.average')}
               </th>
               <th className="px-4 py-3 text-end text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                % of Total
+                {t('insights.members.percentOfTotal')}
               </th>
             </tr>
           </thead>

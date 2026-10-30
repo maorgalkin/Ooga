@@ -1,11 +1,13 @@
 import React from 'react';
 import { getUserLocale } from '../utils/locale';
+import { useTranslation } from 'react-i18next';
 
 interface BuildInfoProps {
   inline?: boolean; // If true, render inline at bottom of page instead of floating
 }
 
 export const BuildInfo: React.FC<BuildInfoProps> = ({ inline = false }) => {
+  const { t } = useTranslation();
   const commit = import.meta.env.VITE_GIT_COMMIT;
   const branch = import.meta.env.VITE_GIT_BRANCH;
   const buildTime = import.meta.env.VITE_BUILD_TIME;
@@ -29,8 +31,8 @@ export const BuildInfo: React.FC<BuildInfoProps> = ({ inline = false }) => {
             <span>{branch}</span>
           </div>
           <div className="flex gap-4 text-gray-500 dark:text-gray-500">
-            {commit && <div>Commit: {commit}</div>}
-            {buildTime && <div>Built: {new Date(buildTime).toLocaleString(getUserLocale())}</div>}
+            {commit && <div>{t('buildInfo.commit')} {commit}</div>}
+            {buildTime && <div>{t('buildInfo.built')} {new Date(buildTime).toLocaleString(getUserLocale())}</div>}
           </div>
         </div>
       </div>
@@ -42,7 +44,7 @@ export const BuildInfo: React.FC<BuildInfoProps> = ({ inline = false }) => {
     <button
       onClick={handleClick}
       className="fixed bottom-2 end-2 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg opacity-75 hover:opacity-100 transition-opacity font-mono z-50 cursor-pointer hover:bg-gray-700"
-      title="Click to scroll to top"
+      title={t('buildInfo.scrollToTop')}
     >
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
@@ -52,8 +54,8 @@ export const BuildInfo: React.FC<BuildInfoProps> = ({ inline = false }) => {
           <span>{branch}</span>
         </div>
         <div className="text-gray-300">
-          {commit && <div>Commit: {commit}</div>}
-          {buildTime && <div>Built: {new Date(buildTime).toLocaleString(getUserLocale())}</div>}
+          {commit && <div>{t('buildInfo.commit')} {commit}</div>}
+          {buildTime && <div>{t('buildInfo.built')} {new Date(buildTime).toLocaleString(getUserLocale())}</div>}
         </div>
       </div>
     </button>
