@@ -66,6 +66,8 @@ Run with `npx tsx scripts/demo/seed-demo-household.ts <step>`.
 
 To refresh one chapter, rerun only its phase, but read the gotchas first.
 
+The `guide-visuals` agent (`.claude/agents/guide-visuals.md`) follows this procedure for you: after a UI change it works out which frames and guide text went stale, and re-captures them when the drift is substantial.
+
 ## Gotchas
 
 - **Capture phases aren't idempotent.** `household` renames the household and `budget` creates the budget. Run `fresh` and `family` before rerunning them.
