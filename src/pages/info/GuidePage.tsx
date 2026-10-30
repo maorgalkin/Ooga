@@ -20,10 +20,10 @@ function ChapterNav({ current }: { current?: string }) {
         Getting started
       </Link>
       <ol className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-4 lg:overflow-visible lg:pb-0">
-        {GUIDE_PARTS.map((part, p) => (
+        {GUIDE_PARTS.map((part) => (
           <li key={part.title} className="shrink-0">
             <p className="hidden px-3 pb-1 text-xs font-medium text-gray-500 dark:text-gray-400 lg:block">
-              Part {p + 1} · {part.title}
+              {part.title}
             </p>
             <ol className="flex gap-2 lg:flex-col lg:gap-0.5">
               {part.chapters.map((slug) => {
@@ -142,7 +142,7 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
   const prev = GUIDE_CHAPTERS[index - 1];
   const next = GUIDE_CHAPTERS[index + 1];
   const Icon = chapter.icon;
-  const located = partOf(chapter.slug);
+  const part = partOf(chapter.slug);
 
   return (
     <article>
@@ -150,9 +150,9 @@ function Chapter({ chapter, index }: { chapter: GuideChapter; index: number }) {
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${chapter.tint}`}>
           <Icon className="h-5 w-5" />
         </span>
-        {located && (
+        {part && (
           <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
-            Part {located.number} · {located.part.title}
+            {part.title}
           </span>
         )}
         <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-sm text-gray-500 dark:text-gray-400">

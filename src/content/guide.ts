@@ -54,9 +54,9 @@ const BUDGET_SETTINGS = { label: 'Open Budget settings', to: '/?tab=budget&subta
 export const GUIDE_CHAPTERS: GuideChapter[] = [
   {
     slug: 'household',
-    title: 'Set up your household',
+    title: 'Setting up your household',
     summary: 'Create your account, name your household and invite your partner.',
-    intro: "Ooga keeps everything for your family in one household: the budget, the transactions and the connected accounts. Yours is created for you the moment you create your account.",
+    intro: "A household is everyone who shares the family's money: you, your partner, the kids. You may be many under one roof, but there's one budget, and it's for all of you. That's why every expense matters, whoever made it: the budget, every transaction and the connected accounts all live in the household, where everyone sees the whole picture. Ooga creates yours the moment you create your account.",
     minutes: 3,
     icon: Home,
     tint: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
@@ -95,7 +95,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
   },
   {
     slug: 'budget',
-    title: 'Create your budget',
+    title: 'Creating your budget',
     summary: 'Pick your categories and give each one a monthly limit.',
     intro: "A budget in Ooga is a list of categories, each with a monthly limit. Ooga tracks every month against it and warns you before a category runs over.",
     minutes: 3,
@@ -126,7 +126,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
   },
   {
     slug: 'transactions',
-    title: 'Add transactions',
+    title: 'Adding transactions',
     summary: 'Enter spending by hand or import it from your bank, then see the month on the Dashboard.',
     intro: "Every expense and income goes into Ooga as a transaction. Enter them by hand as they happen, import them from your bank, or both: set \"Paid with\" on the ones you enter by hand, and the import matches the bank's charge to them so nothing is counted twice.",
     minutes: 4,
@@ -188,7 +188,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
   },
   {
     slug: 'update-budget',
-    title: 'Keep your budget current',
+    title: 'Keeping your budget current',
     summary: 'Change a limit for one month or for good, tidy up categories and go back to an earlier version.',
     intro: "Real months rarely match the plan. Ooga lets you fix a single month, change the plan from next month on, and go back to an earlier version if you need to.",
     minutes: 3,
@@ -232,7 +232,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
   },
   {
     slug: 'insights',
-    title: 'Understand your trends',
+    title: 'Understanding your trends',
     summary: 'Insights compares your budget with actual spending and shows where it drifts.',
     intro: "Once a few weeks of transactions are in, Ooga starts showing patterns: where the money goes, which categories drift and who spends what.",
     minutes: 2,
@@ -298,8 +298,7 @@ export const GUIDE_PARTS: GuidePart[] = [
   },
 ];
 
-/** The part a chapter belongs to, with its 1-based number. */
+/** The part a chapter belongs to. */
 export function partOf(slug: string) {
-  const index = GUIDE_PARTS.findIndex((p) => p.chapters.includes(slug));
-  return index === -1 ? undefined : { part: GUIDE_PARTS[index], number: index + 1 };
+  return GUIDE_PARTS.find((p) => p.chapters.includes(slug));
 }

@@ -86,7 +86,7 @@ describe('Guide page', () => {
     const [first, second, third] = GUIDE_CHAPTERS;
     renderAt(`/guide/${second.slug}`);
     expect(screen.getByRole('heading', { level: 1, name: second.title })).toBeInTheDocument();
-    expect(within(screen.getByRole('article')).getByText('Part 2 · Your budget')).toBeInTheDocument();
+    expect(within(screen.getByRole('article')).getByText('Your budget')).toBeInTheDocument();
     const pager = screen.getByRole('navigation', { name: 'Chapter navigation' });
     expect(pager.querySelector(`a[href="/guide/${first.slug}"]`)).not.toBeNull();
     expect(pager.querySelector(`a[href="/guide/${third.slug}"]`)).not.toBeNull();
