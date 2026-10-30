@@ -205,7 +205,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
     >
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto overscroll-contain touch-pan-y">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">Edit Transaction</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Edit transaction</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -251,7 +251,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {/* Amount */}
           <div>
             <label htmlFor="edit-amount" className="block text-sm font-medium text-gray-700 mb-1">
-              {convertToInstallments && canConvertToInstallments ? 'Total Amount' : 'Amount'} ({currencySymbol})
+              {convertToInstallments && canConvertToInstallments ? 'Total amount' : 'Amount'} ({currencySymbol})
             </label>
             <input
               id="edit-amount"
@@ -308,7 +308,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
           {/* Family Member */}
           <div>
             <label htmlFor="edit-family-member" className="block text-sm font-medium text-gray-700 mb-1">
-              Family Member (Optional)
+              Family member (optional)
             </label>
             <select
               id="edit-family-member"
@@ -403,7 +403,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                   disabled={isSubmitting}
                   className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors font-medium disabled:opacity-50"
                 >
-                  {convertToInstallments && canConvertToInstallments ? 'Create Installments' : 'Save Changes'}
+                  {convertToInstallments && canConvertToInstallments ? 'Create installments' : 'Save changes'}
                 </button>
                 <button
                   type="button"
@@ -479,7 +479,7 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ transaction
                         onClick={handleDelete}
                         className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
                       >
-                        Confirm Delete
+                        Confirm delete
                       </button>
                       <button
                         type="button"

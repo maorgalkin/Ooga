@@ -113,7 +113,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
     }
     
     if (isInstallment && (!numberOfInstallments || parseInt(numberOfInstallments) < 2)) {
-      missingFields.push('Number of Installments (minimum 2)');
+      missingFields.push('Number of installments (minimum 2)');
     }
     
     if (missingFields.length > 0) {
@@ -240,7 +240,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Add {formData.type === 'income' ? '💰 Income' : '💸 Expense'}
+                Add {formData.type === 'income' ? '💰 income' : '💸 expense'}
               </h2>
               <button
                 onClick={onClose}
@@ -255,7 +255,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
           <div className="pb-1">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
               <Download className="w-3.5 h-3.5" />
-              Import Transactions
+              Import transactions
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {connections.map(conn => (
@@ -382,7 +382,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ isOpen, onClose }) => {
 
           <div>
             <label htmlFor="transaction-family-member" className="block text-sm font-medium text-gray-700 mb-1">
-              Family Member
+              Family member
             </label>
             <select
               id="transaction-family-member"

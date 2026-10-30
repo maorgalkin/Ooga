@@ -688,7 +688,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   if (categoryData.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Expenses by Category</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Expenses by category</h2>
         <p className="text-gray-500 dark:text-gray-400 text-center py-12">No expense data available</p>
       </div>
     );
@@ -698,7 +698,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
       {/* Header: title + selected category name/color */}
       <div className="max-md:hidden flex items-center gap-2 mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0">Expenses by Category</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0">Expenses by category</h2>
         {selectedDesktopCategory && (() => {
           const catColor = getCategoryColor(selectedDesktopCategory, 'expense', personalBudget).hexColor;
           return (
@@ -895,7 +895,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                             onClick={() => onViewAllTransactions(selectedDesktopCategory)}
                             className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                           >
-                            See All {selectedDesktopCategory} Expenses ({totalTransactions})
+                            See all {selectedDesktopCategory} expenses ({totalTransactions})
                           </button>
                         </div>
                       )}

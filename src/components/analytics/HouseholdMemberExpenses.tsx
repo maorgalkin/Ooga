@@ -151,7 +151,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
             <div className="space-y-3">
               <div>
                 <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Expenses</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Total expenses</span>
                   <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     {formatCurrency(member.totalExpenses)}
                   </span>
@@ -181,7 +181,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
               {/* Top Categories */}
               <div>
                 <span className="text-sm text-gray-600 dark:text-gray-400 mb-2 block">
-                  Top Categories
+                  Top categories
                 </span>
                 <div className="space-y-1">
                   {Object.entries(member.categories)

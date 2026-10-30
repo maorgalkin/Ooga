@@ -69,7 +69,7 @@ export const BudgetManagement: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className={`text-3xl font-bold ${getHeadingColor(themeColor)} mb-2`}>
-          Budget Management
+          Budget management
         </h1>
         <p className={getSubheadingColor(themeColor)}>
           Manage your budget and track monthly spending
@@ -117,7 +117,7 @@ export const BudgetManagement: React.FC = () => {
               <div>
                 {/* Tips Block - at the top */}
                 <div className={`text-sm text-gray-500 dark:text-gray-400 mb-6 p-4 ${getInactiveBg(themeColor)} rounded-lg`}>
-                  <p className="font-medium mb-2">💡 Getting Started:</p>
+                  <p className="font-medium mb-2">💡 Getting started:</p>
                   <ul className="list-disc list-inside space-y-1">
                     <li>Add your spending categories and set monthly limits</li>
                     <li>Your budget will be created automatically when you save</li>

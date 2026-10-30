@@ -82,7 +82,7 @@ export const InsightsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Budget Summary
+                  Budget summary
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Overview of planned vs actual spending
@@ -104,7 +104,7 @@ export const InsightsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Original vs Current Budget Performance by Category
+                  Original vs current budget performance by category
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Compare budgeted amounts with actual spending across categories
@@ -126,7 +126,7 @@ export const InsightsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Category Accuracy
+                  Category accuracy
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   How well are you hitting your budget targets?
@@ -163,7 +163,7 @@ export const InsightsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Household Member Expenses
+                  Household member expenses
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   See who's spending what in your household
@@ -183,7 +183,7 @@ export const InsightsPage: React.FC = () => {
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-8 text-center">
           <LineChart className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">
-            Coming Soon: Spending Trends
+            Coming soon: spending trends
           </h3>
           <p className="text-sm text-gray-400 dark:text-gray-500">
             Track how your spending evolves over time with trend analysis

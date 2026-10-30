@@ -38,11 +38,11 @@ describe('TransactionFilterTree categories', () => {
     expect(screen.getByLabelText('Salary')).toBeInTheDocument();
   });
 
-  it('"Select All" selects every listed category across groups', () => {
+  it('"Select all" selects every listed category across groups', () => {
     const onCategoryChange = vi.fn();
     renderTree(groups, onCategoryChange);
-    // Each section has its own "Select All"; the categories section is last
-    const selectAlls = screen.getAllByLabelText('Select All', { selector: 'input' });
+    // Each section has its own "Select all"; the categories section is last
+    const selectAlls = screen.getAllByLabelText('Select all', { selector: 'input' });
     fireEvent.click(selectAlls[selectAlls.length - 1]);
     expect(onCategoryChange).toHaveBeenCalledWith(['Dining', 'Groceries', 'Salary']);
   });

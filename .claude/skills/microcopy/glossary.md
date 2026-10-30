@@ -9,7 +9,7 @@ Terms marked **proposed** were inferred from the newest screens and haven't been
 |---|---|---|---|
 | household | The shared space a family's budget, transactions and accounts belong to. Every user is in exactly one. | family account, group | `Household settings`, `Leave household` |
 | owner | The participant who manages the household (invites, removes, transfers ownership). | admin | DB role `owner` |
-| participant | Someone with an Ooga login in the household. **Proposed:** `Participant` in badges and lists (today: `Budget Participant`). | member, budget participant, user | DB role `participant` (renamed from member/admin in migration 010) |
+| participant | Someone with an Ooga login in the household. **Proposed:** `Participant` in badges and lists (today: `Budget participant`). | member, budget participant, user | DB role `participant` (renamed from member/admin in migration 010) |
 | family member | Who a transaction is for, or who spent it: a label, optionally linked to a participant. Kids can be family members without a login. | tag, custom tag, household member tag | `Family member (optional)` on transaction forms. Verb: "pick" in instructions, "mark" in feature text (never "tag") |
 | invitation code | The code a participant shares so someone can join the household. | invite link, join code | `Paste invitation code` |
 
@@ -43,7 +43,7 @@ Terms marked **proposed** were inferred from the newest screens and haven't been
 | import | Pulling transactions from a connected account. | sync, scrape, fetch | `Import transactions`, `Cancel import` |
 | duplicate | An imported row Ooga already has, so it's skipped. | dupe, conflict | `3 duplicates skipped` |
 | merge (into an entry) | A bank row folded into the manual transaction it matches. | reconcile, link | Reversible: `Undo` |
-| verification code | The one-time SMS code a bank sends. **Proposed** for UI text. | OTP | `Send code`, `Enter the code from your SMS` |
+| verification code | The one-time SMS code a bank sends. Use `code` in buttons and labels. | OTP | `Send code`, `Enter the code from your SMS` |
 
 ## Sign-in
 
@@ -55,6 +55,5 @@ Terms marked **proposed** were inferred from the newest screens and haven't been
 
 ## Open questions for the owner
 
-- `participant` vs `member` for people with a login. Badges say `Budget Participant`; dialogs say "remove this member".
-- Whether `verification code` should replace `OTP` everywhere, or only in body text.
+- `participant` vs `member` for people with a login. Badges say `Budget participant`; dialogs say "remove this member".
 - The single name for the warning setting (`Warning threshold`, `Alert at` and `Warning at` all appear today).

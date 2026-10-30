@@ -52,7 +52,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Select {type === 'income' ? 'Income Source' : 'Expense Category'}
+                Select {type === 'income' ? 'income source' : 'expense category'}
               </h3>
               <p className="text-sm text-gray-500 mt-1">
                 Choose from your categories below

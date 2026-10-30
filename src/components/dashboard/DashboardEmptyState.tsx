@@ -201,14 +201,14 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
               className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-md"
             >
               <Plus className="h-4 w-4" />
-              Add Transaction
+              Add transaction
             </button>
             <button
               onClick={() => navigate('/?tab=transactions')}
               className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors font-medium"
             >
               <Upload className="h-4 w-4" />
-              Import Transactions
+              Import transactions
             </button>
             {!personalBudget && (
               <button
@@ -216,7 +216,7 @@ export const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({
                 className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors font-medium"
               >
                 <Sparkles className="h-4 w-4" />
-                Set Up Budget
+                Set up budget
               </button>
             )}
           </div>

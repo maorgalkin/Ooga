@@ -143,7 +143,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
               <div className="ml-4">
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {isCritical ? 'Critical Error Detected' : 'Something went wrong'}
+                  {isCritical ? 'Critical error detected' : 'Something went wrong'}
                 </h1>
                 <p className="text-gray-600 mt-1">
                   {isCritical 
@@ -178,7 +178,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
             {error && (
               <div className="mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Error Details:</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Error details:</h2>
                 <div className="bg-red-50 border border-red-200 rounded-md p-4">
                   <p className="text-red-800 font-mono text-sm break-all">
                     {error.toString()}
@@ -190,7 +190,7 @@ export class ErrorBoundary extends Component<Props, State> {
             {import.meta.env.DEV && this.state.errorInfo && (
               <details className="mb-6">
                 <summary className="cursor-pointer text-gray-700 font-medium hover:text-gray-900">
-                  Stack Trace (Development Only)
+                  Stack trace (development only)
                 </summary>
                 <pre className="mt-2 bg-gray-100 border border-gray-200 rounded-md p-4 overflow-auto text-xs text-gray-800">
                   {this.state.errorInfo.componentStack}
@@ -203,14 +203,14 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleReload}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
               >
-                Reload Page Now
+                Reload page now
               </button>
               {!isCritical && (
                 <button
                   onClick={this.handleReset}
                   className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
                 >
-                  Try Again
+                  Try again
                 </button>
               )}
             </div>
