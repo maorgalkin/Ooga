@@ -13,6 +13,12 @@
       "female": "Female",
       "male": "Male",
       "saveError": "Couldn't save this choice. Check your connection and try again."
+    },
+    "offer": {
+      "label": "Hebrew is available",
+      "body": "Ooga is also available in Hebrew.",
+      "accept": "Switch to Hebrew",
+      "decline": "Keep English"
     }
   },
   "common": {

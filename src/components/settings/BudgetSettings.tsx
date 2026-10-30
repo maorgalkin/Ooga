@@ -20,7 +20,6 @@ import { BudgetHistory } from './BudgetHistory';
 import { useActiveBudget, useUpdatePersonalBudget } from '../../hooks/useBudgets';
 import ConnectedAccountsSettings from '../ConnectedAccountsSettings';
 import { LanguageSettings } from './LanguageSettings';
-import { isHebrewEnabled } from '../../i18n';
 import { useT } from '../../hooks/useT';
 import HouseholdSettingsModal from '../HouseholdSettingsModal';
 import * as HouseholdService from '../../services/householdService';
@@ -370,7 +369,7 @@ export const BudgetSettings: React.FC<BudgetSettingsProps> = ({ className = '' }
       </div>
 
       {/* Personal, unlike the household-wide settings above: saved to the signed-in account */}
-      {isHebrewEnabled() && <LanguageSettings />}
+      <LanguageSettings />
 
       {/* Connected Bank Accounts Section */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">

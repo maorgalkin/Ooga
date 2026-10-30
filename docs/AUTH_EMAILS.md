@@ -29,7 +29,7 @@ The same saved language names a new household in Hebrew (migration 040).
 
    Both languages, because the subject may not support the same template logic. If the dashboard's preview shows template tags working in the subject, `{{ if and .Data.language (eq .Data.language "he") }}…{{ else }}…{{ end }}` there too gives one language.
 3. **Body:** paste the whole file (the comment line on top is fine to keep).
-4. Before saving, send yourself both versions: sign up (or request a reset) once with the app in English and once in Hebrew (`VITE_ENABLE_HEBREW=1` locally, against the test project), and check that the English one renders for an account without a saved language.
+4. Before saving, send yourself both versions: sign up (or request a reset) once with the app in English and once in Hebrew (locally, against the test project), and check that the English one renders for an account without a saved language.
 5. Save. Edit the file here first and paste again for any later change, so the repo stays the source of truth.
 
 Copy rules: `microcopy` skill (English) and `microcopy/hebrew.md` (Hebrew).

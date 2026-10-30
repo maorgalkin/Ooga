@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FinanceProvider } from './context/FinanceContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageSync } from './i18n/LanguageSync';
+import { HebrewOffer } from './i18n/HebrewOffer';
 import { useTranslation } from 'react-i18next';
 import { useT } from './hooks/useT';
 import Dashboard from './components/Dashboard';
@@ -135,6 +136,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LanguageSync />
+        <HebrewOffer />
         <BrowserRouter>
           <FinanceProvider>
             <Routes>

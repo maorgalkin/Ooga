@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { readPreferences, savePreferences } from '../services/preferencesService';
-import { applyLanguage, browserLanguage, isHebrewEnabled } from '.';
+import { applyLanguage, browserLanguage } from '.';
 
 /** Applies the signed-in account's language, so a choice made on one device shows on all of them. */
 export function LanguageSync() {
@@ -10,7 +10,6 @@ export function LanguageSync() {
   const userId = user?.id;
 
   useEffect(() => {
-    if (!isHebrewEnabled()) return;
     if (saved) {
       applyLanguage(saved);
       return;
