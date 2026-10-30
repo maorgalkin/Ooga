@@ -8,6 +8,8 @@ import ResetPassword from '../../../src/pages/auth/ResetPassword';
 const auth = vi.hoisted(() => ({
   user: { id: 'user-1' } as { id: string } | null,
   loading: false,
+  isRecovery: true,
+  awaitingRecovery: false,
   resetPassword: vi.fn(),
   updatePassword: vi.fn(),
 }));
@@ -23,6 +25,8 @@ const renderPage = (page: React.ReactElement) => render(<MemoryRouter>{page}</Me
 
 beforeEach(() => {
   auth.user = { id: 'user-1' };
+  auth.isRecovery = true;
+  auth.awaitingRecovery = false;
   auth.resetPassword.mockReset().mockResolvedValue({ error: null });
   auth.updatePassword.mockReset().mockResolvedValue({ error: null });
   navigate.mockReset();

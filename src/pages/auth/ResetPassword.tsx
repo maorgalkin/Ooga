@@ -6,14 +6,14 @@ import { Lock, AlertCircle, Loader2 } from 'lucide-react';
 const MIN_PASSWORD_LENGTH = 6;
 
 /**
- * Landing page for the link in the password reset email. Supabase signs the person in
- * from the link's token, so a user is present here only while the link is valid.
+ * Landing page for the link in the password reset email. The form shows only for a session
+ * the link opened (Supabase's PASSWORD_RECOVERY event), not for anyone already signed in.
  */
 const ResetPassword: React.FC = () => {
-  const { user, loading: authLoading, updatePassword } = useAuth();
+  const { user, loading: authLoading, updatePassword, isRecovery, awaitingRecovery } = useAuth();
   const navigate = useNavigate();
-  // Supabase sends an expired or used link back with error_code in the hash, and leaves any
-  // existing session in place, so the hash, not the session, says whether the link worked
+  // Supabase sends an expired or used link back with error_code in the hash; checking it
+  // catches those links whatever the session state
   const { hash } = useLocation();
   const linkFailed = new URLSearchParams(hash.replace(/^#/, '')).has('error_code');
 
@@ -57,11 +57,11 @@ const ResetPassword: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Choose a new password</h1>
         </div>
 
-        {authLoading ? (
+        {authLoading || awaitingRecovery ? (
           <div className="flex justify-center py-6">
             <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
           </div>
-        ) : !user || linkFailed ? (
+        ) : !user || linkFailed || !isRecovery ? (
           <div className="text-center space-y-4">
             <p className="text-gray-600 dark:text-gray-400">
               This reset link has expired or was already used. Request a new one to continue.

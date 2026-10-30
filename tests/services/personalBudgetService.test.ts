@@ -367,6 +367,18 @@ describe('PersonalBudgetService', () => {
       expect(writeChain.update).not.toHaveBeenCalled();
     });
 
+    it('treats a category named like an Object.prototype key as new', async () => {
+      const readChain = createMockChain({ data: activeBudget, error: null });
+      const writeChain = createMockChain({ data: null, error: null });
+      mockTables({ personal_budgets: [readChain, writeChain] });
+
+      await PersonalBudgetService.addCategoryToActiveBudget('constructor', pets);
+
+      expect(writeChain.update).toHaveBeenCalledWith(expect.objectContaining({
+        categories: { ...activeBudget.categories, constructor: pets },
+      }));
+    });
+
     it('does nothing when the household has no active budget', async () => {
       const readChain = createMockChain({ data: null, error: { code: 'PGRST116' } });
       mockTables({ personal_budgets: readChain });

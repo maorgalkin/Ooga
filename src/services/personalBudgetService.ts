@@ -732,13 +732,14 @@ export class PersonalBudgetService {
     if (!budget) return;
 
     const active = budget.global_settings?.activeExpenseCategories ?? [];
-    const alreadyListed = budget.categories?.[categoryName] && active.includes(categoryName);
-    if (alreadyListed) return;
+    // Own keys only: a category named "constructor" must not match Object.prototype
+    const existing = Object.hasOwn(budget.categories ?? {}, categoryName) ? budget.categories[categoryName] : undefined;
+    if (existing && active.includes(categoryName)) return;
 
     const { error } = await supabase
       .from('personal_budgets')
       .update({
-        categories: { ...budget.categories, [categoryName]: budget.categories?.[categoryName] ?? config },
+        categories: { ...budget.categories, [categoryName]: existing ?? config },
         global_settings: {
           ...budget.global_settings,
           activeExpenseCategories: active.includes(categoryName) ? active : [...active, categoryName],

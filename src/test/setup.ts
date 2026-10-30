@@ -30,6 +30,8 @@ vi.mock('../contexts/AuthContext', () => ({
     signOut: vi.fn().mockResolvedValue({ error: null }),
     resetPassword: vi.fn().mockResolvedValue({ data: {}, error: null }),
     updatePassword: vi.fn().mockResolvedValue({ error: null }),
+    isRecovery: false,
+    awaitingRecovery: false,
   }),
 }));
 
