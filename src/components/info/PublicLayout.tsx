@@ -79,6 +79,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             {user ? t('nav.openOoga') : t('nav.signIn')}
           </Link>
         </nav>
+        <p className="mt-3 text-xs">{t('footer.copyright')}</p>
       </footer>
     </div>
   );

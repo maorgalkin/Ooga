@@ -18,7 +18,7 @@ export interface GuideStep {
   clip?: { alt: string; frames: ClipFrame[]; mobileFrames?: ClipFrame[] };
   /** Where in the app to do this step; shown at the end of the step's text. */
   link?: { label: string; to: string };
-  /** The step "How it works" on the sign-in page shows for this chapter. */
+  /** The step whose clip "How it works" on the sign-in page plays for this chapter. */
   featured?: boolean;
   /** Only for people who aren't signed in yet, such as creating an account. */
   signedOutOnly?: boolean;
@@ -32,8 +32,6 @@ export interface GuideChapter {
   minutes: number;
   icon: LucideIcon;
   tint: string;
-  /** Also shown in "How it works" on the sign-in page, with its featured step. */
-  landing?: boolean;
   steps: GuideStep[];
 }
 
@@ -93,7 +91,6 @@ export const GUIDE_CHAPTERS: ChapterShape[] = [
     minutes: 3,
     icon: Home,
     tint: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-    landing: true,
     steps: [
       { id: 'create-account', clip: ['household/register-1', 'household/register-2', 'household/register-3'], to: '/register', signedOutOnly: true },
       { id: 'name-and-family', clip: ['household/dashboard-empty', 'household/rename', 'household/members'], to: '/' },
@@ -105,7 +102,6 @@ export const GUIDE_CHAPTERS: ChapterShape[] = [
     minutes: 3,
     icon: PiggyBank,
     tint: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-    landing: true,
     steps: [
       { id: 'start', clip: ['budget/tab', 'budget/defaults'], to: '/?tab=budget&create=true' },
       { id: 'make-it-yours', clip: ['budget/edit-category', 'budget/add-category', 'budget/save', 'budget/saved'], featured: true },
@@ -116,7 +112,6 @@ export const GUIDE_CHAPTERS: ChapterShape[] = [
     minutes: 4,
     icon: ReceiptText,
     tint: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-    landing: true,
     steps: [
       { id: 'add', clip: ['transactions/modal', 'transactions/categories', 'transactions/filled', 'transactions/income'], featured: true },
       { id: 'installments', clip: ['transactions/installments'] },
@@ -143,7 +138,6 @@ export const GUIDE_CHAPTERS: ChapterShape[] = [
     minutes: 2,
     icon: TrendingUp,
     tint: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    landing: true,
     steps: [
       { id: 'compare', clip: ['insights/range', 'insights/summary', 'insights/chart'], to: '/?tab=insights', featured: true },
       { id: 'drift', clip: ['insights/accuracy', 'insights/pace'] },

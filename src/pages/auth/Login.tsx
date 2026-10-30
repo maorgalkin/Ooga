@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { authErrorMessage } from '../../i18n/authErrors';
@@ -19,6 +19,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const returnPath = safeReturnPath((location.state as { from?: unknown } | null)?.from);
 
   // Already signed in: there's nothing to do here, so go where they were heading
@@ -61,10 +62,7 @@ const Login: React.FC = () => {
           </div>
 
       <div className="max-w-md w-full mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('auth.signIn.title')}</h2>
-          <p className="text-gray-600 dark:text-gray-300">{t('auth.signIn.subtitle')}</p>
-        </div>
+        <h2 className="text-center mb-8 text-3xl font-bold text-gray-900 dark:text-white">{t('auth.signIn.title')}</h2>
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
@@ -88,6 +86,15 @@ const Login: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter with the password still empty moves on to it rather than stopping at "fill in this field"
+                  if (e.key === 'Enter' && !password) {
+                    e.preventDefault();
+                    passwordRef.current?.focus();
+                  }
+                }}
+                autoComplete="email"
+                enterKeyHint={password ? 'go' : 'next'}
                 required
                 disabled={loading}
                 className="block w-full ps-10 pe-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
@@ -107,7 +114,10 @@ const Login: React.FC = () => {
               </div>
               <input
                 id="password"
+                ref={passwordRef}
                 type="password"
+                autoComplete="current-password"
+                enterKeyHint="go"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

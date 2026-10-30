@@ -28,7 +28,7 @@ Never edit app code (`src/components`, `src/pages`, `src/hooks`, `src/services`,
 - `capture-guide.mjs` has one function per phase (`signed-out`, `household`, `budget`, `transactions`, `tour`). Each `shot(chapter, name, { target, area, focus })` call writes `public/guide/<chapter>/<name>.webp` (phones: `public/guide/mobile/…`) and its manifest entry under the key `chapter/name`.
 - `guide.ts` holds the guide's shape: each step has an `id` and its frame keys (`clip: ['chapter/name', …]`); its words are under `chapters.<slug>.steps.<id>` in `guide.en.json` / `guide.he.json`, including the clip's `alt`. A step uses phone frames only when every one of its frames has a phone version.
 - There are two sets: English (`public/guide/…`) and Hebrew (`public/guide/he/…`, captured with `--lang he` from a Hebrew demo household; see "The Hebrew set" in `docs/GUIDE_SCREENSHOTS.md`). Audit and re-capture both: a UI change that stales one usually stales the other. The Hebrew guide quotes the Hebrew labels, so check its words against `he.json` too.
-- The landing page's "How it works" reuses each `landing` chapter's `featured` step (or its first step with a clip), so a stale guide frame is a stale landing frame too.
+- The landing page's "How it works" (`STEPS` in `LandingSections.tsx`) plays the `featured` step's clip (or the first step with a clip) of the household, budget and transactions chapters, so a stale guide frame there is a stale landing frame too.
 - A frame's `target` is the element the pointer and highlight ring point at. If that selector stops matching, the phase throws; if it matches the wrong element, the frame is quietly wrong.
 
 ## Audit (always first)
