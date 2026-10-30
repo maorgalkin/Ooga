@@ -42,7 +42,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Transaction Details
+            Transaction details
           </h2>
           <button
             onClick={onClose}
@@ -119,7 +119,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
                 <User className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Family Member</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Family member</p>
                 <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                   {getFamilyMemberName(transaction.familyMember)}
                 </p>

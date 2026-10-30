@@ -361,7 +361,7 @@ Are you absolutely sure you want to continue?`;
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Personalize Your Budget
+              Personalize your budget
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Configure your budget categories and monthly limits
@@ -374,7 +374,7 @@ Are you absolutely sure you want to continue?`;
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Create Budget
+                Create budget
               </button>
             )}
             {!isCreating && !editingBudgetId && history.length > 0 && (
@@ -384,7 +384,7 @@ Are you absolutely sure you want to continue?`;
                 title="Reset all budget configuration - delete everything"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Reset All
+                Reset all
               </button>
             )}
           </div>
@@ -398,7 +398,7 @@ Are you absolutely sure you want to continue?`;
             {/* Budget Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Budget Name
+                Budget name
               </label>
               <input
                 type="text"
@@ -412,7 +412,7 @@ Are you absolutely sure you want to continue?`;
             {/* Categories Grid */}
             <div className="pt-4 border-t border-gray-300 dark:border-gray-600">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Budget Categories
+                Budget categories
               </label>
               
               {/* Categories Grid - v3.0 CUSTOM CSS */}
@@ -482,7 +482,7 @@ Are you absolutely sure you want to continue?`;
                 >
                   <Plus className="h-8 w-8 text-green-600 dark:text-green-400 mb-2" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Add Category
+                    Add category
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Click to create new
@@ -494,7 +494,7 @@ Are you absolutely sure you want to continue?`;
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Total Monthly Budget:
+                    Total monthly budget:
                   </span>
                   <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
                     {formatCurrency(totalBudget)}
@@ -532,7 +532,7 @@ Are you absolutely sure you want to continue?`;
                 ) : (
                   <>
                     <Save className="inline h-4 w-4 mr-2" />
-                    Save Budget
+                    Save budget
                   </>
                 )}
               </button>
@@ -555,7 +555,7 @@ Are you absolutely sure you want to continue?`;
             <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-600 dark:text-gray-400">No budget configured yet</p>
             <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-              Click "Create Budget" to set up your first budget
+              Click "Create budget" to set up your first budget
             </p>
           </div>
         ) : (
@@ -624,7 +624,7 @@ Are you absolutely sure you want to continue?`;
                         onClick={() => handleDelete(budget.id, budget.is_active)}
                         disabled={deleteBudget.isPending}
                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                        title={budget.is_active ? "Delete Active Budget" : "Delete Budget"}
+                        title={budget.is_active ? "Delete active budget" : "Delete budget"}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -655,7 +655,7 @@ Are you absolutely sure you want to continue?`;
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-800">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {isAddingCategory ? 'Add Category' : `Edit ${editingCategory}`}
+                {isAddingCategory ? 'Add category' : `Edit ${editingCategory}`}
               </h3>
               <button
                 onClick={() => {
@@ -679,7 +679,7 @@ Are you absolutely sure you want to continue?`;
                   {/* Category Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Category Name *
+                      Category name *
                     </label>
                     <input
                       type="text"
@@ -694,7 +694,7 @@ Are you absolutely sure you want to continue?`;
                   {/* Monthly Limit */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Monthly Limit ($) *
+                      Monthly limit ($) *
                     </label>
                     <input
                       type="number"
@@ -792,7 +792,7 @@ Are you absolutely sure you want to continue?`;
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                     >
                       <Plus className="inline h-4 w-4 mr-2" />
-                      Add Category
+                      Add category
                     </button>
                     <button
                       onClick={() => {
@@ -828,7 +828,7 @@ Are you absolutely sure you want to continue?`;
                     {/* Monthly Limit */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Monthly Limit ({currency === 'USD' ? '$' : currency === 'ILS' ? '₪' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '¥'})
+                        Monthly limit ({currency === 'USD' ? '$' : currency === 'ILS' ? '₪' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '¥'})
                       </label>
                       <input
                         type="number"
@@ -846,7 +846,7 @@ Are you absolutely sure you want to continue?`;
                   {/* Warning Threshold */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Warning Threshold (%)
+                      Warning threshold (%)
                     </label>
                     <div className="flex items-center gap-3">
                       <input
@@ -884,7 +884,7 @@ Are you absolutely sure you want to continue?`;
                   <div className="space-y-2">
                     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Active Category
+                        Active category
                       </span>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -931,7 +931,7 @@ Are you absolutely sure you want to continue?`;
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                     >
                       <Save className="inline h-4 w-4 mr-2" />
-                      Save Changes
+                      Save changes
                     </button>
                     <button
                       onClick={() => {

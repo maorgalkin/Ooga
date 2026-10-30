@@ -484,7 +484,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           disabled={saving}
           className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40 transition-colors"
         >
-          {saving ? <><Loader2 className="w-4 h-4 animate-spin inline mr-1" />Cancelling…</> : 'Cancel Import'}
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin inline mr-1" />Cancelling…</> : 'Cancel import'}
         </button>
         <button
           onClick={handleAccept}

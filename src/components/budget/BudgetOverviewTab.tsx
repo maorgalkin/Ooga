@@ -369,14 +369,14 @@ export const BudgetOverviewTab: React.FC = () => {
         {(
           [
             {
-              label: 'Monthly Budget',
+              label: 'Monthly budget',
               value: formatCurrency(totalBudget),
               sub: `${activeCategories.length} categories`,
               icon: DollarSign,
               color: 'text-gray-900 dark:text-gray-100',
             },
             {
-              label: 'Month Spent',
+              label: 'Month spent',
               value: formatCurrency(totalSpent),
               sub: `${Math.round(usagePct)}% used`,
               icon: TrendingDown,
@@ -414,7 +414,7 @@ export const BudgetOverviewTab: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 px-5 py-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Overall Usage
+            Overall usage
           </span>
           <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
             {Math.round(usagePct)}%
@@ -525,7 +525,7 @@ export const BudgetOverviewTab: React.FC = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingDown className={`h-4 w-4 ${getIconColor(THEME)}`} />
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Biggest Expense
+                    Biggest expense
                   </span>
                 </div>
                 {selectedCategoryDetail.biggestExpense ? (
@@ -559,7 +559,7 @@ export const BudgetOverviewTab: React.FC = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle className={`h-4 w-4 ${getIconColor(THEME)}`} />
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Limit Met
+                    Limit met
                   </span>
                 </div>
                 {selectedCategoryDetail.limitHistory.some((m) => m.spent > 0) ? (
@@ -642,7 +642,7 @@ export const BudgetOverviewTab: React.FC = () => {
             )} mb-3 flex items-center gap-2`}
           >
             <Clock className="h-4 w-4" />
-            Previous Versions
+            Previous versions
           </h3>
           <div className="space-y-2">
             {recentHistory.map((b) => (

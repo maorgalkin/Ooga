@@ -37,12 +37,12 @@ const PROVIDERS: Provider[] = [
     fields: [
       { key: 'id', label: 'National ID (ת.ז.)', placeholder: '123456789', type: 'text', inputMode: 'numeric' },
       { key: 'password', label: 'Password', placeholder: '••••••••', type: 'password' },
-      { key: 'num', label: 'Access Code (קוד גישה)', placeholder: '6-character code', type: 'text', hint: 'The code shown on the login page, not your SMS OTP' },
+      { key: 'num', label: 'Access code (קוד גישה)', placeholder: '6-character code', type: 'text', hint: 'The code shown on the bank\'s sign-in page, not the SMS code' },
     ],
   },
   {
     id: 'visaCal',
-    label: 'Visa Cal',
+    label: 'Visa Cal (username)',
     icon: 'card',
     fields: [
       { key: 'username', label: 'Username', placeholder: 'Your Cal username', type: 'text' },
@@ -51,11 +51,11 @@ const PROVIDERS: Provider[] = [
   },
   {
     id: 'visaCalFast',
-    label: 'Visa Cal (Fast Access)',
+    label: 'Visa Cal (SMS code)',
     icon: 'card',
     fields: [
       { key: 'id', label: 'National ID (ת.ז.)', placeholder: '123456789', type: 'text', inputMode: 'numeric' },
-      { key: 'last4Digits', label: 'Last 4 digits of card', placeholder: '1234', type: 'text', inputMode: 'numeric', hint: 'Login requires SMS OTP — your phone will receive a code during import' },
+      { key: 'last4Digits', label: 'Last 4 digits of card', placeholder: '1234', type: 'text', inputMode: 'numeric', hint: 'Signing in needs an SMS code. Your phone gets one during import.' },
     ],
   },
   {
@@ -92,7 +92,7 @@ const PROVIDERS: Provider[] = [
     label: 'Bank Hapoalim',
     icon: 'bank',
     fields: [
-      { key: 'userCode', label: 'User Code', placeholder: 'Your user code', type: 'text' },
+      { key: 'userCode', label: 'User code', placeholder: 'Your user code', type: 'text' },
       { key: 'password', label: 'Password', placeholder: '••••••••', type: 'password' },
     ],
   },
@@ -147,7 +147,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {step === 'select' ? 'Add Bank Account' : selectedProvider?.label ?? 'Add Account'}
+            {step === 'select' ? 'Add bank account' : selectedProvider?.label ?? 'Add account'}
           </h2>
           <button
             onClick={onClose}
@@ -233,7 +233,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                   disabled={!allFieldsFilled || !displayName.trim()}
                   className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
                 >
-                  Test & Save
+                  Test & save
                 </button>
               </div>
             </div>
@@ -288,7 +288,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
                   onClick={() => setStep('credentials')}
                   className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
                 >
-                  Try Again
+                  Try again
                 </button>
               </div>
             </div>

@@ -53,7 +53,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
       },
       {
         title: "Meet your household",
-        clip: clip("The empty Dashboard with the Manage household link, then the Household Settings window", 'household/dashboard-empty', 'household/settings'),
+        clip: clip("The empty Dashboard with the Manage household link, then the Household settings window", 'household/dashboard-empty', 'household/settings'),
         body: [
           "Ooga creates a household for you automatically, named after you (for example \"Dana's Household\"), and makes you its owner.",
           "To open it, go to the Dashboard tab and click \"Manage household\" under the month title.",
@@ -61,27 +61,27 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
       },
       {
         title: "Give it a name",
-        clip: clip("Renaming the household in Household Settings", 'household/settings', 'household/rename'),
+        clip: clip("Renaming the household in Household settings", 'household/settings', 'household/rename'),
         body: [
-          "In Household Settings, click Edit next to the name, type a new one and press Enter.",
+          "In Household settings, click Edit next to the name, type a new one and press Enter.",
         ],
         tip: "Only the owner can rename the household or invite people.",
       },
       {
         title: "Add the rest of the family",
-        clip: clip("Household Settings listing Dana, Avi and the kids Noa and Itai, with the Add Member button", 'household/members'),
+        clip: clip("Household settings listing Dana, Avi and the kids Noa and Itai, with the Add member button", 'household/members'),
         body: [
-          "Click Add Member to add someone who won't sign in, such as your kids. They become family members you can pick on transactions, so you can later see who spent what.",
+          "Click Add member to add someone who won't sign in, such as your kids. They become family members you can pick on transactions, so you can later see who spent what.",
           "Everyone who joins with their own login gets a family member automatically.",
         ],
       },
       {
         title: "Invite your partner",
-        clip: clip("The invitation code with its Copy button, and the Switch Households button your partner uses", 'household/invite', 'household/switch'),
+        clip: clip("The invitation code with its Copy button, and the Switch households button your partner uses", 'household/invite', 'household/switch'),
         featured: true,
         body: [
-          "Under \"Invite Budget Participants\", click Copy to copy your invitation code and send it to your partner.",
-          "Your partner creates their own account, opens Household Settings, clicks Switch Households and pastes the code. They'll see a warning that their data will be deleted: that's the empty household Ooga made for them when they created their account, so it's safe to continue with \"Delete Data & Join\".",
+          "Under \"Invite budget participants\", click Copy to copy your invitation code and send it to your partner.",
+          "Your partner creates their own account, opens Household settings, clicks Switch households and pastes the code. They'll see a warning that their data will be deleted: that's the empty household Ooga made for them when they created their account, so it's safe to continue with \"Delete data & join\".",
         ],
         tip: "Anyone with the code can join, so share it only with people you trust.",
       },
@@ -99,16 +99,16 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
     steps: [
       {
         title: "Open the Budget tab",
-        clip: clip("The Budget tab before a budget exists, with the Create Budget button", 'budget/tab'),
+        clip: clip("The Budget tab before a budget exists, with the Create budget button", 'budget/tab'),
         body: [
-          "Click the Budget tab, or \"Set Up Budget\" on an empty Dashboard. With no budget yet, the Overview shows the budget editor.",
+          "Click the Budget tab, or \"Set up budget\" on an empty Dashboard. With no budget yet, the Overview shows the budget editor.",
         ],
       },
       {
         title: "Start from the defaults",
         clip: clip("The budget editor with a name and the five default categories", 'budget/defaults'),
         body: [
-          "Click Create Budget. Ooga fills in five common categories (Groceries, Transportation, Entertainment, Bills & Utilities, Home & Garden) with starter limits.",
+          "Click Create budget. Ooga fills in five common categories (Groceries, Transportation, Entertainment, Bills & Utilities, Home & Garden) with starter limits.",
           "Give the budget a name you'll recognize, such as \"Family budget 2026\".",
         ],
       },
@@ -118,7 +118,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
         featured: true,
         body: [
           "Click a category tile to change its monthly limit, its warning threshold (80% by default) or its color.",
-          "Use the Add Category tile for anything that's missing, like Kids or Dining out.",
+          "Use the Add category tile for anything that's missing, like Kids or Dining out.",
         ],
         tip: "Not sure what to set? Start with what you spent last month. You can fine-tune limits any time.",
       },
@@ -126,7 +126,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
         title: "Save the budget",
         clip: clip("Saving the budget, then the Overview summary that replaces the editor", 'budget/save', 'budget/saved'),
         body: [
-          "Check the total monthly budget at the bottom, then click Save Budget. The Overview switches to a summary of the month: what's budgeted, what's spent and what's left.",
+          "Check the total monthly budget at the bottom, then click Save budget. The Overview switches to a summary of the month: what's budgeted, what's spent and what's left.",
         ],
         tip: "Amounts are in shekels by default. To change the currency, go to Budget, then Settings.",
       },
@@ -144,23 +144,23 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
     steps: [
       {
         title: "Add an expense",
-        clip: clip("The Add Transaction window: choosing Groceries and filling in the amount", 'transactions/modal', 'transactions/categories', 'transactions/filled'),
+        clip: clip("The Add transaction window: choosing Groceries and filling in the amount", 'transactions/modal', 'transactions/categories', 'transactions/filled'),
         featured: true,
         body: [
-          "Click Add Transaction in the top bar. Pick a category with Choose, enter the amount and the date, and optionally a description and the family member it was for.",
+          "Click Add transaction in the top bar. Pick a category with Choose, enter the amount and the date, and optionally a description and the family member it was for.",
           "Click Submit and it appears on the Dashboard straight away.",
         ],
       },
       {
         title: "Record income",
-        clip: clip("The Add Transaction window switched to Income", 'transactions/income'),
+        clip: clip("The Add transaction window switched to Income", 'transactions/income'),
         body: [
           "Switch the toggle at the top to Income and choose a source, such as Salary. Ooga fills in a description for you.",
         ],
       },
       {
         title: "Split a purchase into installments",
-        clip: clip("The Add Expense window for a 412 grocery purchase, with \"Create as installments\" ticked and 6 entered as the number of months", 'transactions/installments'),
+        clip: clip("The Add expense window for a 412 grocery purchase, with \"Create as installments\" ticked and 6 entered as the number of months", 'transactions/installments'),
         body: [
           "For a purchase paid over several months, tick \"Create as installments\" and enter the number of months. Ooga adds one installment per month, so future months show what's already committed.",
         ],
@@ -169,15 +169,15 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
         title: "Connect a bank or card",
         clip: clip("Connected accounts in Budget settings, then the list of banks and cards to connect", 'transactions/accounts', 'transactions/providers'),
         body: [
-          "Go to Budget, then Settings, then Connected Accounts, and click Add Account. The list shows several banks and cards, but Ooga can import only from Visa Cal (Fast Access) and Discount Bank for now; the others aren't supported yet.",
-          "Enter the details the bank asks for and click Test & Save. Everyone in the household can import from the account; only you can remove it.",
+          "Go to Budget, then Settings, then Connected accounts, and click Add account. The list shows several banks and cards, but Ooga can import only from Visa Cal (SMS code) and Discount Bank for now; the others aren't supported yet.",
+          "Enter the details the bank asks for and click Test & save. Everyone in the household can import from the account; only you can remove it.",
         ],
-        tip: "For Visa Cal (Fast Access), Ooga saves only your ID number and the card's last 4 digits, and you confirm each import with an SMS code. For Discount Bank, your login details are stored encrypted and used only to import your transactions.",
+        tip: "For Visa Cal (SMS code), Ooga saves only your ID number and the card's last 4 digits, and you confirm each import with an SMS code. For Discount Bank, your login details are stored encrypted and used only to import your transactions.",
       },
       {
         title: "Import from the bank",
         body: [
-          "Open Add Transaction and click the account's tile under Import Transactions. Choose the import period (Current month, Last month or Custom). For Discount Bank, click Import. For Visa Cal, click Send OTP, enter the verification code Visa Cal texts you and click Verify & Import.",
+          "Open Add transaction and click the account's tile under Import transactions. Choose the import period (Current month, Last month or Custom). For Discount Bank, click Import. For Visa Cal, click Send code, enter the verification code Visa Cal texts you and click Verify & import.",
           "Review the list: pick categories, untick anything you don't want and accept. Duplicates are skipped. A bank row that matches a transaction you entered by hand with \"Paid with\" set to this account is merged into it.",
         ],
         tip: "Entered a purchase by hand before the bank charged it? Set \"Paid with\" to the card, and the import will match the charge to your entry.",
@@ -209,7 +209,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
       },
       {
         title: "Adjust this month only",
-        clip: clip("The Categories tab, then the Details tab of Edit Category with the monthly limit", 'update-budget/categories', 'update-budget/details'),
+        clip: clip("The Categories tab, then the Details tab of Edit category with the monthly limit", 'update-budget/categories', 'update-budget/details'),
         body: [
           "On the Categories tab, click Edit next to a category. On the Details tab, change the monthly limit and save.",
           "This is a quick fix for the current month: next month starts from the planned limit again.",
@@ -219,7 +219,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
         title: "Change the plan from next month",
         clip: clip("The Adjust tab, showing the current limit and the new planned limit", 'update-budget/adjust'),
         body: [
-          "In the same window, use the Adjust tab to set a new limit, with a reason if you like. The change is scheduled for next month and shows in the Next Month Summary.",
+          "In the same window, use the Adjust tab to set a new limit, with a reason if you like. The change is scheduled for next month and shows in the Next month summary.",
           "The first time anyone opens Ooga in the new month, Ooga applies scheduled changes and saves a new version of the budget.",
         ],
       },
@@ -233,9 +233,9 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
       },
       {
         title: "Go back to an earlier version",
-        clip: clip("Budget History in Budget settings, listing the saved version \"Family budget\" marked Active, with its 7 categories and monthly total", 'update-budget/history'),
+        clip: clip("Budget history in Budget settings, listing the saved version \"Family budget\" marked Active, with its 7 categories and monthly total", 'update-budget/history'),
         body: [
-          "Every saved change keeps a version. Under Budget, then Settings, Budget History lists them; click the star to make one active again.",
+          "Every saved change keeps a version. Under Budget, then Settings, Budget history lists them; click the star to make one active again.",
         ],
       },
     ],
@@ -262,37 +262,37 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
         title: "Open Insights and pick a range",
         clip: clip("The Insights tab with its date range buttons", 'insights/range'),
         body: [
-          "Click the Insights tab. Start with the current month; longer ranges such as Year to Date and Last 12 Months appear as your history grows.",
+          "Click the Insights tab. Start with the current month; longer ranges such as Year to date and Last 12 months appear as your history grows.",
         ],
       },
       {
         title: "Compare plan and reality",
-        clip: clip("Budget Summary and the chart comparing budget with actual spending by category", 'insights/summary', 'insights/chart'),
+        clip: clip("Budget summary and the chart comparing budget with actual spending by category", 'insights/summary', 'insights/chart'),
         featured: true,
         body: [
-          "Budget Summary compares what you planned at the start of the month with what you spent. The category chart shows the original budget, the current budget and actual spending side by side, colored by how close each category came.",
+          "Budget summary compares what you planned at the start of the month with what you spent. The category chart shows the original budget, the current budget and actual spending side by side, colored by how close each category came.",
         ],
       },
       {
         title: "See how accurate your budget is",
-        clip: clip("Category Accuracy, scoring a category against its target", 'insights/accuracy'),
+        clip: clip("Category accuracy, scoring a category against its target", 'insights/accuracy'),
         body: [
-          "Category Accuracy scores each category against its target. Close to 100% means your limit is realistic; far above or below means it's time to adjust it.",
+          "Category accuracy scores each category against its target. Close to 100% means your limit is realistic; far above or below means it's time to adjust it.",
         ],
         tip: "Consistently under budget in a category? Move some of that limit to one that always runs over.",
       },
       {
         title: "Catch overspending early",
-        clip: clip("Category Pace Tracker, with checkpoints through the month", 'insights/pace'),
+        clip: clip("Category pace tracker, with checkpoints through the month", 'insights/pace'),
         body: [
-          "Category Pace Tracker checks a category at points in the month (end of week 1, mid-month, end of week 4) against your usual pace, so you can slow down before the month ends.",
+          "Category pace tracker checks a category at points in the month (end of week 1, mid-month, end of week 4) against your usual pace, so you can slow down before the month ends.",
         ],
       },
       {
         title: "See who spends what",
-        clip: clip("Household Member Expenses, with a card per family member", 'insights/members'),
+        clip: clip("Household member expenses, with a card per family member", 'insights/members'),
         body: [
-          "Household Member Expenses breaks spending down by family member: their total, their share of the household's spending and their top categories.",
+          "Household member expenses breaks spending down by family member: their total, their share of the household's spending and their top categories.",
         ],
       },
     ],

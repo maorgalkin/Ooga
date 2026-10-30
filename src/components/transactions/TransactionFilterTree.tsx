@@ -148,7 +148,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
           onClick={() => toggleSection('type')}
           className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
-          <span>Transaction Type</span>
+          <span>Transaction type</span>
           {expandedSections.has('type') ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
@@ -170,7 +170,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Select All
+                Select all
               </span>
             </label>
 
@@ -205,7 +205,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
           onClick={() => toggleSection('members')}
           className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
-          <span>Family Members</span>
+          <span>Family members</span>
           {expandedSections.has('members') ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
@@ -227,7 +227,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Select All
+                Select all
               </span>
             </label>
 
@@ -280,7 +280,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Select All
+                Select all
               </span>
             </label>
 

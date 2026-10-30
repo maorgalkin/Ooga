@@ -213,7 +213,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
       {!showSummaryOnly && !showChartOnly && (
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Budget vs Actual
+            Budget vs actual
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             Compare budgeted amounts with actual spending across categories
@@ -226,7 +226,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Avg Original Budget
+              Avg original budget
             </p>
             <p className="text-2xl font-bold text-blue-900 dark:text-blue-400">
               {formatCurrency(summary.totalOriginal)}
@@ -238,7 +238,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
 
           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Avg Current Budget
+              Avg current budget
             </p>
             <p className="text-2xl font-bold text-purple-900 dark:text-purple-400">
               {formatCurrency(summary.totalCurrent)}
@@ -252,7 +252,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
 
           <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Total Spending
+              Total spending
             </p>
             <p className="text-2xl font-bold text-orange-900 dark:text-orange-400">
               {formatCurrency(summary.totalSpent)}
@@ -271,7 +271,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
         <div className={showChartOnly ? "" : "bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"}>
           {!showChartOnly && (
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
-              Category Breakdown
+              Category breakdown
             </h3>
           )}
 
@@ -285,11 +285,11 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
             <div className="flex flex-wrap gap-4 mb-6 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-gray-400 dark:bg-gray-600" />
-                <span className="text-gray-700 dark:text-gray-300">Original Budget</span>
+                <span className="text-gray-700 dark:text-gray-300">Original budget</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-blue-400 dark:bg-blue-600" />
-                <span className="text-gray-700 dark:text-gray-300">Current Budget</span>
+                <span className="text-gray-700 dark:text-gray-300">Current budget</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
@@ -297,7 +297,7 @@ export const BudgetVsActual: React.FC<BudgetVsActualProps> = ({ selectedRange, s
                   <div className="w-4 h-4 rounded bg-yellow-400 dark:bg-yellow-600" />
                   <div className="w-4 h-4 rounded bg-red-400 dark:bg-red-600" />
                 </div>
-                <span className="text-gray-700 dark:text-gray-300">Actual Spending (Good / Warning / Over)</span>
+                <span className="text-gray-700 dark:text-gray-300">Actual spending (good / warning / over)</span>
               </div>
             </div>
 

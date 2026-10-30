@@ -156,7 +156,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   };
 
   const providerLabel = (p: string) =>
-    ({ discount: 'Discount Bank', visaCal: 'Visa Cal', visaCalFast: 'Visa Cal (Fast)', isracard: 'Isracard', max: 'Max', amex: 'Amex' }[p] ?? p);
+    ({ discount: 'Discount Bank', visaCal: 'Visa Cal (username)', visaCalFast: 'Visa Cal (SMS code)', isracard: 'Isracard', max: 'Max', amex: 'Amex' }[p] ?? p);
 
   const isCalProvider = (p: string) => p === 'visaCal' || p === 'visaCalFast';
 
@@ -182,7 +182,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
           <div className="flex items-center gap-2">
             <Download className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {step === 'review' ? 'Review Transactions' : 'Import from Bank'}
+              {step === 'review' ? 'Review transactions' : 'Import from bank'}
             </h2>
           </div>
           <button
@@ -222,7 +222,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                     onClick={() => { onClose(); onAddAccount(); }}
                     className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
                   >
-                    <PlusCircle className="w-4 h-4" /> Add Account
+                    <PlusCircle className="w-4 h-4" /> Add account
                   </button>
                 )}
               </div>
@@ -313,7 +313,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                   fetches completed transactions. Credit-card bill payments are skipped, because the card’s purchases are
                   imported on their own. This can take up to 2 minutes. Duplicates are skipped.</>
                 ) : (
-                  <>Tapping <strong>Send OTP</strong> will text a verification code to your registered phone number.
+                  <>Tapping <strong>Send code</strong> will text a verification code to your registered phone number.
                   Imported transactions start as <strong>Uncategorized</strong>. Duplicates are skipped.</>
                 )}
               </p>
@@ -337,7 +337,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                     onClick={handleStart}
                     className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
                   >
-                    Send OTP →
+                    Send code →
                   </button>
                 )}
               </div>
@@ -367,7 +367,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                 onKeyDown={(e) => e.key === 'Enter' && handleOtpSubmit()}
-                placeholder="Enter OTP code"
+                placeholder="Enter the code from your SMS"
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm text-center tracking-widest"
                 autoFocus
               />
@@ -377,7 +377,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 className="w-full px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
                 {otpSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                Verify &amp; Import
+                Verify &amp; import
               </button>
             </div>
           )}
@@ -389,7 +389,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 detail="Bank logins can take up to 2 minutes. Keep this window open."
               />
             ) : (
-              <SpinnerStep message="Importing transactions…" detail="Verifying OTP and fetching from Visa Cal — this may take up to 30 seconds" />
+              <SpinnerStep message="Importing transactions…" detail="Verifying the code and importing from Visa Cal. This can take up to 30 seconds." />
             )
           )}
 
@@ -491,7 +491,7 @@ function ErrorStep({ message, onRetry, onClose }: { message: string; onRetry: ()
           onClick={onRetry}
           className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
         >
-          Try Again
+          Try again
         </button>
       </div>
     </div>

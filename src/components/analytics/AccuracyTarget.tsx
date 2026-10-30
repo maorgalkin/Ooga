@@ -191,12 +191,12 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
               {!accuracy.isUnused && (
                 <>
                   <div className="flex justify-between">
-                    <span>Avg Budget:</span>
+                    <span>Avg budget:</span>
                     <span className="font-medium">{formatCurrency(accuracy.budgetAverage)}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span>Avg Actual:</span>
+                    <span>Avg actual:</span>
                     <span className="font-medium">{formatCurrency(accuracy.actualAverage)}</span>
                   </div>
                   

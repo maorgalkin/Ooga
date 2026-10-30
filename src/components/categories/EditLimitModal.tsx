@@ -78,7 +78,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
               style={{ backgroundColor: category.color }}
             />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Edit Limit: {category.name}
+              Edit limit: {category.name}
             </h2>
           </div>
           <button
@@ -95,7 +95,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
           {/* Monthly Limit */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Monthly Limit
+              Monthly limit
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -119,7 +119,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
           {/* Warning Threshold */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Warning Threshold
+              Warning threshold
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -194,7 +194,7 @@ export const EditLimitModal: React.FC<EditLimitModalProps> = ({
                   Saving...
                 </>
               ) : (
-                'Save Changes'
+                'Save changes'
               )}
             </button>
           </div>

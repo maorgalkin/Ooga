@@ -351,7 +351,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Edit Category
+              Edit category
             </h2>
             {/* Help tooltip */}
             <div className="relative group">
@@ -453,7 +453,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* Monthly Limit */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Monthly Limit
+                  Monthly limit
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
@@ -586,7 +586,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                 </div>
                 <ArrowRight className="h-5 w-5 text-gray-400" />
                 <div className="flex-1 text-right">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">New Planned</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">New planned</p>
                   {categoryAdjustment ? (
                     <p className={`text-lg font-semibold ${
                       categoryAdjustment.new_limit === 0
@@ -620,7 +620,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {/* New limit input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  New Limit
+                  New limit
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>

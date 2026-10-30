@@ -98,11 +98,11 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   const getTypeLabel = () => {
     if (typeFilter === 'income') return 'Income';
     if (typeFilter === 'expense') return 'Expenses';
-    return 'All Types';
+    return 'All types';
   };
 
   const getMemberLabel = () => {
-    if (memberFilter === 'all') return 'All Members';
+    if (memberFilter === 'all') return 'All members';
     const member = familyMembers.find(m => m.id === memberFilter);
     return member?.name || 'Unknown';
   };
@@ -112,12 +112,12 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
     if (monthFilter.startsWith('carousel-')) {
       const index = parseInt(monthFilter.split('-')[1]);
       const month = months[index];
-      return month ? `${month.monthName} ${month.year}` : 'Select Month';
+      return month ? `${month.monthName} ${month.year}` : 'Select month';
     }
     
     // Check other options
     const option = monthOptions.find(m => m.value === monthFilter);
-    return option?.label || 'Select Month';
+    return option?.label || 'Select month';
   };
 
   const getButtonClasses = (isActive: boolean) => {
@@ -158,7 +158,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className={typeFilter === 'all' ? activeOptionClasses : optionClasses}
             >
-              All Types
+              All types
             </div>
             <div
               onClick={() => {
@@ -206,7 +206,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className={memberFilter === 'all' ? activeOptionClasses : optionClasses}
             >
-              All Members
+              All members
             </div>
             {familyMembers.map(member => (
               <div
@@ -234,7 +234,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           className={getButtonClasses(categoryFilter !== 'all')}
         >
           <span className="flex items-center gap-1">
-            {categoryFilter === 'all' ? 'All Categories' : categoryFilter}
+            {categoryFilter === 'all' ? 'All categories' : categoryFilter}
             <ChevronDown className="h-4 w-4" />
           </span>
         </button>
@@ -248,7 +248,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className={categoryFilter === 'all' ? activeOptionClasses : optionClasses}
             >
-              All Categories
+              All categories
             </div>
             {categoryGroups.map(group => (
               <div key={group.type}>
@@ -337,7 +337,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               }}
               className="px-4 py-2 text-gray-400 dark:text-gray-500 cursor-not-allowed"
             >
-              Coming Soon...
+              Coming soon…
             </div>
           </div>
         )}

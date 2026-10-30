@@ -84,7 +84,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Successfully Joined!
+              Successfully joined!
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
               Welcome to your new household. Redirecting...
@@ -105,7 +105,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-6 w-6 text-white" />
-                <h2 className="text-xl font-semibold text-white">Warning: Data Loss</h2>
+                <h2 className="text-xl font-semibold text-white">Warning: data loss</h2>
               </div>
               <button
                 onClick={handleCancel}
@@ -168,7 +168,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
                 ) : (
                   <>
                     <AlertTriangle className="h-4 w-4" />
-                    Delete Data & Join
+                    Delete data & join
                   </>
                 )}
               </button>
@@ -188,7 +188,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Users className="h-6 w-6 text-white" />
-              <h2 className="text-xl font-semibold text-white">Join Household</h2>
+              <h2 className="text-xl font-semibold text-white">Join household</h2>
             </div>
             <button
               onClick={handleCancel}
@@ -213,7 +213,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Invitation Code
+              Invitation code
             </label>
             <input
               type="text"
@@ -250,7 +250,7 @@ export const JoinHouseholdModal: React.FC<JoinHouseholdModalProps> = ({ isOpen, 
               ) : (
                 <>
                   <Users className="h-4 w-4" />
-                  Join Household
+                  Join household
                 </>
               )}
             </button>

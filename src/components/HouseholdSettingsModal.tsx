@@ -172,7 +172,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
   const handleTransferOwnership = async (memberId: string, memberName: string) => {
     const confirmed = confirm(
       `Transfer ownership to ${memberName}?\n\n` +
-      `You will become a Budget Participant and ${memberName} will become the Owner. ` +
+      `You will become a budget participant and ${memberName} will become the owner. ` +
       `This action cannot be undone.`
     );
     
@@ -212,9 +212,9 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
       case 'owner':
         return 'Owner';
       case 'participant':
-        return 'Budget Participant';
+        return 'Budget participant';
       default:
-        return 'Budget Participant';
+        return 'Budget participant';
     }
   };
 
@@ -236,7 +236,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <Home className="h-5 w-5 sm:h-6 sm:w-6 text-white flex-shrink-0" />
-              <h2 className="text-lg sm:text-xl font-semibold text-white truncate">Household Settings</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-white truncate">Household settings</h2>
             </div>
             <button
               onClick={onClose}
@@ -356,7 +356,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                                   title="Transfer ownership to this member"
                                 >
                                   <Crown className="h-3 w-3 flex-shrink-0" />
-                                  <span className="hidden sm:inline">Make Owner</span>
+                                  <span className="hidden sm:inline">Make owner</span>
                                   <span className="sm:hidden">Owner</span>
                                 </button>
                               )}
@@ -422,7 +422,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                       className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors flex items-center justify-center gap-2 mb-4"
                     >
                       <Plus className="h-4 w-4" />
-                      Add Member
+                      Add member
                     </button>
                   )}
                 </div>
@@ -432,12 +432,12 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-4">
                       <UserPlus className="h-5 w-5 mr-2" />
-                      Invite Budget Participants
+                      Invite budget participants
                     </h3>
                     
                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                       <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-3">
-                        Share this code to invite others as Budget Participants:
+                        Share this code to invite others as budget participants:
                       </p>
                       <div className="flex gap-2">
                         <input
@@ -468,7 +468,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                         </button>
                       </div>
                       <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-                        Anyone with this code can join your household as a Budget Participant. They'll automatically get a Household Member tag for transactions.
+                        Anyone with this code can join your household as a budget participant. They'll automatically get a household member tag for transactions.
                       </p>
                     </div>
                   </div>
@@ -477,7 +477,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                 {/* Leaving the Household Section */}
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Leaving the Household?
+                    Leaving the household?
                   </h3>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
@@ -485,7 +485,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                       className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                     >
                       <UserCheck className="h-4 w-4 flex-shrink-0" />
-                      <span className="whitespace-nowrap">Switch Households</span>
+                      <span className="whitespace-nowrap">Switch households</span>
                     </button>
                     
                     <button
@@ -493,7 +493,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                       className="flex-1 px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                     >
                       <LogOut className="h-4 w-4 flex-shrink-0" />
-                      <span className="whitespace-nowrap">New Household</span>
+                      <span className="whitespace-nowrap">New household</span>
                     </button>
                   </div>
                 </div>
@@ -518,14 +518,14 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-2 sm:p-4" onClick={() => setEditingTag(null)}>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Edit Household Member Tag
+              Edit household member tag
             </h3>
             
             <div className="space-y-4">
               {/* Tag Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tag Name
+                  Tag name
                 </label>
                 <input
                   type="text"
@@ -561,7 +561,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
               {/* Link to Participant */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Link to Budget Participant (Optional)
+                  Link to budget participant (optional)
                 </label>
                 <select
                   value={editedTagLinkedMember}
@@ -589,7 +589,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                   onClick={handleSaveTagEdit}
                   className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-sm"
                 >
-                  Save Changes
+                  Save changes
                 </button>
                 <button
                   onClick={handleDeleteTagFromModal}

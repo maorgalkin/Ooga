@@ -26,7 +26,7 @@ describe('PersonalBudgetEditor', () => {
   it('renders category limits and the total when creating a first budget', () => {
     render(<PersonalBudgetEditor autoCreate />);
 
-    expect(screen.getByText('Total Monthly Budget:')).toBeInTheDocument();
+    expect(screen.getByText('Total monthly budget:')).toBeInTheDocument();
     // Default categories: 1500 + 600 + 400 + 1000 + 300 = 3800, in ILS, rounded by default
     expect(screen.getByText('₪3,800')).toBeInTheDocument();
     expect(screen.getByText('₪1,500')).toBeInTheDocument();

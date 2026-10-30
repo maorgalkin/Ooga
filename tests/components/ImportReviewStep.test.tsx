@@ -73,7 +73,7 @@ describe('ImportReviewStep matching', () => {
   it('cancelling the import undoes its merges before removing its rows', async () => {
     const onCancel = vi.fn();
     renderStep(onCancel);
-    fireEvent.click(await screen.findByRole('button', { name: 'Cancel Import' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel import' }));
     await waitFor(() => expect(onCancel).toHaveBeenCalled());
     expect(reconcile.undoMergesForSession).toHaveBeenCalledWith('s1');
     expect(bankImport.deleteTransactions).toHaveBeenCalledWith(['b2', 'b3']);

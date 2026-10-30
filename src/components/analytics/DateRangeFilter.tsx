@@ -21,11 +21,11 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
     : 12; // Default to 12 if no transactions
 
   const filters: { id: DateRangeType; label: string; requiredMonths: number }[] = [
-    { id: 'mtd', label: 'Current Month', requiredMonths: 1 },
-    { id: 'ytd', label: 'Year to Date', requiredMonths: 3 }, // Show if at least 3 months of data
-    { id: 'qtd', label: 'Quarter to Date', requiredMonths: 2 }, // Show if at least 2 months of data
-    { id: 'lastQuarter', label: 'Last Quarter', requiredMonths: 3 },
-    { id: 'lastYear', label: 'Last 12 Months', requiredMonths: 6 }, // Show if at least 6 months of data
+    { id: 'mtd', label: 'Current month', requiredMonths: 1 },
+    { id: 'ytd', label: 'Year to date', requiredMonths: 3 }, // Show if at least 3 months of data
+    { id: 'qtd', label: 'Quarter to date', requiredMonths: 2 }, // Show if at least 2 months of data
+    { id: 'lastQuarter', label: 'Last quarter', requiredMonths: 3 },
+    { id: 'lastYear', label: 'Last 12 months', requiredMonths: 6 }, // Show if at least 6 months of data
   ];
 
   // Filter out ranges that require more months than available data
