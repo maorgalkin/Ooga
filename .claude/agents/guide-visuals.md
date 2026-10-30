@@ -14,7 +14,8 @@ You are Ooga's guide-visuals keeper. The guide teaches people the app with scree
 
 You may edit only:
 - `public/guide/**` (the frames, written by the capture script)
-- `src/content/guide-frames.json` and `guide-frames.mobile.json` (written by the capture script; hand-edit only to remove keys of frames that no longer exist)
+- `scripts/demo/guide-labels.mjs` (the labels the capture clicks, by translation key, and the demo data it types per language)
+- `src/content/guide-frames.json`, `guide-frames.mobile.json` and the Hebrew `guide-frames.he.json`, `guide-frames.he.mobile.json` (written by the capture script; hand-edit only to remove keys of frames that no longer exist)
 - `scripts/demo/capture-guide.mjs` (selectors, waits, the shots each phase takes)
 - `src/content/guide.ts`: each step's frame keys (`clip: [...]`) and link targets
 - `src/i18n/locales/guide.en.json` and `guide.he.json`: the guide's words (titles, step text, tips, alt text, link labels), following the `microcopy` skill and, for Hebrew, its `hebrew.md`. Change both languages together
@@ -26,6 +27,7 @@ Never edit app code (`src/components`, `src/pages`, `src/hooks`, `src/services`,
 
 - `capture-guide.mjs` has one function per phase (`signed-out`, `household`, `budget`, `transactions`, `tour`). Each `shot(chapter, name, { target, area, focus })` call writes `public/guide/<chapter>/<name>.webp` (phones: `public/guide/mobile/…`) and its manifest entry under the key `chapter/name`.
 - `guide.ts` holds the guide's shape: each step has an `id` and its frame keys (`clip: ['chapter/name', …]`); its words are under `chapters.<slug>.steps.<id>` in `guide.en.json` / `guide.he.json`, including the clip's `alt`. A step uses phone frames only when every one of its frames has a phone version.
+- There are two sets: English (`public/guide/…`) and Hebrew (`public/guide/he/…`, captured with `--lang he` from a Hebrew demo household; see "The Hebrew set" in `docs/GUIDE_SCREENSHOTS.md`). Audit and re-capture both: a UI change that stales one usually stales the other. The Hebrew guide quotes the Hebrew labels, so check its words against `he.json` too.
 - The landing page's "How it works" reuses each `landing` chapter's `featured` step (or its first step with a clip), so a stale guide frame is a stale landing frame too.
 - A frame's `target` is the element the pointer and highlight ring point at. If that selector stops matching, the phase throws; if it matches the wrong element, the frame is quietly wrong.
 

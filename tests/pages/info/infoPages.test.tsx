@@ -150,7 +150,7 @@ describe('Guide page', () => {
   });
 
   it('has every chapter and step in Hebrew, with no English left on the page', () => {
-    const hebrew = localizeGuide(i18n.getFixedT('he', 'guide'));
+    const hebrew = localizeGuide(i18n.getFixedT('he', 'guide'), 'he');
     for (const step of hebrew.chapters.flatMap((c) => c.steps)) {
       expect(step.title).toMatch(/[\u0590-\u05FF]/);
       expect(step.body.length).toBeGreaterThan(0);

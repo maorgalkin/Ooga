@@ -8,6 +8,10 @@
  *   npx tsx scripts/demo/seed-demo-household.ts history   # add ~3 months of past spending
  *   npx tsx scripts/demo/seed-demo-household.ts reset     # delete the demo user and their data
  *
+ * Add `--lang he` to family, fresh and history for the Hebrew screenshots: the people, the
+ * household and the spending get Hebrew names, and the demo account's language is set to
+ * Hebrew. Run `family` again without it to go back to English.
+ *
  * The demo sign-in is written to .env.demo.local (gitignored), never printed.
  * `history` signs in as the demo user, so every row goes through the same RLS as the app;
  * run it after the budget has been created in the UI so the categories exist.
@@ -22,6 +26,19 @@ const read = (file: string) => (existsSync(file) ? parse(readFileSync(file)) : {
 const DEMO_FILE = '.env.demo.local';
 const DEMO_EMAIL = 'demo-family@ooga-test.local';
 const PARTNER_EMAIL = 'demo-partner@ooga-test.local';
+
+const langAt = process.argv.indexOf('--lang');
+const LANG = (langAt > -1 ? process.argv[langAt + 1] : 'en') as 'en' | 'he';
+if (LANG !== 'en' && LANG !== 'he') throw new Error('--lang must be en or he');
+
+// The same family in each language; the capture renames the household itself
+const PEOPLE = {
+  en: { owner: ['Dana', 'Levi'], partner: ['Avi', 'Levi'], kids: ['Noa', 'Itai'], household: "Dana's Household", salary: 'Salary' },
+  he: { owner: ['דנה', 'לוי'], partner: ['אבי', 'לוי'], kids: ['נועה', 'איתי'], household: 'משק הבית של דנה', salary: 'משכורת' },
+} as const;
+const people = PEOPLE[LANG];
+const other = PEOPLE[LANG === 'en' ? 'he' : 'en'];
+const nameMeta = ([first, last]: readonly [string, string]) => ({ first_name: first, last_name: last, full_name: `${first} ${last}` });
 
 const { url, anonKey, serviceKey } = testProject({ needServiceKey: true });
 
@@ -66,7 +83,13 @@ async function addFamily() {
   if (!owner) throw new Error('The demo user has no household yet.');
 
   // The guide's capture renames the household, so start each run from the sign-up name
-  await admin.from('households').update({ name: "Dana's Household" }).eq('id', owner.household_id);
+  await admin.from('households').update({ name: people.household }).eq('id', owner.household_id);
+  // Names in this run's language, and the account's language set outright: otherwise the app
+  // would keep whichever language an earlier capture run left saved on the account
+  const { error: ownerError } = await admin.auth.admin.updateUserById(ownerId, {
+    user_metadata: { ...nameMeta(people.owner), language: LANG },
+  });
+  if (ownerError) throw ownerError;
 
   let partnerId = await findUserId(PARTNER_EMAIL);
   if (!partnerId) {
@@ -74,10 +97,13 @@ async function addFamily() {
       email: PARTNER_EMAIL,
       password: randomBytes(18).toString('base64url'), // nobody signs in as the partner
       email_confirm: true,
-      user_metadata: { first_name: 'Avi', last_name: 'Levi', full_name: 'Avi Levi' },
+      user_metadata: nameMeta(people.partner),
     });
     if (error) throw error;
     partnerId = data.user.id;
+  } else {
+    const { error } = await admin.auth.admin.updateUserById(partnerId, { user_metadata: nameMeta(people.partner) });
+    if (error) throw error;
   }
   const { data: own } = await admin.from('household_members').select('household_id').eq('user_id', partnerId).maybeSingle();
   if (own && own.household_id !== owner.household_id) {
@@ -97,11 +123,21 @@ async function addFamily() {
     if (error) throw error;
   }
 
+  // Family members carry the other language's names after a run in it: rename them in place
+  const renames: [string, string][] = [
+    [other.owner[0], people.owner[0]],
+    [other.partner[0], people.partner[0]],
+    ...other.kids.map((name, i) => [name, people.kids[i]] as [string, string]),
+  ];
+  for (const [from, to] of renames) {
+    const { error } = await admin.from('family_members').update({ name: to }).eq('household_id', owner.household_id).eq('name', from);
+    if (error) throw error;
+  }
   const { data: existing } = await admin.from('family_members').select('name').eq('household_id', owner.household_id);
   const names = new Set((existing ?? []).map((m) => m.name));
   const kids = [
-    { name: 'Noa', color: '#EC4899' },
-    { name: 'Itai', color: '#F59E0B' },
+    { name: people.kids[0], color: '#EC4899' },
+    { name: people.kids[1], color: '#F59E0B' },
   ].filter((k) => !names.has(k.name));
   if (kids.length) {
     const { error } = await admin
@@ -131,7 +167,7 @@ async function makeFresh() {
     const { error } = await admin.from(table).delete().eq('household_id', owner.household_id);
     if (error && !['42P01', '42703', 'PGRST205'].includes(error.code)) throw new Error(`${table}: ${error.message}`);
   }
-  await admin.from('households').update({ name: "Dana's Household" }).eq('id', owner.household_id);
+  await admin.from('households').update({ name: people.household }).eq('id', owner.household_id);
   console.log('Demo household emptied.');
 }
 
@@ -154,6 +190,14 @@ const MONTHLY: Record<string, { total: number; merchants: string[] }> = {
   Kids: { total: 1200, merchants: ['After-school club', 'Swimming lessons', 'School supplies', 'Birthday gift'] },
   Education: { total: 1200, merchants: ['After-school club', 'Books', 'School trip'] },
   Home: { total: 600, merchants: ['ACE hardware', 'IKEA', 'Cleaning supplies'] },
+  // The Hebrew defaults and the categories the Hebrew capture adds
+  'מכולת': { total: 3200, merchants: ['שופרסל', 'רמי לוי', 'ויקטורי', 'יוחננוף', 'השוק השכונתי'] },
+  'מסעדות': { total: 900, merchants: ['ארומה', 'קפה קפה', 'ערב פיצה', 'סושי עם חברים'] },
+  'תחבורה': { total: 1100, merchants: ['דלק פז', 'טעינת רב־קו', 'חניה', 'דלק'] },
+  'חשבונות': { total: 1050, merchants: ['חברת החשמל', 'חשבון מים', 'אינטרנט', 'סלולר', 'ארנונה'] },
+  'בית וגינה': { total: 350, merchants: ['ACE', 'איקאה', 'משתלה'] },
+  'בילויים': { total: 500, merchants: ['סינמה סיטי', 'Netflix', 'Spotify', 'חדר בריחה'] },
+  'ילדים': { total: 1200, merchants: ['חוג אחרי בית הספר', 'חוג שחייה', 'ציוד לבית הספר', 'מתנת יום הולדת'] },
 };
 
 // How each category usually lands against its limit (1 = right on it).
@@ -165,6 +209,13 @@ const HABIT: Record<string, number> = {
   Entertainment: 1.04,
   'Bills & Utilities': 0.9,
   'Home & Garden': 0.6,
+  'מכולת': 0.93,
+  'מסעדות': 1.12,
+  'ילדים': 0.98,
+  'תחבורה': 0.8,
+  'בילויים': 1.04,
+  'חשבונות': 0.9,
+  'בית וגינה': 0.6,
 };
 
 function rng(seed: number) {
@@ -217,13 +268,13 @@ async function addHistory() {
     const lastDay = back === 0 ? Math.max(1, today.getDate() - 1) : daysInMonth;
     const monthDrift = 0.92 + random() * 0.14;
 
-    for (const [name, amount, day] of [['Dana', 14200, 10], ['Avi', 11800, 10]] as const) {
+    for (const [name, amount, day] of [[people.owner[0], 14200, 10], [people.partner[0], 11800, 10]] as const) {
       if (day > lastDay) continue;
-      const month = first.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const month = first.toLocaleDateString(LANG === 'he' ? 'he-IL' : 'en-US', { month: 'long', year: 'numeric' });
       row(new Date(first.getFullYear(), first.getMonth(), day), {
-        description: `Salary - ${month}`,
+        description: `${people.salary} - ${month}`,
         amount,
-        category: 'Salary',
+        category: people.salary,
         type: 'income',
         family_member_id: memberId(name),
       });
@@ -273,10 +324,10 @@ async function reset() {
   console.log('Demo users removed.');
 }
 
-const step = process.argv[2];
+const step = process.argv.slice(2).find((a) => !a.startsWith('--') && a !== LANG);
 const steps: Record<string, () => Promise<void>> = { user: createUser, family: addFamily, fresh: makeFresh, history: addHistory, reset };
 if (!steps[step]) {
-  console.error('Usage: npx tsx scripts/demo/seed-demo-household.ts <user|family|fresh|history|reset>');
+  console.error('Usage: npx tsx scripts/demo/seed-demo-household.ts <user|family|fresh|history|reset> [--lang he]');
   process.exit(1);
 }
 await steps[step]();
