@@ -78,7 +78,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                 <button
                   key={category}
                   onClick={(event) => handleCategoryClick(category, event)}
-                  className="border-2 rounded-lg p-4 text-left transition-all duration-200 hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 group"
+                  className="border-2 rounded-lg p-4 text-start transition-all duration-200 hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 group"
                   style={{
                     backgroundColor: categoryColors.tile,
                     borderColor: categoryColors.border

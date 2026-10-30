@@ -222,7 +222,7 @@ export const AccuracyTarget: React.FC<AccuracyTargetProps> = ({
           </div>
           
           {/* Tooltip arrow */}
-          <div className="absolute left-1/2 -translate-x-1/2 -top-2 w-4 h-4 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700 transform rotate-45"></div>
+          <div className="absolute left-1/2 -translate-x-1/2 -top-2 w-4 h-4 bg-white dark:bg-gray-800 border-s border-t border-gray-200 dark:border-gray-700 transform rotate-45"></div>
         </div>
       )}
     </div>

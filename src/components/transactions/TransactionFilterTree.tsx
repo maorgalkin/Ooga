@@ -146,20 +146,20 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
       <div className="border-b border-gray-200 dark:border-gray-700 pb-3 mb-3">
         <button
           onClick={() => toggleSection('type')}
-          className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          className="flex items-center justify-between w-full text-start text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           <span>Transaction type</span>
           {expandedSections.has('type') ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 rtl:-scale-x-100" />
           )}
         </button>
 
         {expandedSections.has('type') && (
-          <div className="mt-2 space-y-2 pl-2">
+          <div className="mt-2 space-y-2 ps-2">
             {/* Select All */}
-            <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
+            <label className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
               <input
                 type="checkbox"
                 checked={isAllTypesSelected}
@@ -175,7 +175,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
             </label>
 
             {/* Income */}
-            <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
+            <label className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
               <input
                 type="checkbox"
                 checked={selectedTypes.includes('income')}
@@ -186,7 +186,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
             </label>
 
             {/* Expense */}
-            <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
+            <label className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
               <input
                 type="checkbox"
                 checked={selectedTypes.includes('expense')}
@@ -203,20 +203,20 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
       <div className="border-b border-gray-200 dark:border-gray-700 pb-3 mb-3">
         <button
           onClick={() => toggleSection('members')}
-          className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          className="flex items-center justify-between w-full text-start text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           <span>Family members</span>
           {expandedSections.has('members') ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 rtl:-scale-x-100" />
           )}
         </button>
 
         {expandedSections.has('members') && (
-          <div className="mt-2 space-y-2 pl-2 max-h-48 overflow-y-auto">
+          <div className="mt-2 space-y-2 ps-2 max-h-48 overflow-y-auto">
             {/* Select All */}
-            <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
+            <label className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
               <input
                 type="checkbox"
                 checked={isAllMembersSelected}
@@ -235,7 +235,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
             {familyMembers.map(member => (
               <label
                 key={member.id}
-                className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors"
+                className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors"
               >
                 <input
                   type="checkbox"
@@ -256,20 +256,20 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
       <div>
         <button
           onClick={() => toggleSection('categories')}
-          className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          className="flex items-center justify-between w-full text-start text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           <span>Categories</span>
           {expandedSections.has('categories') ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 rtl:-scale-x-100" />
           )}
         </button>
 
         {expandedSections.has('categories') && (
-          <div className="mt-2 space-y-2 pl-2 max-h-64 overflow-y-auto">
+          <div className="mt-2 space-y-2 ps-2 max-h-64 overflow-y-auto">
             {/* Select All */}
-            <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
+            <label className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors">
               <input
                 type="checkbox"
                 checked={isAllCategoriesSelected}
@@ -295,7 +295,7 @@ export const TransactionFilterTree: React.FC<TransactionFilterTreeProps> = ({
                 {group.categories.map(category => (
                   <label
                     key={category}
-                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors"
+                    className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 py-1 px-2 rounded transition-colors"
                   >
                     <input
                       type="checkbox"

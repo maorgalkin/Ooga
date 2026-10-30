@@ -64,3 +64,8 @@ input[type="date"]::-webkit-date-and-time-value {
     }
   }
 }
+
+/* Charts stay left to right in Hebrew: Recharts places SVG text with physical anchors that flip under dir="rtl" */
+.recharts-wrapper {
+  direction: ltr;
+}

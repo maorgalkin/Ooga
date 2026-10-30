@@ -292,7 +292,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                     ) : (
                       <>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                          <Users className="h-5 w-5 mr-2 flex-shrink-0" />
+                          <Users className="h-5 w-5 me-2 flex-shrink-0" />
                           <span className="break-words">{household?.name}</span>
                         </h3>
                         {userRole === 'owner' && (
@@ -379,7 +379,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                     {familyMembers.filter(fm => !fm.household_member_id).map((fm) => (
                       <div
                         key={fm.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border-l-4"
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border-s-4"
                         style={{ borderLeftColor: fm.color }}
                       >
                         <div className="flex items-center gap-3">
@@ -431,7 +431,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                 {canManageMembers && invitationCode && (
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-4">
-                      <UserPlus className="h-5 w-5 mr-2" />
+                      <UserPlus className="h-5 w-5 me-2" />
                       Invite budget participants
                     </h3>
                     
@@ -492,7 +492,7 @@ const HouseholdSettingsModal: React.FC<HouseholdSettingsModalProps> = ({ isOpen,
                       onClick={() => setShowLeaveModal(true)}
                       className="flex-1 px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                     >
-                      <LogOut className="h-4 w-4 flex-shrink-0" />
+                      <LogOut className="h-4 w-4 flex-shrink-0 rtl:-scale-x-100" />
                       <span className="whitespace-nowrap">New household</span>
                     </button>
                   </div>

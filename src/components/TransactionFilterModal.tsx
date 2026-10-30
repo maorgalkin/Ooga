@@ -171,7 +171,7 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({
     >
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <Filter className="h-5 w-5 text-blue-600" />
             <h2 className="text-xl font-semibold text-gray-900">Filter Transactions</h2>
           </div>
@@ -210,24 +210,24 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Calendar className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
                 <input
                   type="date"
                   value={filters.dateRange.start}
                   onChange={(e) => handleFilterChange('dateRange', { ...filters.dateRange, start: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Calendar className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
                 <input
                   type="date"
                   value={filters.dateRange.end}
                   onChange={(e) => handleFilterChange('dateRange', { ...filters.dateRange, end: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -237,13 +237,13 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search Description</label>
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search in description, category, or family member..."
                 value={filters.searchTerm}
                 onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
           </div>
@@ -301,23 +301,23 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">Amount Range (₪)</label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">
-                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <DollarSign className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
                 <input
                   type="number"
                   placeholder="Min amount"
                   value={filters.amountRange.min}
                   onChange={(e) => handleFilterChange('amountRange', { ...filters.amountRange, min: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <DollarSign className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
                 <input
                   type="number"
                   placeholder="Max amount"
                   value={filters.amountRange.max}
                   onChange={(e) => handleFilterChange('amountRange', { ...filters.amountRange, max: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -331,7 +331,7 @@ const TransactionFilterModal: React.FC<TransactionFilterModalProps> = ({
           >
             Clear Filters
           </button>
-          <div className="flex space-x-3">
+          <div className="flex space-x-3 rtl:space-x-reverse">
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"

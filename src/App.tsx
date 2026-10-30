@@ -73,35 +73,35 @@ function AppContent() {
           <div className="h-16 flex items-center justify-between">
             <BrandLogo>
               {user && (
-                <span className="hidden md:inline ml-2 text-xs text-white/70 drop-shadow">
+                <span className="hidden md:inline ms-2 text-xs text-white/70 drop-shadow">
                   {user.email}
                 </span>
               )}
             </BrandLogo>
             
             {/* Desktop & Mobile Buttons - Glassy style */}
-            <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse sm:space-x-3">
               <Link
                 to="/guide"
                 className="flex items-center justify-center px-3 py-2 bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"
               >
                 <CircleHelp className="h-4 w-4 flex-shrink-0" />
-                <span className="ml-2 max-md:sr-only">Help</span>
+                <span className="ms-2 max-md:sr-only">Help</span>
               </Link>
               <button
                 onClick={() => setIsAddTransactionOpen(true)}
                 className="flex items-center justify-center px-3 py-2 bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"
               >
                 <Plus className="h-4 w-4 flex-shrink-0" />
-                <span className="ml-2 max-md:sr-only">Add transaction</span>
+                <span className="ms-2 max-md:sr-only">Add transaction</span>
               </button>
               <button
                 onClick={signOut}
                 className="flex items-center justify-center px-3 py-2 bg-red-500/30 backdrop-blur-md text-white rounded-lg hover:bg-red-500/40 transition-all border border-red-400/50 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"
                 title="Sign out"
               >
-                <LogOut className="h-4 w-4 flex-shrink-0" />
-                <span className="ml-2 max-md:hidden">Sign out</span>
+                <LogOut className="h-4 w-4 flex-shrink-0 rtl:-scale-x-100" />
+                <span className="ms-2 max-md:hidden">Sign out</span>
               </button>
             </div>
           </div>

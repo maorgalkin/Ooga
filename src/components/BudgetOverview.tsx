@@ -213,14 +213,14 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ selectedMonth, isCompac
             {budgetAnalysis.alerts.slice(0, isCompact ? 2 : 3).map((alert) => (
               <div 
                 key={alert.id}
-                className={`${isCompact ? 'p-2' : 'p-3'} rounded-lg border-l-4 ${
+                className={`${isCompact ? 'p-2' : 'p-3'} rounded-lg border-s-4 ${
                   alert.severity === 'high' ? 'bg-red-50 border-red-400' :
                   alert.severity === 'medium' ? 'bg-yellow-50 border-yellow-400' :
                   'bg-blue-50 border-blue-400'
                 }`}
               >
                 <div className="flex">
-                  <AlertTriangle className={`h-4 w-4 mt-0.5 mr-2 ${
+                  <AlertTriangle className={`h-4 w-4 mt-0.5 me-2 ${
                     alert.severity === 'high' ? 'text-red-500' :
                     alert.severity === 'medium' ? 'text-yellow-500' :
                     'text-blue-500'
@@ -252,9 +252,9 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ selectedMonth, isCompac
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center">
                         {getStatusIcon(comparison.status)}
-                        <span className="ml-2 font-medium text-gray-900">{comparison.category}</span>
+                        <span className="ms-2 font-medium text-gray-900">{comparison.category}</span>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <div className={`text-sm font-medium ${getStatusColor(comparison.status)}`}>
                           {formatCurrency(comparison.actual)} / {formatCurrency(comparison.budgeted)}
                         </div>
@@ -335,7 +335,7 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ selectedMonth, isCompac
             {/* Content */}
             <div className="p-6 space-y-6">
               {/* Calculation Formula */}
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+              <div className="bg-blue-50 border-s-4 border-blue-500 p-4 rounded">
                 <h3 className="font-semibold text-blue-900 mb-2">📊 The Formula</h3>
                 <div className="font-mono text-sm bg-white p-3 rounded border border-blue-200">
                   Progress = (Total Spent / Total Budgeted) × 100%
@@ -355,7 +355,7 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ selectedMonth, isCompac
               </div>
 
               {/* Example Calculation */}
-              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+              <div className="bg-green-50 border-s-4 border-green-500 p-4 rounded">
                 <h3 className="font-semibold text-green-900 mb-2">🧮 Your Current Calculation</h3>
                 <div className="text-sm space-y-2">
                   <p className="text-gray-700">
@@ -387,7 +387,7 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ selectedMonth, isCompac
               </div>
 
               {/* Important Notes */}
-              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+              <div className="bg-yellow-50 border-s-4 border-yellow-500 p-4 rounded">
                 <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Important Considerations</h3>
                 <ul className="text-sm text-gray-700 space-y-2 list-disc list-inside">
                   <li><strong>Only Active Categories Count:</strong> Inactive categories are excluded from both budget and spending totals.</li>
@@ -398,7 +398,7 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ selectedMonth, isCompac
               </div>
 
               {/* Tips */}
-              <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
+              <div className="bg-purple-50 border-s-4 border-purple-500 p-4 rounded">
                 <h3 className="font-semibold text-purple-900 mb-2">💰 Pro Tips</h3>
                 <ul className="text-sm text-gray-700 space-y-2 list-disc list-inside">
                   <li>Deactivate categories you're not tracking this month to keep progress focused</li>

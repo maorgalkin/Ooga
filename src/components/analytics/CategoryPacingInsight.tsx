@@ -365,7 +365,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                 </div>
               </div>
               {latestMonthLabel && (
-                <div className="text-sm text-right text-gray-500 dark:text-gray-400">
+                <div className="text-sm text-end text-gray-500 dark:text-gray-400">
                   Tracking {selectedCategory} through {latestMonthLabel}
                 </div>
               )}
@@ -374,11 +374,12 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 <thead>
-                  <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    <th className="py-2">Checkpoint</th>
-                    <th className="py-2">Spent</th>
-                    <th className="py-2">Remaining</th>
-                    {hasHistoricalSample && <th className="py-2">Historical avg</th>}
+                  {/* On each th: a th ignores an inherited text-align: start and centres itself */}
+                  <tr className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    <th className="py-2 text-start">Checkpoint</th>
+                    <th className="py-2 text-start">Spent</th>
+                    <th className="py-2 text-start">Remaining</th>
+                    {hasHistoricalSample && <th className="py-2 text-start">Historical avg</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -427,7 +428,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                           <div className="font-medium text-gray-900 dark:text-gray-100">
                             {row.label}
                             {row.id === 'current' && latestBucket && (
-                              <span className="ml-2 text-xs font-normal text-indigo-600 dark:text-indigo-300">
+                              <span className="ms-2 text-xs font-normal text-indigo-600 dark:text-indigo-300">
                                 Day {row.day}
                               </span>
                             )}

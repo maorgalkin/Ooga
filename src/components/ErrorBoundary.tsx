@@ -141,7 +141,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   />
                 </svg>
               </div>
-              <div className="ml-4">
+              <div className="ms-4">
                 <h1 className="text-2xl font-bold text-gray-900">
                   {isCritical ? 'Critical error detected' : 'Something went wrong'}
                 </h1>
@@ -157,7 +157,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
                 <div className="flex items-center">
                   <svg
-                    className="h-5 w-5 text-blue-500 mr-2"
+                    className="h-5 w-5 text-blue-500 me-2"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

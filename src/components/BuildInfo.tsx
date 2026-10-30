@@ -41,7 +41,7 @@ export const BuildInfo: React.FC<BuildInfoProps> = ({ inline = false }) => {
   return (
     <button
       onClick={handleClick}
-      className="fixed bottom-2 right-2 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg opacity-75 hover:opacity-100 transition-opacity font-mono z-50 cursor-pointer hover:bg-gray-700"
+      className="fixed bottom-2 end-2 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg opacity-75 hover:opacity-100 transition-opacity font-mono z-50 cursor-pointer hover:bg-gray-700"
       title="Click to scroll to top"
     >
       <div className="flex flex-col gap-1">

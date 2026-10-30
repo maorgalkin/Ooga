@@ -322,7 +322,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
               />
               <span>Date</span>
               <span>Description</span>
-              <span className="text-right">Amount</span>
+              <span className="text-end">Amount</span>
               <span>Category</span>
             </div>
 
@@ -386,7 +386,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                           ···· {tx.bank_card_last4}
                         </span>
                       ) : <span />}
-                      <span className={`text-right text-xs tabular-nums font-medium ${
+                      <span className={`text-end text-xs tabular-nums font-medium ${
                         tx.type === 'expense' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
                       }`}>
                         {formatAmount(tx, '₪')}
@@ -484,7 +484,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           disabled={saving}
           className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40 transition-colors"
         >
-          {saving ? <><Loader2 className="w-4 h-4 animate-spin inline mr-1" />Cancelling…</> : 'Cancel import'}
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin inline me-1" />Cancelling…</> : 'Cancel import'}
         </button>
         <button
           onClick={handleAccept}

@@ -38,7 +38,7 @@ export const PersonalBudgetDisplay: React.FC<PersonalBudgetDisplayProps> = ({
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          <span className="ml-3 text-gray-600 dark:text-gray-300">Loading budget...</span>
+          <span className="ms-3 text-gray-600 dark:text-gray-300">Loading budget...</span>
         </div>
       </div>
     );
@@ -75,7 +75,7 @@ export const PersonalBudgetDisplay: React.FC<PersonalBudgetDisplayProps> = ({
       <div className={`px-6 py-4 border-b border-gray-200 dark:border-gray-700 ${getInactiveBg(themeColor)}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <DollarSign className={`h-5 w-5 ${getIconColor(themeColor)} mr-2`} />
+            <DollarSign className={`h-5 w-5 ${getIconColor(themeColor)} me-2`} />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Total Monthly Budget
             </span>

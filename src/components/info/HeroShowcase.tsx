@@ -92,7 +92,7 @@ export function HeroShowcase() {
       {/* A new transaction drops in every couple of seconds */}
       <motion.div
         key={feedIndex}
-        className="absolute -bottom-6 -left-4 sm:-left-10 flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 px-4 py-3"
+        className="absolute -bottom-6 -start-4 sm:-start-10 flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 px-4 py-3"
         initial={reduce ? false : { y: 16, opacity: 0, scale: 0.95 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -108,7 +108,7 @@ export function HeroShowcase() {
 
       {/* Over-budget nudge bobbing gently in the corner */}
       <motion.div
-        className="absolute -top-4 -right-2 sm:-right-6 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-lg"
+        className="absolute -top-4 -end-2 sm:-end-6 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-lg"
         animate={reduce ? undefined : { y: [0, -6, 0] }}
         transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
       >

@@ -224,7 +224,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <span className="ml-2 text-gray-600 dark:text-gray-300">Loading budget...</span>
+          <span className="ms-2 text-gray-600 dark:text-gray-300">Loading budget...</span>
         </div>
       </div>
     );
@@ -312,7 +312,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
           {/* Budget Total */}
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
             <div className="flex items-center text-xs text-gray-600 dark:text-gray-400 mb-1">
-              <Calendar className="h-3 w-3 mr-1" />
+              <Calendar className="h-3 w-3 me-1" />
               Budgeted
             </div>
             <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCurrency(budgetAnalysis.totalBudgeted)}</p>
@@ -378,9 +378,9 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
         {/* Alerts Preview */}
         {budgetAnalysis.alerts.length > 0 && !showDetails && !viewingAlerts && (
           <div className="mb-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-400">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border-s-4 border-orange-400">
               <div className="flex items-center">
-                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 mr-2" />
+                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 me-2" />
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {budgetAnalysis.alerts.length} budget alert{budgetAnalysis.alerts.length !== 1 ? 's' : ''}
                 </span>
@@ -401,9 +401,9 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
         {/* Pending Adjustments */}
         {adjustments && adjustments.adjustmentCount > 0 && (
           <div className="mb-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-400">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border-s-4 border-purple-400">
               <div className="flex items-center">
-                <Settings className="h-5 w-5 text-purple-600 dark:text-purple-400 mr-2" />
+                <Settings className="h-5 w-5 text-purple-600 dark:text-purple-400 me-2" />
                 <span className="text-sm text-gray-900 dark:text-gray-100">
                   {adjustments.adjustmentCount} pending adjustment{adjustments.adjustmentCount !== 1 ? 's' : ''}
                 </span>
@@ -465,9 +465,9 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
                     >                      <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center">
                           {getStatusIcon(comparison.status)}
-                          <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">{comparison.category}</span>
+                          <span className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-100">{comparison.category}</span>
                         </div>
-                        <div className="text-right">
+                        <div className="text-end">
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {formatCurrency(comparison.actual)} / {formatCurrency(comparison.budgeted)}
                           </div>
@@ -509,12 +509,12 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
             >
               {showDetails ? (
                 <>
-                  <ChevronUp className="h-4 w-4 mr-1" />
+                  <ChevronUp className="h-4 w-4 me-1" />
                   Show less
                 </>
               ) : (
                 <>
-                  <ChevronDown className="h-4 w-4 mr-1" />
+                  <ChevronDown className="h-4 w-4 me-1" />
                   Show details
                 </>
               )}
@@ -525,7 +525,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
             className={`flex-1 flex items-center justify-center px-4 py-2 text-white rounded-md transition-colors text-sm font-medium ${getPrimaryButtonBg(themeColor)} ${getPrimaryButtonHoverBg(themeColor)}`}
           >
             Manage budget
-            <ArrowRight className="h-4 w-4 ml-1" />
+            <ArrowRight className="h-4 w-4 ms-1 rtl:-scale-x-100" />
           </button>
         </div>
       </div>

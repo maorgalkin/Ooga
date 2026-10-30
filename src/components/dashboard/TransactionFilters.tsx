@@ -128,7 +128,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
     }`;
   };
 
-  const dropdownClasses = 'absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 min-w-[200px] max-h-[300px] overflow-y-auto';
+  const dropdownClasses = 'absolute top-full start-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 min-w-[200px] max-h-[300px] overflow-y-auto';
   const optionClasses = 'px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer transition-colors text-gray-700 dark:text-gray-300';
   const activeOptionClasses = 'px-4 py-2 bg-blue-100 dark:bg-blue-900/50 cursor-pointer text-blue-700 dark:text-blue-300 font-medium';
 

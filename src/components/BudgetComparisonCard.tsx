@@ -28,7 +28,7 @@ export const BudgetComparisonCard: React.FC<BudgetComparisonCardProps> = ({
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          <span className="ml-3 text-gray-600 dark:text-gray-300">Loading comparison...</span>
+          <span className="ms-3 text-gray-600 dark:text-gray-300">Loading comparison...</span>
         </div>
       </div>
     );
@@ -38,7 +38,7 @@ export const BudgetComparisonCard: React.FC<BudgetComparisonCardProps> = ({
     return (
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
         <div className="flex items-center text-red-600 dark:text-red-400">
-          <AlertCircle className="h-5 w-5 mr-2" />
+          <AlertCircle className="h-5 w-5 me-2" />
           <span>Error loading budget comparison</span>
         </div>
       </div>
@@ -154,7 +154,7 @@ export const BudgetComparisonCard: React.FC<BudgetComparisonCardProps> = ({
                   : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }`}
             >
-              <div className="flex items-center space-x-3 flex-1">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse flex-1">
                 <div className="flex items-center justify-center w-8 h-8">
                   {getStatusIcon(item.status)}
                 </div>
@@ -166,7 +166,7 @@ export const BudgetComparisonCard: React.FC<BudgetComparisonCardProps> = ({
                   }`}>
                     {item.category}
                   </p>
-                  <div className="flex items-center space-x-2 mt-1">
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse mt-1">
                     {item.status === 'removed' ? (
                       <>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
@@ -215,7 +215,7 @@ export const BudgetComparisonCard: React.FC<BudgetComparisonCardProps> = ({
                   <>
                     {item.difference > 0 && '+'}
                     {formatCurrency(item.difference)}
-                    <span className="ml-1 text-xs">
+                    <span className="ms-1 text-xs">
                       ({item.differencePercentage > 0 && '+'}
                       {item.differencePercentage.toFixed(1)}%)
                     </span>

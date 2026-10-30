@@ -32,7 +32,7 @@ export const BudgetQuickView: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-          <span className="ml-2 text-gray-600 dark:text-gray-300">Loading budget...</span>
+          <span className="ms-2 text-gray-600 dark:text-gray-300">Loading budget...</span>
         </div>
       </div>
     );
@@ -79,7 +79,7 @@ export const BudgetQuickView: React.FC = () => {
             {/* Stats Grid */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
-                <Calendar className="h-4 w-4 mr-1" />
+                <Calendar className="h-4 w-4 me-1" />
                 Monthly Budget
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -101,7 +101,7 @@ export const BudgetQuickView: React.FC = () => {
             {adjustments && adjustments.adjustmentCount > 0 && (
               <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20">
                 <div className="flex items-center">
-                  <Settings className="h-5 w-5 mr-2 text-orange-600 dark:text-orange-400" />
+                  <Settings className="h-5 w-5 me-2 text-orange-600 dark:text-orange-400" />
                   <span className="text-sm text-gray-900 dark:text-gray-100">
                     {adjustments.adjustmentCount} pending adjustment{adjustments.adjustmentCount !== 1 ? 's' : ''}
                   </span>
@@ -119,7 +119,7 @@ export const BudgetQuickView: React.FC = () => {
                 className={`w-full flex items-center justify-center px-4 py-2 ${getPrimaryButtonBg(themeColor)} text-white rounded-md ${getPrimaryButtonHoverBg(themeColor)} transition-colors text-sm font-medium`}
               >
                 View Details
-                <ArrowRight className="h-4 w-4 ml-1" />
+                <ArrowRight className="h-4 w-4 ms-1 rtl:-scale-x-100" />
               </button>
             </div>
           </div>

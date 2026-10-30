@@ -96,7 +96,7 @@ export const BudgetManagement: React.FC = () => {
                     }
                   `}
                 >
-                  <Icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                  <Icon className="h-3 w-3 sm:h-4 sm:w-4 me-1 sm:me-2 flex-shrink-0" />
                   <span className="truncate">{tab.label}</span>
                 </button>
               );

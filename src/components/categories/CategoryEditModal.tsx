@@ -402,7 +402,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                 <Icon className="h-4 w-4" />
                 <span>{tab.label}</span>
                 {hasAdjustment && (
-                  <span className="absolute top-1 right-1 sm:relative sm:top-0 sm:right-0 w-2 h-2 bg-orange-500 rounded-full" />
+                  <span className="absolute top-1 end-1 sm:relative sm:top-0 sm:end-0 w-2 h-2 bg-orange-500 rounded-full" />
                 )}
               </button>
             );
@@ -456,7 +456,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   Monthly limit
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
+                  <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                   <input
                     type="number"
                     value={monthlyLimit}
@@ -464,7 +464,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                     placeholder="0"
                     min="0"
                     step="50"
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full ps-8 pe-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -484,7 +484,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                     step="5"
                     className="flex-1"
                   />
-                  <span className="text-sm text-gray-600 dark:text-gray-400 w-12 text-right">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 w-12 text-end">
                     {warningThreshold}%
                   </span>
                 </div>
@@ -545,7 +545,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                     <Info className="h-4 w-4" />
                     After merge:
                   </div>
-                  <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1 ml-6">
+                  <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1 ms-6">
                     <li className="flex items-center gap-2">
                       <Check className="h-3 w-3" />
                       New budget: ₪{combinedBudget.toLocaleString()} / month
@@ -584,8 +584,8 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                     {formatCurrency(currentMonthLimit)}
                   </p>
                 </div>
-                <ArrowRight className="h-5 w-5 text-gray-400" />
-                <div className="flex-1 text-right">
+                <ArrowRight className="h-5 w-5 text-gray-400 rtl:-scale-x-100" />
+                <div className="flex-1 text-end">
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">New planned</p>
                   {categoryAdjustment ? (
                     <p className={`text-lg font-semibold ${
@@ -623,7 +623,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   New limit
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
+                  <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                   <input
                     type="number"
                     value={nextMonthLimit}
@@ -631,7 +631,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                     placeholder="0"
                     min="0"
                     step="50"
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full ps-8 pe-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
               </div>
