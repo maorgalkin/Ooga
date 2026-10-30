@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { DuplicateSummary } from '../services/bankImportService';
+import { useT } from '../hooks/useT';
+import { getUserLocale } from '../utils/locale';
 
 interface Props {
   count: number;
@@ -7,13 +9,14 @@ interface Props {
 }
 
 const formatDate = (iso: string) =>
-  new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(getUserLocale(), { day: 'numeric', month: 'short' });
 
 /**
  * "N duplicates skipped" with a compact, scrollable list of those rows.
  * Opens on hover with a mouse and on tap/Enter otherwise; Escape or a click outside closes it.
  */
 export default function DuplicatesBubble({ count, duplicates }: Props) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLSpanElement>(null);
   const lastPointerType = useRef<string>('');
@@ -54,14 +57,14 @@ export default function DuplicatesBubble({ count, duplicates }: Props) {
         }}
         className="text-gray-500 dark:text-gray-400 text-xs underline decoration-dotted underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200"
       >
-        {count} duplicate{count !== 1 ? 's' : ''} skipped
+        {t('import.duplicates.skipped', { count })}
       </button>
 
       {open && (
         <div
           id={bubbleId}
           role="dialog"
-          aria-label="Skipped duplicates"
+          aria-label={t('import.duplicates.title')}
           className="absolute start-0 top-full z-20 mt-1.5 w-72 max-w-[calc(100vw-3rem)] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg"
         >
           {rows.length > 0 && (
@@ -73,8 +76,8 @@ export default function DuplicatesBubble({ count, duplicates }: Props) {
                     {d.description}
                   </span>
                   {d.reason === 'deleted' && (
-                    <span className="flex-shrink-0 rounded px-1 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400" title="A household member deleted this earlier">
-                      deleted
+                    <span className="flex-shrink-0 rounded px-1 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400" title={t('import.duplicates.deletedHint')}>
+                      {t('import.duplicates.deleted')}
                     </span>
                   )}
                   <span className={`flex-shrink-0 tabular-nums ${d.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-300'}`}>
@@ -85,7 +88,7 @@ export default function DuplicatesBubble({ count, duplicates }: Props) {
             </ul>
           )}
           <p className="px-3 py-1.5 text-[11px] text-gray-400 border-t border-gray-100 dark:border-gray-700">
-            Already in your account, or deleted earlier on purpose, so they weren’t imported again.
+            {t('import.duplicates.explanation')}
           </p>
         </div>
       )}

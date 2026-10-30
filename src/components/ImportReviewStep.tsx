@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Trans } from 'react-i18next';
+import { useT } from '../hooks/useT';
+import { getUserLocale } from '../utils/locale';
 import { Loader2, AlertCircle, Link2 } from 'lucide-react';
 import DuplicatesBubble from './DuplicatesBubble';
 import {
@@ -27,7 +30,7 @@ interface Props {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(getUserLocale(), { month: 'short', day: 'numeric' });
 }
 
 function formatAmount(tx: ReviewTransaction, currency: string): string {
@@ -40,6 +43,7 @@ function formatAmount(tx: ReviewTransaction, currency: string): string {
 }
 
 export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel }: Props) {
+  const t = useT();
   const [transactions, setTransactions] = useState<ReviewTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -84,12 +88,12 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         setSuggestions(result.suggestions);
         await loadRows();
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load transactions');
+        setError(e instanceof Error ? e.message : t('import.review.loadFailed'));
       } finally {
         setLoading(false);
       }
     })();
-  }, [dbSessionId, loadRows]);
+  }, [dbSessionId, loadRows, t]);
 
   const handleUndoMerge = useCallback(async (match: MatchedEntry) => {
     setBusyId(match.entry.id);
@@ -98,11 +102,11 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       setMerged((prev) => prev.filter((m) => m.entry.id !== match.entry.id));
       await loadRows(); // the bank row is back in the list
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to undo');
+      setError(e instanceof Error ? e.message : t('import.review.undoFailed'));
     } finally {
       setBusyId(null);
     }
-  }, [loadRows]);
+  }, [loadRows, t]);
 
   const handleMergeSuggestion = useCallback(async (match: MatchedEntry) => {
     setBusyId(match.bank.id);
@@ -112,11 +116,11 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       setMerged((prev) => [...prev, match]);
       await loadRows(); // the bank row is now part of the entry
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to merge');
+      setError(e instanceof Error ? e.message : t('import.review.mergeFailed'));
     } finally {
       setBusyId(null);
     }
-  }, [loadRows]);
+  }, [loadRows, t]);
 
   const handleKeepBoth = useCallback((match: MatchedEntry) => {
     setSuggestions((prev) => prev.filter((m) => m.bank.id !== match.bank.id));
@@ -168,10 +172,10 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
 
       onDone(selected.size);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save changes');
+      setError(e instanceof Error ? e.message : t('import.review.saveFailed'));
       setSaving(false);
     }
-  }, [transactions, selected, categoryOverrides, onDone]);
+  }, [transactions, selected, categoryOverrides, onDone, t]);
 
   const handleCancel = useCallback(async () => {
     setSaving(true);
@@ -182,10 +186,10 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       await deleteTransactions(rows.map((t) => t.id));
       onCancel();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to cancel import');
+      setError(e instanceof Error ? e.message : t('import.review.cancelFailed'));
       setSaving(false);
     }
-  }, [dbSessionId, onCancel]);
+  }, [dbSessionId, onCancel, t]);
 
   const allChecked = transactions.length > 0 && selected.size === transactions.length;
   const someChecked = selected.size > 0 && selected.size < transactions.length;
@@ -194,7 +198,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
     return (
       <div className="flex flex-col items-center gap-3 py-8">
         <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <p className="text-sm text-gray-500 dark:text-gray-400">Loading transactions…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('import.review.loading')}</p>
       </div>
     );
   }
@@ -208,7 +212,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           onClick={onCancel}
           className="mt-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
         >
-          Close
+          {t('common.close')}
         </button>
       </div>
     );
@@ -219,13 +223,11 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       {/* Summary banner */}
       <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
         <span className="text-green-700 dark:text-green-300 text-sm font-medium">
-          {transactions.length > 0
-            ? `${transactions.length} new transaction${transactions.length !== 1 ? 's' : ''} fetched`
-            : 'No new transactions'}
+          {transactions.length > 0 ? t('import.review.fetched', { count: transactions.length }) : t('import.review.noneNew')}
         </span>
         {merged.length > 0 && (
           <span className="text-gray-500 dark:text-gray-400 text-xs">
-            · {merged.length} matched with your entries
+            {t('import.review.matchedCount', { count: merged.length })}
           </span>
         )}
         {result.skipped > 0 && (
@@ -238,8 +240,8 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       {/* Bank rows merged into manual entries paid with this account */}
       {merged.length > 0 && (
         <MatchList
-          title={`Matched with your entries (${merged.length})`}
-          hint="Your category, family member and description were kept; the amount and date now come from the bank."
+          title={t('import.review.matchedTitle', { count: merged.length })}
+          hint={t('import.review.matchedHint')}
           matches={merged}
           busyId={busyId}
           renderActions={(m) => (
@@ -248,7 +250,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
               disabled={busyId !== null}
               className="px-2 py-1 rounded text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
             >
-              Undo
+              {t('import.review.undo')}
             </button>
           )}
           busyKey={(m) => m.entry.id}
@@ -258,8 +260,8 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       {/* Bank rows that might be the same purchase as a manual entry */}
       {suggestions.length > 0 && (
         <MatchList
-          title={`Possible duplicates (${suggestions.length})`}
-          hint="These look like entries you added by hand. Merge them, or keep both if they're different purchases."
+          title={t('import.review.possibleTitle', { count: suggestions.length })}
+          hint={t('import.review.possibleHint')}
           matches={suggestions}
           busyId={busyId}
           tone="warning"
@@ -270,14 +272,14 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                 disabled={busyId !== null}
                 className="px-2 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40"
               >
-                Merge
+                {t('import.review.merge')}
               </button>
               <button
                 onClick={() => handleKeepBoth(m)}
                 disabled={busyId !== null}
                 className="px-2 py-1 rounded text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
               >
-                Keep both
+                {t('import.review.keepBoth')}
               </button>
             </>
           )}
@@ -289,13 +291,13 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         <>
           {/* Bulk category + select-all row */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-gray-500 dark:text-gray-400">Apply to uncategorized:</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{t('import.review.applyToUncategorized')}</span>
             <select
               value={bulkCategoryId}
               onChange={(e) => setBulkCategoryId(e.target.value)}
               className="flex-1 min-w-0 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2 py-1"
             >
-              <option value="">— pick category —</option>
+              <option value="">{t('import.review.pickCategory')}</option>
               {expenseCategories.map((c: Category) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -305,7 +307,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
               disabled={!bulkCategoryId}
               className="px-2 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white transition-colors"
             >
-              Apply
+              {t('import.review.apply')}
             </button>
           </div>
 
@@ -320,10 +322,10 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                 onChange={(e) => toggleAll(e.target.checked)}
                 className="w-4 h-4 cursor-pointer"
               />
-              <span>Date</span>
-              <span>Description</span>
-              <span className="text-end">Amount</span>
-              <span>Category</span>
+              <span>{t('transactions.details.date')}</span>
+              <span>{t('transactions.details.description')}</span>
+              <span className="text-end">{t('transactions.details.amount')}</span>
+              <span>{t('transactions.details.category')}</span>
             </div>
 
             {/* Mobile select-all row */}
@@ -335,7 +337,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                 onChange={(e) => toggleAll(e.target.checked)}
                 className="w-4 h-4 cursor-pointer"
               />
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Select all</span>
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('transactions.filters.selectAll')}</span>
             </div>
 
             {/* Scrollable rows */}
@@ -368,16 +370,16 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                         {formatDate(tx.date)}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate text-gray-900 dark:text-gray-100 text-xs font-medium">
+                        <p dir="auto" className="truncate text-gray-900 dark:text-gray-100 text-xs font-medium">
                           {tx.description}
                         </p>
                         {tx.installment_number && tx.installment_total && (
                           <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                            installment {tx.installment_number}/{tx.installment_total}
+                            {t('import.review.installment', { number: tx.installment_number, total: tx.installment_total })}
                           </span>
                         )}
                         {tx.memo && (
-                          <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
+                          <p dir="auto" className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
                         )}
                       </div>
                       {/* Card badge */}
@@ -402,7 +404,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                         onClick={(e) => e.stopPropagation()}
                         className="w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-1 py-1 disabled:opacity-40"
                       >
-                        <option value="">Uncategorized</option>
+                        <option value="">{t('import.review.uncategorized')}</option>
                         {expenseCategories.map((c: Category) => (
                           <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
@@ -420,7 +422,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1">
-                          <p className="truncate text-gray-900 dark:text-gray-100 text-xs font-medium">
+                          <p dir="auto" className="truncate text-gray-900 dark:text-gray-100 text-xs font-medium">
                             {tx.description}
                           </p>
                           <span className={`flex-shrink-0 text-xs tabular-nums font-semibold ${
@@ -444,7 +446,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                             </span>
                           )}
                           {tx.memo && (
-                            <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
+                            <p dir="auto" className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
                           )}
                         </div>
                         <select
@@ -458,7 +460,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                           onClick={(e) => e.stopPropagation()}
                           className="mt-1 w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-1 py-0.5 disabled:opacity-40"
                         >
-                          <option value="">Uncategorized</option>
+                          <option value="">{t('import.review.uncategorized')}</option>
                           {expenseCategories.map((c: Category) => (
                             <option key={c.id} value={c.id}>{c.name}</option>
                           ))}
@@ -472,7 +474,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           </div>
 
           <p className="text-xs text-gray-400 dark:text-gray-500">
-            Unchecked rows will be <strong>deleted</strong>. You can always re-import later.
+            <Trans i18nKey="import.review.uncheckedNote" components={{ b: <strong /> }} />
           </p>
         </>
       )}
@@ -484,7 +486,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           disabled={saving}
           className="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-40 transition-colors"
         >
-          {saving ? <><Loader2 className="w-4 h-4 animate-spin inline me-1" />Cancelling…</> : 'Cancel import'}
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin inline me-1" />{t('import.review.cancelling')}</> : t('import.review.cancelImport')}
         </button>
         <button
           onClick={handleAccept}
@@ -492,9 +494,9 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           className="flex-1 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
         >
           {saving ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> {t('import.review.saving')}</>
           ) : (
-            `Accept ${selected.size} transaction${selected.size !== 1 ? 's' : ''}`
+            t('import.review.accept', { count: selected.size })
           )}
         </button>
       </div>
@@ -513,6 +515,7 @@ interface MatchListProps {
 }
 
 function MatchList({ title, hint, matches, busyId, busyKey, renderActions, tone = 'neutral' }: MatchListProps) {
+  const t = useT();
   const money = (amount: number) =>
     `₪${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return (
@@ -529,10 +532,10 @@ function MatchList({ title, hint, matches, busyId, busyKey, renderActions, tone 
           <li key={`${m.entry.id}:${m.bank.id}`} className="flex items-center gap-2 py-1.5 text-xs">
             <div className="flex-1 min-w-0">
               <p className="truncate text-gray-800 dark:text-gray-100" dir="auto">
-                <span className="text-gray-400">You:</span> {m.entry.description} · {formatDate(m.entry.date)} · {money(m.entry.amount)}
+                <span className="text-gray-400">{t('import.review.you')}</span> {m.entry.description} · {formatDate(m.entry.date)} · {money(m.entry.amount)}
               </p>
               <p className="truncate text-gray-500 dark:text-gray-400" dir="auto">
-                <span className="text-gray-400">Bank:</span> {m.bank.description} · {formatDate(m.bank.date)} · {money(m.bank.amount)}
+                <span className="text-gray-400">{t('import.review.bank')}</span> {m.bank.description} · {formatDate(m.bank.date)} · {money(m.bank.amount)}
               </p>
             </div>
             <div className="flex-shrink-0 flex items-center gap-1">

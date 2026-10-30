@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { Trans } from 'react-i18next';
+import { useT } from '../hooks/useT';
+import { getUserLocale } from '../utils/locale';
 import { X, Download, Loader2, CheckCircle2, AlertCircle, PlusCircle } from 'lucide-react';
 import {
   listConnections,
@@ -53,6 +56,7 @@ function periodDateRange(period: ImportPeriod, now: Date = new Date()): { startD
 }
 
 export default function BankImportModal({ onClose, onImportComplete, onAddAccount, selectedConnectionId }: Props) {
+  const t = useT();
   const [step, setStep] = useState<Step>('loading');
   const [period, setPeriod] = useState<ImportPeriod>({ type: 'current_month' });
   const [customStart, setCustomStart] = useState(SIX_MONTHS_AGO);
@@ -94,7 +98,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       setCalSessionToken(token);
       setStep('awaiting_otp');
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to request OTP');
+      setErrorMsg(err instanceof Error ? err.message : t('import.otpRequestFailed'));
       setStep('error');
     }
   };
@@ -124,7 +128,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       setStep(sid ? 'review' : 'complete');
       onImportComplete?.(imported);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Import failed');
+      setErrorMsg(err instanceof Error ? err.message : t('import.failed'));
       setStep('error');
     } finally {
       setOtpSubmitting(false);
@@ -142,7 +146,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       );
       const sessionId = await startServerImport(activeConnection.id, startDate, endDate);
       const state = await waitForServerImport(sessionId, setServerStatus);
-      if (state.status === 'error' || !state.result) throw new Error(state.error ?? 'Import failed');
+      if (state.status === 'error' || !state.result) throw new Error(state.error ?? t('import.failed'));
 
       setResult({ imported: state.result.imported, skipped: state.result.skipped, duplicates: state.result.duplicates });
       setSkippedCardBills(state.result.skippedCardBills ?? []);
@@ -150,13 +154,13 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       setStep(state.dbSessionId ? 'review' : 'complete');
       onImportComplete?.(state.result.imported);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Import failed');
+      setErrorMsg(err instanceof Error ? err.message : t('import.failed'));
       setStep('error');
     }
   };
 
   const providerLabel = (p: string) =>
-    ({ discount: 'Discount Bank', visaCal: 'Visa Cal (username)', visaCalFast: 'Visa Cal (SMS code)', isracard: 'Isracard', max: 'Max', amex: 'Amex' }[p] ?? p);
+    ['discount', 'visaCal', 'visaCalFast', 'isracard', 'max', 'amex'].includes(p) ? t(`import.providers.${p}`) : p;
 
   const isCalProvider = (p: string) => p === 'visaCal' || p === 'visaCalFast';
 
@@ -182,11 +186,12 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
           <div className="flex items-center gap-2">
             <Download className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {step === 'review' ? 'Review transactions' : 'Import from bank'}
+              {step === 'review' ? t('import.titleReview') : t('import.titleImport')}
             </h2>
           </div>
           <button
             onClick={handleClose}
+            aria-label={t('common.close')}
             className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -205,9 +210,9 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
             <div className="flex flex-col items-center gap-4 py-4 text-center">
               <AlertCircle className="w-10 h-10 text-amber-500" />
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">No accounts connected</p>
+                <p className="font-medium text-gray-900 dark:text-white">{t('import.noAccounts')}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Add a bank or credit card account in Settings before importing.
+                  {t('import.noAccountsHint')}
                 </p>
               </div>
               <div className="flex gap-3 w-full pt-1">
@@ -215,14 +220,14 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                   onClick={onClose}
                   className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Close
+                  {t('common.close')}
                 </button>
                 {onAddAccount && (
                   <button
                     onClick={() => { onClose(); onAddAccount(); }}
                     className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
                   >
-                    <PlusCircle className="w-4 h-4" /> Add account
+                    <PlusCircle className="w-4 h-4" /> {t('transactions.form.addAccount')}
                   </button>
                 )}
               </div>
@@ -243,13 +248,13 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
               ) : connections.length > 0 ? (
                 <div>
                   <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                    Connected accounts ({connections.length})
+                    {t('import.connectedCount', { count: connections.length })}
                   </p>
                   <ul className="space-y-1">
                     {connections.map((c) => (
                       <li key={c.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                         <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-                        <span>{c.display_name}</span>
+                        <span dir="auto">{c.display_name}</span>
                         <span className="text-gray-400 dark:text-gray-500 text-xs">({providerLabel(c.provider)})</span>
                       </li>
                     ))}
@@ -259,13 +264,13 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Import period
+                  {t('import.period.label')}
                 </label>
                 <div className="flex flex-col gap-2">
                   {([ 
-                    { value: 'current_month', label: 'Current month', desc: `${new Date().toLocaleString('default', { month: 'long' })} 1st – today` },
-                    { value: 'last_month',    label: 'Last month',    desc: (() => { const d = new Date(); d.setMonth(d.getMonth()-1); return d.toLocaleString('default', { month: 'long', year: 'numeric' }); })() },
-                    { value: 'custom',        label: 'Custom',        desc: 'Pick a start date (up to 6 months back)' },
+                    { value: 'current_month', label: t('import.period.current'), desc: t('import.period.currentDesc', { month: new Date().toLocaleString(getUserLocale(), { month: 'long' }) }) },
+                    { value: 'last_month',    label: t('import.period.last'),    desc: (() => { const d = new Date(); d.setMonth(d.getMonth()-1); return d.toLocaleString(getUserLocale(), { month: 'long', year: 'numeric' }); })() },
+                    { value: 'custom',        label: t('import.period.custom'),  desc: t('import.period.customDesc') },
                   ] as const).map(({ value, label, desc }) => (
                     <label key={value} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                       period.type === value
@@ -290,7 +295,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 {period.type === 'custom' && (
                   <div className="pt-1">
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      Start date
+                      {t('import.period.startDate')}
                     </label>
                     <input
                       type="date"
@@ -301,7 +306,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                       className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm"
                     />
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      Transactions from this date through today will be imported.
+                      {t('import.period.startHint')}
                     </p>
                   </div>
                 )}
@@ -309,12 +314,9 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
 
               <p className="text-xs text-gray-500 dark:text-gray-500">
                 {activeConnection && !isCalProvider(activeConnection.provider) ? (
-                  <>Ooga’s import service logs in to <strong>{providerLabel(activeConnection.provider)}</strong> and
-                  fetches completed transactions. Credit-card bill payments are skipped, because the card’s purchases are
-                  imported on their own. This can take up to 2 minutes. Duplicates are skipped.</>
+                  <Trans i18nKey="import.serverNote" values={{ provider: providerLabel(activeConnection.provider) }} components={{ b: <strong /> }} />
                 ) : (
-                  <>Tapping <strong>Send code</strong> will text a verification code to your registered phone number.
-                  Imported transactions start as <strong>Uncategorized</strong>. Duplicates are skipped.</>
+                  <Trans i18nKey="import.calNote" components={{ b: <strong /> }} />
                 )}
               </p>
 
@@ -323,21 +325,21 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                   onClick={onClose}
                   className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 {activeConnection && !isCalProvider(activeConnection.provider) ? (
                   <button
                     onClick={handleServerImport}
                     className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
                   >
-                    Import →
+                    {t('import.importButton')}
                   </button>
                 ) : (
                   <button
                     onClick={handleStart}
                     className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
                   >
-                    Send code →
+                    {t('import.sendCodeButton')}
                   </button>
                 )}
               </div>
@@ -345,7 +347,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
           )}
 
           {step === 'requesting_otp' && (
-            <SpinnerStep message="Sending SMS code…" detail="Requesting a one-time code from Visa Cal" />
+            <SpinnerStep message={t('import.sendingCode')} detail={t('import.sendingCodeDetail')} />
           )}
 
           {step === 'awaiting_otp' && (
@@ -354,9 +356,9 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                   <span className="text-xl">📱</span>
                 </div>
-                <p className="font-medium text-gray-900 dark:text-white">SMS verification required</p>
+                <p className="font-medium text-gray-900 dark:text-white">{t('import.otpTitle')}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Visa Cal sent a one-time code to your registered phone. Enter it below to continue.
+                  {t('import.otpBody')}
                 </p>
               </div>
               <input
@@ -367,7 +369,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                 onKeyDown={(e) => e.key === 'Enter' && handleOtpSubmit()}
-                placeholder="Enter the code from your SMS"
+                placeholder={t('import.otpPlaceholder')}
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm text-center tracking-widest"
                 autoFocus
               />
@@ -377,7 +379,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
                 className="w-full px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
                 {otpSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                Verify &amp; import
+                {t('import.verify')}
               </button>
             </div>
           )}
@@ -385,18 +387,18 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
           {step === 'importing' && (
             activeConnection && !isCalProvider(activeConnection.provider) ? (
               <SpinnerStep
-                message={serverStatus === 'logging_in' ? `Logging in to ${providerLabel(activeConnection.provider)}…` : 'Fetching transactions…'}
-                detail="Bank logins can take up to 2 minutes. Keep this window open."
+                message={serverStatus === 'logging_in' ? t('import.loggingIn', { provider: providerLabel(activeConnection.provider) }) : t('import.fetching')}
+                detail={t('import.bankWait')}
               />
             ) : (
-              <SpinnerStep message="Importing transactions…" detail="Verifying the code and importing from Visa Cal. This can take up to 30 seconds." />
+              <SpinnerStep message={t('import.importing')} detail={t('import.calWait')} />
             )
           )}
 
           {(step === 'review' || step === 'complete') && skippedCardBills.length > 0 && (
             <div className="mb-4 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
               <p className="font-medium mb-1">
-                Skipped {skippedCardBills.length} credit-card bill payment{skippedCardBills.length === 1 ? '' : 's'} (the card’s purchases are imported separately):
+                {t('import.skippedBills', { count: skippedCardBills.length })}
               </p>
               <ul className="space-y-0.5">
                 {skippedCardBills.map((bill, i) => (
@@ -447,18 +449,21 @@ function SpinnerStep({ message, detail }: { message: string; detail: string }) {
 }
 
 function CompleteStep({ result, onClose }: { result: { imported: number; skipped: number }; onClose: () => void }) {
+  const t = useT();
   return (
     <div className="flex flex-col items-center gap-4 py-4">
       <CheckCircle2 className="w-12 h-12 text-green-500" />
       <div className="text-center">
-        <p className="font-semibold text-gray-900 dark:text-white text-lg">Import complete!</p>
+        <p className="font-semibold text-gray-900 dark:text-white text-lg">{t('import.complete')}</p>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          <span className="font-medium text-green-600">{result.imported}</span> transactions imported
-          {result.skipped > 0 && <>, <span className="font-medium">{result.skipped}</span> duplicates skipped</>}
+          <Trans i18nKey="import.imported" count={result.imported} values={{ count: result.imported }} components={{ g: <span className="font-medium text-green-600" /> }} />
+          {result.skipped > 0 && (
+            <Trans i18nKey="import.duplicatesSkipped" count={result.skipped} values={{ count: result.skipped }} components={{ b: <span className="font-medium" /> }} />
+          )}
         </p>
         {result.imported > 0 && (
           <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-            All imported transactions are marked <strong>Uncategorized</strong> — categorise them in the Transactions tab.
+            <Trans i18nKey="import.uncategorizedNote" components={{ b: <strong /> }} />
           </p>
         )}
       </div>
@@ -466,18 +471,19 @@ function CompleteStep({ result, onClose }: { result: { imported: number; skipped
         onClick={onClose}
         className="mt-2 px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
       >
-        Done
+        {t('import.done')}
       </button>
     </div>
   );
 }
 
 function ErrorStep({ message, onRetry, onClose }: { message: string; onRetry: () => void; onClose: () => void }) {
+  const t = useT();
   return (
     <div className="flex flex-col items-center gap-4 py-4">
       <AlertCircle className="w-12 h-12 text-red-500" />
       <div className="text-center">
-        <p className="font-semibold text-gray-900 dark:text-white">Import failed</p>
+        <p className="font-semibold text-gray-900 dark:text-white">{t('import.failed')}</p>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 break-words">{message}</p>
       </div>
       <div className="flex gap-3 w-full">
@@ -485,13 +491,13 @@ function ErrorStep({ message, onRetry, onClose }: { message: string; onRetry: ()
           onClick={onClose}
           className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
-          Close
+          {t('common.close')}
         </button>
         <button
           onClick={onRetry}
           className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
         >
-          Try again
+          {t('import.tryAgain')}
         </button>
       </div>
     </div>

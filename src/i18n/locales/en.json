@@ -841,5 +841,184 @@
       "suggestedName": "{{name}}'s New Household",
       "suggestedNameNoName": "My New Household"
     }
+  },
+  "import": {
+    "providers": {
+      "discount": "Discount Bank",
+      "visaCal": "Visa Cal (username)",
+      "visaCalFast": "Visa Cal (SMS code)",
+      "isracard": "Isracard",
+      "max": "Max",
+      "amex": "Amex"
+    },
+    "titleReview": "Review transactions",
+    "titleImport": "Import from bank",
+    "noAccounts": "No accounts connected",
+    "noAccountsHint": "Add a bank or credit card account in Settings before importing.",
+    "connectedCount": "Connected accounts ({{count}})",
+    "period": {
+      "label": "Import period",
+      "current": "Current month",
+      "currentDesc": "{{month}} 1st – today",
+      "last": "Last month",
+      "custom": "Custom",
+      "customDesc": "Pick a start date (up to 6 months back)",
+      "startDate": "Start date",
+      "startHint": "Transactions from this date through today will be imported."
+    },
+    "serverNote": "Ooga’s import service logs in to <b>{{provider}}</b> and fetches completed transactions. Credit-card bill payments are skipped, because the card’s purchases are imported on their own. This can take up to 2 minutes. Duplicates are skipped.",
+    "calNote": "Tapping <b>Send code</b> will text a verification code to your registered phone number. Imported transactions start as <b>Uncategorized</b>. Duplicates are skipped.",
+    "importButton": "Import →",
+    "sendCodeButton": "Send code →",
+    "sendingCode": "Sending SMS code…",
+    "sendingCodeDetail": "Requesting a one-time code from Visa Cal",
+    "otpTitle": "SMS verification required",
+    "otpBody": "Visa Cal sent a one-time code to your registered phone. Enter it below to continue.",
+    "otpPlaceholder": "Enter the code from your SMS",
+    "verify": "Verify & import",
+    "loggingIn": "Logging in to {{provider}}…",
+    "fetching": "Fetching transactions…",
+    "bankWait": "Bank logins can take up to 2 minutes. Keep this window open.",
+    "importing": "Importing transactions…",
+    "calWait": "Verifying the code and importing from Visa Cal. This can take up to 30 seconds.",
+    "skippedBills_one": "Skipped {{count}} credit-card bill payment (the card’s purchases are imported separately):",
+    "skippedBills_other": "Skipped {{count}} credit-card bill payments (the card’s purchases are imported separately):",
+    "complete": "Import complete!",
+    "imported": "<g>{{count}}</g> transactions imported",
+    "duplicatesSkipped": ", <b>{{count}}</b> duplicates skipped",
+    "uncategorizedNote": "All imported transactions are marked <b>Uncategorized</b> — categorise them in the Transactions tab.",
+    "done": "Done",
+    "failed": "Import failed",
+    "tryAgain": "Try again",
+    "otpRequestFailed": "Failed to request OTP",
+    "review": {
+      "loading": "Loading transactions…",
+      "fetched_one": "{{count}} new transaction fetched",
+      "fetched_other": "{{count}} new transactions fetched",
+      "noneNew": "No new transactions",
+      "matchedCount": "· {{count}} matched with your entries",
+      "matchedTitle": "Matched with your entries ({{count}})",
+      "matchedHint": "Your category, family member and description were kept; the amount and date now come from the bank.",
+      "undo": "Undo",
+      "possibleTitle": "Possible duplicates ({{count}})",
+      "possibleHint": "These look like entries you added by hand. Merge them, or keep both if they're different purchases.",
+      "merge": "Merge",
+      "keepBoth": "Keep both",
+      "applyToUncategorized": "Apply to uncategorized:",
+      "pickCategory": "— pick category —",
+      "apply": "Apply",
+      "uncategorized": "Uncategorized",
+      "installment": "installment {{number}}/{{total}}",
+      "uncheckedNote": "Unchecked rows will be <b>deleted</b>. You can always re-import later.",
+      "cancelling": "Cancelling…",
+      "cancelImport": "Cancel import",
+      "saving": "Saving…",
+      "accept_one": "Accept {{count}} transaction",
+      "accept_other": "Accept {{count}} transactions",
+      "you": "You:",
+      "bank": "Bank:",
+      "loadFailed": "Failed to load transactions",
+      "undoFailed": "Failed to undo",
+      "mergeFailed": "Failed to merge",
+      "saveFailed": "Failed to save changes",
+      "cancelFailed": "Failed to cancel import"
+    },
+    "duplicates": {
+      "skipped_one": "{{count}} duplicate skipped",
+      "skipped_other": "{{count}} duplicates skipped",
+      "title": "Skipped duplicates",
+      "deletedHint": "A household member deleted this earlier",
+      "deleted": "deleted",
+      "explanation": "Already in your account, or deleted earlier on purpose, so they weren’t imported again."
+    },
+    "providerNames": {
+      "discount": "Discount Bank",
+      "hapoalim": "Bank Hapoalim",
+      "leumi": "Bank Leumi",
+      "mizrahi": "Mizrahi-Tefahot",
+      "beinleumi": "First International",
+      "union": "Union Bank",
+      "massad": "Bank Massad",
+      "mercantile": "Mercantile Bank",
+      "visaCal": "Visa Cal (username)",
+      "visaCalFast": "Visa Cal (SMS code)",
+      "isracard": "Isracard",
+      "amex": "Amex Israel",
+      "max": "Max (Leumi Card)"
+    },
+    "fields": {
+      "id": {
+        "label": "National ID (ת.ז.)"
+      },
+      "password": {
+        "label": "Password"
+      },
+      "num": {
+        "label": "Access code (קוד גישה)",
+        "placeholder": "6-character code",
+        "hint": "The code shown on the bank's sign-in page, not the SMS code"
+      },
+      "username": {
+        "label": "Username",
+        "placeholder": "Your username"
+      },
+      "last4Digits": {
+        "label": "Last 4 digits of card",
+        "hint": "Signing in needs an SMS code. Your phone gets one during import."
+      },
+      "card6Digits": {
+        "label": "Last 6 digits of card"
+      },
+      "userCode": {
+        "label": "User code",
+        "placeholder": "Your user code"
+      }
+    },
+    "fieldsByProvider": {
+      "visaCal": {
+        "username": {
+          "placeholder": "Your Cal username"
+        }
+      },
+      "max": {
+        "username": {
+          "placeholder": "Your Max username"
+        }
+      },
+      "isracard": {
+        "card6Digits": {
+          "hint": "The last 6 digits of your primary Isracard"
+        }
+      }
+    },
+    "addAccount": {
+      "title": "Add bank account",
+      "choose": "Choose the bank or credit card to connect:",
+      "comingSoon": "Coming soon",
+      "displayName": "Display name",
+      "cardNote": "Only your ID and the card’s last 4 digits are saved. Each import is confirmed with an SMS code.",
+      "serverNote": "Sent once to Ooga’s import service and stored encrypted there. They’re never stored in your browser or shown again.",
+      "back": "Back",
+      "testSave": "Test & save",
+      "testing": "Testing connection…",
+      "verifying": "Verifying credentials with {{provider}}",
+      "connected": "Connected!",
+      "savedVerified": "<b>{{name}}</b> was saved and verified.",
+      "failed": "Connection failed",
+      "saveFailed": "Failed to save connection"
+    },
+    "accounts": {
+      "title": "Connected accounts",
+      "subtitle": "Banks and credit cards to include when importing transactions",
+      "refresh": "Refresh",
+      "none": "No accounts connected yet",
+      "addFirst": "+ Add your first account",
+      "meta": "{{provider}} · Last sync: {{date}}",
+      "never": "Never",
+      "addedByOther": " · Added by another household member",
+      "removeFailed": "Couldn't remove this account. Try again in a minute.",
+      "remove": "Remove connection",
+      "confirmRemove": "Remove this account connection? You can re-add it later."
+    }
   }
 }
