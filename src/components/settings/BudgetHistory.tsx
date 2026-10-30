@@ -96,7 +96,7 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
         <div className="flex items-center gap-2">
           <History className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-            Budget History
+            Budget history
           </h3>
           <span className="text-xs text-gray-500 dark:text-gray-400">
             ({history.length} version{history.length !== 1 ? 's' : ''})

@@ -235,7 +235,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <div className={`px-6 py-4 ${getHeaderGradient(themeColor)}`}>
-          <h3 className="text-lg font-semibold text-white">Budget Performance</h3>
+          <h3 className="text-lg font-semibold text-white">Budget performance</h3>
           <p className={`text-sm ${getTextColor(themeColor)} mt-1`}>
             {displayMonthName} {year}
           </p>
@@ -245,7 +245,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
           <div className="flex flex-col items-center justify-center text-center">
             <Sparkles className="h-16 w-16 text-blue-500 mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Welcome to Budget Management! 🎉
+              Welcome to budget management! 🎉
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
               Get started by creating your first budget. Add your spending categories and set monthly limits to track your financial performance.
@@ -255,7 +255,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md hover:shadow-lg flex items-center gap-2"
             >
               <Sparkles className="h-5 w-5" />
-              Create Your First Budget
+              Create your first budget
             </button>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
               💡 Tip: Start with categories like Groceries, Utilities, and Entertainment
@@ -272,7 +272,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
       <div className={`max-md:hidden px-6 py-4 ${getHeaderGradient(themeColor)}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-white">Budget Performance</h3>
+            <h3 className="text-lg font-semibold text-white">Budget performance</h3>
             <p className={`text-sm ${getTextColor(themeColor)} mt-1`}>
               {displayMonthName} {year}
             </p>
@@ -336,8 +336,8 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
               'text-red-900 dark:text-red-400'
             }`}>
               {categoriesOverBudget === 0 
-                ? `On Track` 
-                : `${categoriesOverBudget} Over`
+                ? `On track` 
+                : `${categoriesOverBudget} over`
               }
             </p>
             <p className={`text-xs font-medium mt-0.5 ${
@@ -420,14 +420,14 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
           <div ref={categoryBreakdownRef} className="mb-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {viewingAlerts ? 'Alert Categories' : 'Category Breakdown'}
+                {viewingAlerts ? 'Alert categories' : 'Category breakdown'}
               </h4>
               {viewingAlerts && (
                 <button
                   onClick={() => setViewingAlerts(false)}
                   className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 >
-                  Show All
+                  Show all
                 </button>
               )}
             </div>
@@ -510,12 +510,12 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
               {showDetails ? (
                 <>
                   <ChevronUp className="h-4 w-4 mr-1" />
-                  Show Less
+                  Show less
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-4 w-4 mr-1" />
-                  Show Details
+                  Show details
                 </>
               )}
             </button>
@@ -524,7 +524,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
             onClick={() => navigate('/?tab=budget')}
             className={`flex-1 flex items-center justify-center px-4 py-2 text-white rounded-md transition-colors text-sm font-medium ${getPrimaryButtonBg(themeColor)} ${getPrimaryButtonHoverBg(themeColor)}`}
           >
-            Manage Budget
+            Manage budget
             <ArrowRight className="h-4 w-4 ml-1" />
           </button>
         </div>

@@ -182,27 +182,27 @@ const phases = {
     await shot('household', 'dashboard-empty', { target: text('Manage household') });
     await click(text('Manage household'));
     await waitText('Owner');
-    await markPanel(text('Household Settings'));
+    await markPanel(text('Household settings'));
     await shot('household', 'settings', { area: PANEL, target: text('Edit'), pad: 0 });
     await click(text('Edit'));
     await type(`${PANEL} input`, 'The Levi family');
     await shot('household', 'rename', { area: PANEL, target: `${PANEL} input`, pad: 0 });
     await page.keyboard.press('Enter');
     await pause(1500);
-    await shot('household', 'members', { area: PANEL, target: text('Add Member'), pad: 0 });
-    await page.$eval(text('Switch Households'), (el) => el.scrollIntoView({ block: 'end' }));
+    await shot('household', 'members', { area: PANEL, target: text('Add member'), pad: 0 });
+    await page.$eval(text('Switch households'), (el) => el.scrollIntoView({ block: 'end' }));
     await pause(400);
     await shot('household', 'invite', { area: PANEL, target: text('Copy'), pad: 0 });
-    await shot('household', 'switch', { area: PANEL, target: text('Switch Households'), pad: 0 });
+    await shot('household', 'switch', { area: PANEL, target: text('Switch households'), pad: 0 });
   },
 
   async budget() {
     await signIn();
     await go('/');
     await tab('Budget');
-    await waitText('Create Budget');
-    await shot('budget', 'tab', { target: text('Create Budget') });
-    await click(text('Create Budget'));
+    await waitText('Create budget');
+    await shot('budget', 'tab', { target: text('Create budget') });
+    await click(text('Create budget'));
     await type('input[placeholder="e.g., Summer 2025 Budget"]', 'Family budget');
     await shot('budget', 'defaults', { target: 'input[placeholder="e.g., Summer 2025 Budget"]' });
 
@@ -210,7 +210,7 @@ const phases = {
     await markPanel('input[type=color]');
     await type(`${PANEL} input[type=number]`, 3200);
     await shot('budget', 'edit-category', { area: PANEL, target: `${PANEL} input[type=number]`, pad: 0 });
-    await click(`${PANEL} ::-p-text(Save Changes)`);
+    await click(`${PANEL} ::-p-text(Save changes)`);
 
     for (const [name, limit] of [['Kids', 1200], ['Dining out', 900]]) {
       await click(text('Click to create new'));
@@ -222,8 +222,8 @@ const phases = {
     }
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await pause(500);
-    await shot('budget', 'save', { target: text('Save Budget') });
-    await click(text('Save Budget'));
+    await shot('budget', 'save', { target: text('Save budget') });
+    await click(text('Save budget'));
     await waitText('Remaining');
     await pause(1500);
     await page.evaluate(() => window.scrollTo(0, 0));
@@ -233,13 +233,13 @@ const phases = {
   async transactions() {
     await signIn();
     await go('/');
-    await shot('transactions', 'open', { target: `nav ${text('Add Transaction')}` });
-    await click(`nav ${text('Add Transaction')}`);
+    await shot('transactions', 'open', { target: `nav ${text('Add transaction')}` });
+    await click(`nav ${text('Add transaction')}`);
     await markPanel(text('Choose'));
     await shot('transactions', 'modal', { area: PANEL, target: text('Choose'), pad: 0 });
     await click(text('Choose'));
     await pause(500);
-    await markPanel(text('Select Expense Category'));
+    await markPanel(`h3${text('Select expense category')}`);
     await shot('transactions', 'categories', { area: PANEL, target: `${PANEL} ${text('Groceries')}`, pad: 0 });
     await click(`${PANEL} ${text('Groceries')}`);
     await markPanel(text('Choose'));
@@ -251,7 +251,7 @@ const phases = {
     await shot('transactions', 'income', { area: PANEL, target: `${PANEL} ${text('Income')}`, pad: 0 });
     await click(`${PANEL} button::-p-text(Expense)`);
     await click(`${PANEL} ${text('Choose')}`);
-    await markPanel(text('Select Expense Category'));
+    await markPanel(`h3${text('Select expense category')}`);
     await click(`${PANEL} ${text('Groceries')}`);
     await markPanel(text('Choose'));
     await type('input[placeholder="0.00"]', 412);
@@ -264,13 +264,13 @@ const phases = {
 
     await tab('Budget');
     await click(text('Settings'));
-    await waitText('Connected Accounts');
-    await page.evaluate(() => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes('Connected Accounts'))?.scrollIntoView({ block: 'center' }));
+    await waitText('Connected accounts');
+    await page.evaluate(() => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes('Connected accounts'))?.scrollIntoView({ block: 'center' }));
     await pause(500);
-    await shot('transactions', 'accounts', { target: text('Add Account') });
-    await click(text('Add Account'));
+    await shot('transactions', 'accounts', { target: text('Add account') });
+    await click(text('Add account'));
     await markPanel(text('Discount Bank'));
-    await shot('transactions', 'providers', { area: PANEL, target: `${PANEL} ${text('Visa Cal (Fast Access)')}`, pad: 0 });
+    await shot('transactions', 'providers', { area: PANEL, target: `${PANEL} ${text('Visa Cal (SMS code)')}`, pad: 0 });
   },
 
   async tour() {
@@ -292,29 +292,29 @@ const phases = {
     await shot('update-budget', 'categories', { target: `${text('Edit')}` });
     await click(text('Edit'));
     await markPanel(text('Details'));
-    await shot('update-budget', 'details', { area: PANEL, target: `${PANEL} ${text('Monthly Limit')}`, pad: 0 });
+    await shot('update-budget', 'details', { area: PANEL, target: `${PANEL} ${text('Monthly limit')}`, pad: 0 });
     await click(`${PANEL} button::-p-text(Adjust)`);
-    await shot('update-budget', 'adjust', { area: PANEL, target: `${PANEL} ${text('New Limit')}`, pad: 0 });
+    await shot('update-budget', 'adjust', { area: PANEL, target: `${PANEL} ${text('New limit')}`, pad: 0 });
     await click(`${PANEL} button::-p-text(Merge)`);
     await shot('update-budget', 'merge', { area: PANEL, target: `${PANEL} select`, pad: 0 });
     await page.keyboard.press('Escape');
     await go('/');
     await tab('Budget');
     await click(text('Settings'));
-    await waitText('Budget History');
-    await page.evaluate(() => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes('Budget History'))?.scrollIntoView({ block: 'start' }));
+    await waitText('Budget history');
+    await page.evaluate(() => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes('Budget history'))?.scrollIntoView({ block: 'start' }));
     await pause(500);
     await shot('update-budget', 'history');
 
     await tab('Insights');
     await pause(3000);
-    await shot('insights', 'range', { target: text('Current Month') });
+    await shot('insights', 'range', { target: text('Current month') });
     for (const [title, name] of [
-      ['Budget Summary', 'summary'],
-      ['Original vs Current', 'chart'],
-      ['Category Accuracy', 'accuracy'],
-      ['Category Pace Tracker', 'pace'],
-      ['Household Member Expenses', 'members'],
+      ['Budget summary', 'summary'],
+      ['Original vs current', 'chart'],
+      ['Category accuracy', 'accuracy'],
+      ['Category pace tracker', 'pace'],
+      ['Household member expenses', 'members'],
     ]) {
       await page.evaluate((t) => [...document.querySelectorAll('h2,h3')].find((h) => h.textContent?.includes(t))?.scrollIntoView({ block: 'start' }), title);
       await page.evaluate(() => window.scrollBy(0, -80));

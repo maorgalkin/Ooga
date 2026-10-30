@@ -81,7 +81,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              New Household Created!
+              New household created
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
               Welcome to your new household. Redirecting...
@@ -100,7 +100,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Home className="h-6 w-6 text-white" />
-              <h2 className="text-xl font-semibold text-white">Leave & Create New Household</h2>
+              <h2 className="text-xl font-semibold text-white">Leave & create new household</h2>
             </div>
             <button
               onClick={handleCancel}
@@ -124,7 +124,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
                 <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-orange-800 dark:text-orange-200 font-medium mb-2">
-                    {isSoleOwner ? 'Warning: All Data Will Be Deleted' : 'Warning: Household Will Be Deleted'}
+                    {isSoleOwner ? 'Warning: all data will be deleted' : 'Warning: household will be deleted'}
                   </p>
                   <p className="text-orange-700 dark:text-orange-300 text-sm">
                     {isSoleOwner ? (
@@ -146,7 +146,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
                   </ul>
                   {!isSoleOwner && (
                     <p className="mt-2 text-sm text-orange-800 dark:text-orange-200 font-medium">
-                      💡 Tip: You can transfer ownership to another member instead of deleting the household. Go to Household Settings → App Users → "Make Owner" button.
+                      💡 Tip: You can transfer ownership to another member instead of deleting the household. Go to Household settings → App Users → "Make owner" button.
                     </p>
                   )}
                 </div>
@@ -172,7 +172,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
           {/* New Household Name */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              New Household Name
+              New household name
             </label>
             <input
               type="text"
@@ -206,7 +206,7 @@ export const LeaveHouseholdModal: React.FC<LeaveHouseholdModalProps> = ({ isOpen
               ) : (
                 <>
                   <Home className="h-4 w-4" />
-                  {isOwner ? 'Delete & Create New' : 'Leave & Create New'}
+                  {isOwner ? 'Delete & create new' : 'Leave & create new'}
                 </>
               )}
             </button>

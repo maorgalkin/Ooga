@@ -185,7 +185,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Your Categories
+            Your categories
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {activeCategories.length} active{newCategoryAdjustments.length > 0 ? `, ${newCategoryAdjustments.length} scheduled` : ''}
@@ -196,7 +196,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Add Category
+          Add category
         </button>
       </div>
 
@@ -215,7 +215,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            Add Category
+            Add category
           </button>
         </div>
       ) : (
@@ -331,7 +331,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                           </h4>
                           <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                             <Sparkles className="h-3 w-3" />
-                            <span className="hidden sm:inline">Next Month</span>
+                            <span className="hidden sm:inline">Next month</span>
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
@@ -372,7 +372,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 <h3 className="font-semibold text-orange-800 dark:text-orange-200">
-                  Next Month Summary
+                  Next month summary
                 </h3>
               </div>
               <span className="text-sm text-orange-600 dark:text-orange-400">

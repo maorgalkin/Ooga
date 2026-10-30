@@ -559,7 +559,7 @@ const Dashboard: React.FC = () => {
                   {/* Mobile Sticky Header */}
                   <div className="md:hidden sticky top-0 z-10 bg-purple-100 dark:bg-purple-950/30 -mx-3 px-3 py-3 mb-4 border-b-2 border-purple-300 dark:border-purple-700">
                     <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">
-                      Budget Performance{showBreakdownInHeader && ' | Breakdown'}
+                      Budget performance{showBreakdownInHeader && ' | Breakdown'}
                     </h2>
                   </div>
 
@@ -578,7 +578,7 @@ const Dashboard: React.FC = () => {
                   {/* Budget Category Breakdown */}
                   <div ref={expenseChartRef} className="mb-8">
                     <div className="md:hidden sticky top-0 z-10 bg-purple-100 dark:bg-purple-950/30 -mx-3 px-3 py-3 mb-4 border-b-2 border-purple-300 dark:border-purple-700">
-                      <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Expenses by Category</h2>
+                      <h2 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Expenses by category</h2>
                     </div>
                     <ExpenseChart
                       categoryData={dashboardCategoryData}

@@ -13,7 +13,8 @@ const PROVIDER_LABELS: Record<string, string> = {
   union: 'Union Bank',
   massad: 'Bank Massad',
   mercantile: 'Mercantile Bank',
-  visaCal: 'Visa Cal',
+  visaCal: 'Visa Cal (username)',
+  visaCalFast: 'Visa Cal (SMS code)',
   isracard: 'Isracard',
   amex: 'Amex Israel',
   max: 'Max (Leumi Card)',
@@ -68,7 +69,7 @@ export default function ConnectedAccountsSettings() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Connected Accounts</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Connected accounts</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             Banks and credit cards to include when importing transactions
           </p>
@@ -86,7 +87,7 @@ export default function ConnectedAccountsSettings() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            Add Account
+            Add account
           </button>
         </div>
       </div>

@@ -264,7 +264,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
       {/* Heading */}
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-          Category Breakdown
+          Category breakdown
           {categoryFilter === 'over' && (
             <span className="ml-2 text-xs font-normal text-red-500 dark:text-red-400">· over budget</span>
           )}

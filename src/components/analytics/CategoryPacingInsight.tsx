@@ -44,7 +44,7 @@ interface CheckpointRow {
 const BASE_CHECKPOINTS: CheckpointConfig[] = [
   {
     id: 'week1',
-    label: 'End of Week 1',
+    label: 'End of week 1',
     day: 7,
     description: 'First-week pace check after seven days.'
   },
@@ -56,7 +56,7 @@ const BASE_CHECKPOINTS: CheckpointConfig[] = [
   },
   {
     id: 'week4',
-    label: 'End of Week 4',
+    label: 'End of week 4',
     day: 28,
     description: 'Late-month snapshot before the month closes.'
   }
@@ -314,7 +314,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
           </div>
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Category Pace Tracker
+              Category pace tracker
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Monitor how a category is tracking toward its monthly budget checkpoints.
@@ -378,7 +378,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
                     <th className="py-2">Checkpoint</th>
                     <th className="py-2">Spent</th>
                     <th className="py-2">Remaining</th>
-                    {hasHistoricalSample && <th className="py-2">Historical Avg</th>}
+                    {hasHistoricalSample && <th className="py-2">Historical avg</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">

@@ -115,11 +115,11 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
           {/* Summary Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Transactions</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total transactions</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{transactions.length}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Amount</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total amount</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(categoryTotal)}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
@@ -184,7 +184,7 @@ export const CategoryTransactionsModal: React.FC<CategoryTransactionsModalProps>
             className="w-full flex items-center justify-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium"
           >
             <ExternalLink className="w-4 h-4" />
-            View in Transactions Page
+            View in Transactions page
           </button>
         </div>
       </motion.div>

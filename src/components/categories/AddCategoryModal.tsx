@@ -112,7 +112,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Add Category
+            Add category
           </h2>
           <button
             onClick={onClose}
@@ -135,7 +135,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Category Name
+              Category name
             </label>
             <input
               type="text"
@@ -165,7 +165,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
             {/* Monthly Limit */}
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Monthly Limit
+                Monthly limit
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
@@ -251,7 +251,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ isOpen, onCl
             >
               {isPending 
                 ? (scheduleForNextMonth ? 'Scheduling...' : 'Creating...') 
-                : (scheduleForNextMonth ? 'Schedule for Next Month' : 'Create Category')
+                : (scheduleForNextMonth ? 'Schedule for next month' : 'Create category')
               }
             </button>
           </div>
