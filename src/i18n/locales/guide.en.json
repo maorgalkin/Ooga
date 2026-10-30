@@ -1,0 +1,227 @@
+{
+  "chapters": {
+    "household": {
+      "title": "Setting up your household",
+      "summary": "Create your account, name your household and invite your partner.",
+      "intro": "A household is everyone who shares the family's money: you, your partner, the kids. You may be many under one roof, but there's one budget, and it's for all of you. That's why every expense matters, whoever made it: the budget, every transaction and the connected accounts all live in the household, where everyone sees the whole picture. Ooga creates yours the moment you create your account.",
+      "steps": {
+        "create-account": {
+          "title": "Create your account",
+          "body": [
+            "Click Create account and enter your name, your email and a password of at least 6 characters. Open the verification link we email you, then sign in.",
+            "Ooga creates your household straight away, named after you (for example \"Dana's Household\"), and makes you its owner."
+          ],
+          "alt": "The Create account form being filled in with a name, email and password",
+          "link": "Create account"
+        },
+        "name-and-family": {
+          "title": "Name it and add the family",
+          "body": [
+            "On the Dashboard, click \"Manage household\" under the month title. Click Edit next to the name to rename it.",
+            "Click Add member for anyone who won't sign in, such as your kids. You can pick them on transactions later to see who spent what. Everyone who joins with their own login is added automatically."
+          ],
+          "tip": "Only the owner can rename the household, add family members or invite people.",
+          "alt": "Household settings: renaming the household, then the member list with Dana, Avi and the kids Noa and Itai",
+          "link": "Open Dashboard"
+        },
+        "invite-partner": {
+          "title": "Invite your partner",
+          "body": [
+            "In Household settings, under \"Invite budget participants\", click Copy and send the code to your partner.",
+            "Your partner creates their own account, opens Household settings, clicks Switch households and pastes the code. The warning that their data will be deleted refers to the empty household Ooga made for them, so it's safe to continue with \"Delete data & join\"."
+          ],
+          "tip": "Anyone with the code can join, so share it only with people you trust.",
+          "alt": "The invitation code with its Copy button, and the Switch households button your partner uses"
+        }
+      }
+    },
+    "budget": {
+      "title": "Creating your budget",
+      "summary": "Pick your categories and give each one a monthly limit.",
+      "intro": "A budget in Ooga is a list of categories, each with a monthly limit. Ooga tracks every month against it and warns you before a category runs over.",
+      "steps": {
+        "start": {
+          "title": "Start your budget",
+          "body": [
+            "On the Budget tab, click Create budget. Ooga starts you off with five common categories (Groceries, Transportation, Entertainment, Bills & Utilities, Home & Garden) and starter limits.",
+            "Give the budget a name you'll recognize, such as \"Family budget 2026\"."
+          ],
+          "alt": "The Budget tab with the Create budget button, then the editor with five default categories",
+          "link": "Create budget"
+        },
+        "make-it-yours": {
+          "title": "Make it yours and save",
+          "body": [
+            "Click a category to change its monthly limit, its warning threshold (80% by default) or its color. Use the Add category tile for anything missing, like Kids or Dining out.",
+            "Check the monthly total at the bottom and click Save budget. The Overview then shows the month: what's budgeted, what's spent and what's left."
+          ],
+          "tip": "Not sure what to set? Start with what you spent last month; you can fine-tune limits any time. Amounts are in shekels unless you change the currency in Budget settings.",
+          "alt": "Changing the Groceries limit, adding a Kids category, then saving the budget"
+        }
+      }
+    },
+    "transactions": {
+      "title": "Adding transactions",
+      "summary": "Enter spending by hand or import it from your bank, then see the month on the Dashboard.",
+      "intro": "Every expense and income goes into Ooga as a transaction. Enter them by hand as they happen, import them from your bank, or both: set \"Paid with\" on the ones you enter by hand, and the import matches the bank's charge to them so nothing is counted twice.",
+      "steps": {
+        "add": {
+          "title": "Add an expense or income",
+          "body": [
+            "Click Add transaction in the top bar. Pick a category with Choose, enter the amount and date, and optionally a description and the family member it was for. Click Submit.",
+            "For money coming in, choose Income at the top and choose a source, such as Salary."
+          ],
+          "alt": "The Add transaction window: choosing Groceries and filling in the amount, then the same window switched to Income"
+        },
+        "installments": {
+          "title": "Split a purchase into installments",
+          "body": [
+            "Paying over several months? Tick \"Create as installments\" and enter the number of months. Ooga adds one installment per month, so future months show what's already committed."
+          ],
+          "alt": "The Add expense window for a 412 grocery purchase, with \"Create as installments\" ticked and 6 entered as the number of months"
+        },
+        "connect": {
+          "title": "Connect a bank or card",
+          "body": [
+            "In Budget settings, under Connected accounts, click Add account. Ooga can import from Visa Cal (SMS code) and Discount Bank for now; the others in the list are marked Coming soon.",
+            "Enter the details the bank asks for and click Test & save. Everyone in the household can import from the account; only you can remove it."
+          ],
+          "tip": "For Visa Cal (SMS code), Ooga saves only your National ID and the card's last 4 digits, and you confirm each import with an SMS code. For Discount Bank, your login details are stored encrypted and used only to import your transactions.",
+          "alt": "Connected accounts in Budget settings, then the list of banks and cards to connect",
+          "link": "Open Budget settings"
+        },
+        "import": {
+          "title": "Import from the bank",
+          "body": [
+            "Open Add transaction and click the account's tile under Import transactions. Choose the period (Current month, Last month or Custom). For Discount Bank, click Import. For Visa Cal, click Send code, enter the code Visa Cal texts you and click Verify & import.",
+            "Review the list: pick categories, untick anything you don't want and click Accept. Duplicates are skipped, and a bank row that matches a transaction you entered with \"Paid with\" set to this account is merged into it."
+          ]
+        },
+        "fix": {
+          "title": "Fix a transaction",
+          "body": [
+            "On the Transactions tab, find the transaction (filter by category or family member if you need to) and click the pencil to edit or delete it."
+          ],
+          "alt": "The Transactions tab with the month carousel, filters and an edit pencil on each transaction",
+          "link": "Open Transactions"
+        },
+        "dashboard": {
+          "title": "Glance at the Dashboard",
+          "body": [
+            "The Dashboard shows the month at a glance: income, expenses, balance and how much of the budget is used. Category cards fill up as you spend, and a category that goes over its limit is flagged as over budget.",
+            "Use the arrows next to the month to look back, or ahead to installments that are already committed."
+          ],
+          "alt": "The Dashboard: category cards, the month's totals and the expenses chart",
+          "link": "Open Dashboard"
+        }
+      }
+    },
+    "update-budget": {
+      "title": "Keeping your budget current",
+      "summary": "Change a limit for one month or for good, tidy up categories and go back to an earlier version.",
+      "intro": "Real months rarely match the plan. Ooga lets you fix a single month, change the plan from next month on, and go back to an earlier version if you need to.",
+      "steps": {
+        "check": {
+          "title": "Check where you stand",
+          "body": [
+            "The Budget tab's Overview shows the monthly budget, what's spent so far and what remains. Pick a category to see its biggest expense and how often it stayed within its limit over the last 3 months."
+          ],
+          "alt": "The budget Overview: monthly budget, spent so far and what remains",
+          "link": "Open Budget"
+        },
+        "change-limit": {
+          "title": "Change a limit",
+          "body": [
+            "On the Categories tab, click Edit next to a category. Then choose how long the change should last:",
+            "This month only: change the monthly limit on the Details tab. Next month starts from the planned limit again.",
+            "From next month on: set a new limit on the Adjust tab. The first time anyone opens Ooga in the new month, Ooga applies it and saves a new version of the budget."
+          ],
+          "alt": "Edit category: the Details tab with this month's limit, then the Adjust tab with the new planned limit",
+          "link": "Open Categories"
+        },
+        "tidy": {
+          "title": "Tidy up categories",
+          "body": [
+            "Rename a category on the Details tab and the new name shows everywhere, including past transactions. Two categories doing the same job? Use the Merge tab to move one's transactions into the other."
+          ],
+          "alt": "The Merge tab, choosing which category to merge into"
+        },
+        "history": {
+          "title": "Go back to an earlier version",
+          "body": [
+            "Every saved change keeps a version. Budget history, in Budget settings, lists them; click the star to make one active again."
+          ],
+          "alt": "Budget history in Budget settings, listing the saved version \"Family budget\" marked Active, with its 7 categories and monthly total",
+          "link": "Open Budget settings"
+        }
+      }
+    },
+    "insights": {
+      "title": "Understanding your trends",
+      "summary": "Insights compares your budget with actual spending and shows where it drifts.",
+      "intro": "Once a few weeks of transactions are in, Ooga starts showing patterns: where the money goes, which categories drift and who spends what.",
+      "steps": {
+        "compare": {
+          "title": "Compare plan and reality",
+          "body": [
+            "On the Insights tab, start with the current month; longer ranges such as Year to date appear as your history grows.",
+            "Budget summary compares what you planned at the start of the month with what you spent. The category chart shows the original budget, the current budget and actual spending side by side, colored by how close each category came."
+          ],
+          "alt": "The Insights date range, the Budget summary and the chart comparing budget with actual spending by category",
+          "link": "Open Insights"
+        },
+        "drift": {
+          "title": "Spot categories that drift",
+          "body": [
+            "Category accuracy scores each category against its monthly limit: close to 100% means the limit is realistic, far off means it's time to adjust it.",
+            "Category pace tracker checks a category at points in the month (end of week 1, mid-month, end of week 4) against your usual pace, so you can slow down before the month ends."
+          ],
+          "tip": "Consistently under budget in a category? Move some of that limit to one that always runs over.",
+          "alt": "Category accuracy scoring a category against its target, then the Category pace tracker with checkpoints through the month"
+        },
+        "members": {
+          "title": "See who spends what",
+          "body": [
+            "Household member expenses breaks spending down by family member: their total, their share of the household's spending and their top categories."
+          ],
+          "alt": "Household member expenses, with a card per family member"
+        }
+      }
+    }
+  },
+  "parts": {
+    "household": {
+      "title": "Your household",
+      "cadence": "Once",
+      "purpose": "Create your account and bring the family in."
+    },
+    "budget": {
+      "title": "Your budget",
+      "cadence": "Once",
+      "purpose": "Decide what you plan to spend each month."
+    },
+    "day-to-day": {
+      "title": "Day to day",
+      "cadence": "A minute or two at a time",
+      "purpose": "Add what you spend and adjust the plan as life happens."
+    },
+    "deeper": {
+      "title": "Going deeper",
+      "cadence": "After a few weeks, whenever you like",
+      "purpose": "See where the money really goes and how your plan holds up."
+    }
+  },
+  "page": {
+    "navTitle": "Getting started",
+    "chaptersNav": "Guide chapters",
+    "chapterNav": "Chapter navigation",
+    "welcome": {
+      "title": "Less to learn than it looks",
+      "lead": "Ooga does a lot, but you don't need all of it on day one.",
+      "body": "The first two parts take about {{minutes}} minutes to read, and you only do them once. After that, the day-to-day is a minute or two: add what you spent and glance at the Dashboard. Insights needs a few weeks of transactions, so come back to it whenever you're curious."
+    },
+    "minRead": "{{count}} min read",
+    "startPart1": "Start with part 1",
+    "overview": "Guide overview"
+  }
+}

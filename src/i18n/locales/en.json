@@ -117,5 +117,61 @@
   },
   "brand": {
     "tagline": "Take the Cake"
+  },
+  "about": {
+    "eyebrow": "About Ooga",
+    "title": "See where your money goes. Decide where it goes next.",
+    "body": "Ooga is a budgeting app for families. It brings everyone's spending into one place, so you get a real picture of where the money goes and stay in control of the bottom line every month.",
+    "guideCta": "Getting started guide",
+    "createAccount": "Create account",
+    "whyTitle": "Why families use Ooga",
+    "whyBody": "Most budgets fail quietly: nobody knows the number until the month is over. Ooga keeps it in front of you while you can still do something about it.",
+    "readyTitle": "Ready when you are",
+    "readyBody": "The guide walks you through it step by step, from your household to your first trends.",
+    "startGuide": "Start the guide",
+    "features": {
+      "household": {
+        "title": "One household, everyone in it",
+        "body": "Invite your partner with an invitation code and share one budget. Mark each transaction with the family member it was for, kids included."
+      },
+      "budget": {
+        "title": "A budget that fits your month",
+        "body": "Give each category a monthly limit. Adjust a month when life happens, and keep a history of every version."
+      },
+      "bank": {
+        "title": "Your bank, without the typing",
+        "body": "Import transactions from Visa Cal and Discount Bank. Ooga skips duplicates and matches each charge to the transaction you entered by hand with \"Paid with\" set."
+      },
+      "trends": {
+        "title": "The trend, not just the total",
+        "body": "Insights compares your budget with actual spending, tracks how fast each category is moving and shows who spends what, month after month."
+      }
+    }
+  },
+  "landing": {
+    "featuresTitle": "Everything a family budget needs",
+    "howTitle": "How it works",
+    "step": "Step {{number}}",
+    "seeHow": "See how",
+    "newTitle": "New to Ooga?",
+    "newBody": "Create your account in a minute; your household comes with it. The guide shows you every step.",
+    "createAccount": "Create account",
+    "readGuide": "Read the guide"
+  },
+  "hero": {
+    "leftToSpend": "Left to spend this month",
+    "overBudget": "{{category}}: over budget",
+    "categories": {
+      "groceries": "Groceries",
+      "kids": "Kids",
+      "diningOut": "Dining out",
+      "transportation": "Transportation"
+    },
+    "feed": {
+      "shufersal": "Shufersal",
+      "fuel": "Paz fuel",
+      "pizza": "Pizza night",
+      "swimming": "Swimming lessons"
+    }
   }
 }

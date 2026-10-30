@@ -4,7 +4,11 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import AboutPage from '../../../src/pages/info/AboutPage';
 import GuidePage from '../../../src/pages/info/GuidePage';
-import { GUIDE_CHAPTERS, GUIDE_PARTS } from '../../../src/content/guide';
+import i18n, { applyLanguage } from '../../../src/i18n';
+import { localizeGuide } from '../../../src/content/guide';
+
+// The guide as English readers see it
+const { chapters: GUIDE_CHAPTERS, parts: GUIDE_PARTS } = localizeGuide(i18n.getFixedT('en', 'guide'));
 
 // jsdom has no IntersectionObserver, which framer-motion's whileInView needs
 vi.stubGlobal(
@@ -143,6 +147,24 @@ describe('Guide page', () => {
     renderAt(`/guide/${last.slug}`);
     expect(setScroll).toHaveBeenCalledWith(900 - (390 - 200) / 2);
     vi.restoreAllMocks();
+  });
+
+  it('has every chapter and step in Hebrew, with no English left on the page', () => {
+    const hebrew = localizeGuide(i18n.getFixedT('he', 'guide'));
+    for (const step of hebrew.chapters.flatMap((c) => c.steps)) {
+      expect(step.title).toMatch(/[\u0590-\u05FF]/);
+      expect(step.body.length).toBeGreaterThan(0);
+    }
+    applyLanguage('he');
+    for (const path of ['/guide', ...GUIDE_CHAPTERS.map((c) => `/guide/${c.slug}`)]) {
+      const { container, unmount } = renderAt(path);
+      const main = container.querySelector('main')!;
+      // Only the brand and the SMS in "קוד ב־SMS" stay Latin
+      const latin = (main.textContent ?? '').match(/[A-Za-z]{2,}/g)?.filter((w) => !['Ooga', 'SMS'].includes(w)) ?? [];
+      expect({ path, latin }).toEqual({ path, latin: [] });
+      unmount();
+    }
+    applyLanguage('en');
   });
 
   it('sends unknown chapters back to the overview', () => {

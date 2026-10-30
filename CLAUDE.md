@@ -12,7 +12,7 @@ The main session implements: it holds the conversation, proposes non-trivial cha
 | `docs-expert` | Docs drift audits, writing or consolidating docs in `docs/` and the README, comment-hygiene reviews | Docs and comments only, never runtime code |
 | `cicd-operator` | GitHub Actions, failing CI runs, build/test/lint config, the scraper's Dockerfile and compose files | CI, build and container config |
 | `db-reviewer` | Reviewing migrations, RLS policies, SECURITY DEFINER functions, grants and credential handling | Never (read-only) |
-| `guide-visuals` | Checking the guide's screenshots and text after a change to a screen they show; re-capturing them from the demo household | Guide frames, manifests, `capture-guide.mjs`, `guide.ts` text |
+| `guide-visuals` | Checking the guide's screenshots and text after a change to a screen they show; re-capturing them from the demo household | Guide frames, manifests, `capture-guide.mjs`, guide text (`guide.*.json`) |
 
 Subagents can't ask the user anything. So: run them in **audit mode** first (they report and propose, no edits), show the user the proposal, and only then run them in **apply mode** with the approved list in the delegation message. Small, clearly-scoped edits the user already asked for can go straight to apply mode. After any change under `supabase/` or to code that touches auth, RLS or bank credentials, have `db-reviewer` look before you call it done. After a UI change to a screen the guide shows, run `guide-visuals`; it's the exception to audit-first: it re-captures on its own when it grades the drift substantial (capturing works only on the user's Mac).
 

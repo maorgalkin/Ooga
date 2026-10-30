@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react';
 import { animate, motion, useReducedMotion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ShoppingCart, Fuel, Utensils, Baby } from 'lucide-react';
 import { formatCurrencyFromSettings } from '../../utils/formatCurrency';
 
 // Illustration only: a made-up month for a made-up family, in shekels like most households here.
 const money = (n: number) => formatCurrencyFromSettings(n, { currency: 'ILS' });
 const CATEGORIES = [
-  { name: 'Groceries', spent: 2650, limit: 3200, bar: 'bg-green-500' },
-  { name: 'Kids', spent: 1140, limit: 1200, bar: 'bg-blue-500' },
-  { name: 'Dining out', spent: 980, limit: 900, bar: 'bg-red-500' },
-  { name: 'Transportation', spent: 610, limit: 1100, bar: 'bg-purple-500' },
+  { id: 'groceries', spent: 2650, limit: 3200, bar: 'bg-green-500' },
+  { id: 'kids', spent: 1140, limit: 1200, bar: 'bg-blue-500' },
+  { id: 'diningOut', spent: 980, limit: 900, bar: 'bg-red-500' },
+  { id: 'transportation', spent: 610, limit: 1100, bar: 'bg-purple-500' },
 ];
 const FEED = [
-  { icon: ShoppingCart, text: 'Shufersal', amount: 412, tint: 'text-green-600 bg-green-100 dark:bg-green-900/40 dark:text-green-300' },
-  { icon: Fuel, text: 'Paz fuel', amount: 260, tint: 'text-purple-600 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300' },
-  { icon: Utensils, text: 'Pizza night', amount: 148, tint: 'text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300' },
-  { icon: Baby, text: 'Swimming lessons', amount: 320, tint: 'text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300' },
+  { icon: ShoppingCart, id: 'shufersal', amount: 412, tint: 'text-green-600 bg-green-100 dark:bg-green-900/40 dark:text-green-300' },
+  { icon: Fuel, id: 'fuel', amount: 260, tint: 'text-purple-600 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300' },
+  { icon: Utensils, id: 'pizza', amount: 148, tint: 'text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300' },
+  { icon: Baby, id: 'swimming', amount: 320, tint: 'text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300' },
 ];
 const LEFT_THIS_MONTH = 4870;
 
@@ -36,6 +37,7 @@ function CountUp({ to }: { to: number }) {
  */
 export function HeroShowcase() {
   const reduce = useReducedMotion();
+  const { t } = useTranslation();
   const [feedIndex, setFeedIndex] = useState(0);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export function HeroShowcase() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Left to spend this month</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('hero.leftToSpend')}</p>
         <p className="mt-1 text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text text-transparent">
           <CountUp to={LEFT_THIS_MONTH} />
         </p>
@@ -68,9 +70,9 @@ export function HeroShowcase() {
             const pct = Math.min(100, Math.round((c.spent / c.limit) * 100));
             const over = c.spent > c.limit;
             return (
-              <li key={c.name}>
+              <li key={c.id}>
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium text-gray-700 dark:text-gray-200">{c.name}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{t(`hero.categories.${c.id}`)}</span>
                   <span className={over ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}>
                     {money(c.spent)} / {money(c.limit)}
                   </span>
@@ -101,7 +103,7 @@ export function HeroShowcase() {
           <Icon className="h-5 w-5" />
         </span>
         <div className="text-sm">
-          <p className="font-medium text-gray-900 dark:text-white">{item.text}</p>
+          <p className="font-medium text-gray-900 dark:text-white">{t(`hero.feed.${item.id}`)}</p>
           <p className="text-gray-500 dark:text-gray-400">{money(item.amount)}</p>
         </div>
       </motion.div>
@@ -112,7 +114,7 @@ export function HeroShowcase() {
         animate={reduce ? undefined : { y: [0, -6, 0] }}
         transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
       >
-        Dining out: over budget
+        {t('hero.overBudget', { category: t('hero.categories.diningOut') })}
       </motion.div>
     </div>
   );
