@@ -2,6 +2,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+// Before App, so the first render already has the language and page direction
+import './i18n';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary';
 

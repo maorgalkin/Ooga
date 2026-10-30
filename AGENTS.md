@@ -6,7 +6,7 @@ Ooga is a family finance tracker (haooga.com): budgets, transactions, household 
 
 | Part | Path | Stack | Runs on / deploys |
 |---|---|---|---|
-| Web app | `src/` | React 19, TypeScript 5.8 (strict), Vite 7, Tailwind 3.4, TanStack Query 5, React Router 6, Recharts 3, framer-motion, lucide-react | Cloudflare builds `npm run build` on every push to `master` (auto-deploy) |
+| Web app | `src/` | React 19, TypeScript 5.8 (strict), Vite 7, Tailwind 3.4, TanStack Query 5, React Router 6, Recharts 3, framer-motion, lucide-react, i18next | Cloudflare builds `npm run build` on every push to `master` (auto-deploy) |
 | Bank scraper | `scraper/` | Node 22, Express 4, israeli-bank-scrapers (Puppeteer + system Chromium), supabase-js with the service role | Docker on a Vultr server in Tel Aviv behind nginx at `https://api.haooga.com`; deployed by hand (`/deploy-scraper`, see `docs/SCRAPER_DEPLOY.md`) |
 | Database | `supabase/migrations/` | Supabase Postgres + Auth, RLS on every table | Migrations are applied by hand in the Supabase SQL editor |
 
@@ -34,7 +34,8 @@ Before calling a change done, run `npm run typecheck && npm run test:run` (plus 
 - **Households:** every user belongs to one household; most tables are scoped by `household_id`, which services resolve from `household_members`. Auth lives in `src/contexts/AuthContext.tsx`.
 - **Types:** hand-written in `src/types/` (`budget.ts`, `category.ts`, `index.ts`). The `Database` type in `src/lib/supabase.ts` is partial and stale; don't rely on it.
 - **Bank import:** Visa Cal imports run in the browser (`calDirectService.ts`). Other banks (Discount) go through the scraper (`scraperService.ts`, `VITE_SCRAPER_URL`, default `https://api.haooga.com`). `reconcileService.ts` merges bank rows into manual "Paid with" entries.
-- **Money and dates:** format money with `formatCurrencyFromSettings` (`src/utils/formatCurrency.ts`, honours `showRoundedAmounts`) and dates with `getUserLocale()` (`src/utils/locale.ts`).
+- **Money and dates:** format money with `formatCurrencyFromSettings` (`src/utils/formatCurrency.ts`, honours `showRoundedAmounts`) and dates with `getUserLocale()` (`src/utils/locale.ts`); both follow the app's language.
+- **Languages:** English, with Hebrew in progress behind `VITE_ENABLE_HEBREW` (react-i18next, text in `src/i18n/locales/`, `useT()` for the reader's Hebrew form of address, right-to-left via `<html dir>`). Language and form of address are saved in the auth user's metadata. See `docs/I18N.md`.
 
 ### Screen map (update when you change navigation)
 
@@ -46,8 +47,8 @@ App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → Bank
 │   ├── Budget → pages/BudgetManagement
 │   │   ├── Overview: BudgetOverviewTab, or PersonalBudgetEditor when no budget exists
 │   │   ├── Categories: CategoryList (add, edit, rename, delete, merge)
-│   │   └── Settings: BudgetSettings (currency, notifications, ConnectedAccountsSettings,
-│   │                 HouseholdSettingsModal, BudgetHistory)
+│   │   └── Settings: BudgetSettings (currency, notifications, LanguageSettings when Hebrew
+│   │                 is enabled, ConnectedAccountsSettings, HouseholdSettingsModal, BudgetHistory)
 │   └── Insights → pages/InsightsPage (date range, budget vs actual, accuracy, pacing, member spend)
 ├── /login — landing page: hero, sign-in card, feature cards, "How it works" clips
 │            (components/info/LandingSections); after sign-in returns to the page that sent
@@ -55,7 +56,7 @@ App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → Bank
 ├── /register
 ├── /forgot-password → pages/auth/ForgotPassword (sends the reset email)
 ├── /reset-password → pages/auth/ResetPassword (the email's link lands here, signed in)
-└── Public, signed in or out:
+└── Public, signed in or out (PublicLayout's top bar has the language switch when Hebrew is enabled):
     ├── /about → pages/info/AboutPage
     └── /guide → pages/info/GuidePage: welcome page with the four parts (Your household,
         Your budget, Day to day, Going deeper);
@@ -69,7 +70,7 @@ App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → Bank
 - Components live in `src/components/<feature>/`, pages in `src/pages/`, tests in `tests/` mirroring `src/`.
 - Tailwind 3.4 utilities only (JS config). Do not upgrade to Tailwind 4. Dynamic class names must match a `safelist` pattern in `tailwind.config.js`. Dark mode follows the OS (`dark:` variants).
 - Modals fit without scrollbars (flex column, compact spacing); footer: destructive/secondary action left, primary right.
-- UI text follows the `microcopy` skill (`.claude/skills/microcopy/`): sentence case, glossary terms, no developer jargon. The UI is English; bank data arrives in Hebrew, so render it with `dir="auto"`.
+- UI text follows the `microcopy` skill (`.claude/skills/microcopy/`): sentence case, glossary terms, no developer jargon. The UI is English, with Hebrew in progress (`docs/I18N.md`); bank data arrives in Hebrew, so render it with `dir="auto"`.
 - Comments explain *why*, not what. No references to plans, phases or chat sessions. Exported services and hooks get a short JSDoc.
 - Don't fix unrelated legacy issues inside a feature change; note them instead.
 

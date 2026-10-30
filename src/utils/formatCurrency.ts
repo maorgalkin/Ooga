@@ -4,6 +4,7 @@
  */
 
 import type { GlobalBudgetSettings } from '../types/budget';
+import { getMoneyLocale } from './locale';
 
 /**
  * Format currency amount according to user preferences
@@ -17,7 +18,7 @@ export function formatCurrency(
   currency: string = 'USD', 
   showRounded: boolean = true
 ): string {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat(getMoneyLocale(), {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: showRounded ? 0 : 2,
@@ -55,10 +56,15 @@ export function formatCurrencyRounded(
   currency: string = 'USD',
   showRounded: boolean = true
 ): string {
+  const locale = getMoneyLocale();
   // Use K notation for values >= 1000
   if (amount >= 1000) {
+    // Hebrew puts the ₪ after the number, so a "K" appended by hand would land after the symbol
+    if (locale !== 'en-US') {
+      return new Intl.NumberFormat(locale, { style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1 }).format(amount);
+    }
     const kValue = amount / 1000;
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
@@ -66,7 +72,7 @@ export function formatCurrencyRounded(
     }).format(kValue) + 'K';
   }
   
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: showRounded ? 0 : 2,

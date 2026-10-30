@@ -1,12 +1,42 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Languages } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { BrandBackdrop, BrandLogo } from './BrandBar';
+import { applyLanguage, isHebrewEnabled } from '../../i18n';
+import { savePreferences } from '../../services/preferencesService';
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-2 rounded-lg text-sm font-medium text-white transition-all min-h-[38px] flex items-center ${
     isActive ? 'bg-white/30' : 'hover:bg-white/20'
   }`;
+
+/** Switches between English and Hebrew; shows the other language's name, in its own script. */
+function LanguageSwitch() {
+  const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const next = i18n.language === 'he' ? 'en' : 'he';
+
+  const change = () => {
+    applyLanguage(next);
+    // Signed in, it's the account's language too; failing that, it still applies on this device
+    if (user) savePreferences({ language: next }).catch((e) => console.error('Saving language failed:', e instanceof Error ? e.message : e));
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={change}
+      title={t('language.change')}
+      className="px-3 py-2 rounded-lg text-sm font-medium text-white transition-all min-h-[38px] flex items-center gap-1.5 hover:bg-white/20"
+    >
+      <Languages className="h-4 w-4" aria-hidden />
+      {/* The language's own name is the button's name; phones show only the icon */}
+      <span lang={next} className="sr-only sm:not-sr-only">{next === 'he' ? 'עברית' : 'English'}</span>
+    </button>
+  );
+}
 
 /** Frame for the pages anyone can read, signed in or not: brand bar, page, footer. */
 export function PublicLayout({ children }: { children: ReactNode }) {
@@ -20,6 +50,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <div className="h-16 flex items-center justify-between gap-2">
             <BrandLogo />
             <div className="flex items-center gap-1 sm:gap-2">
+              {isHebrewEnabled() && <LanguageSwitch />}
               <NavLink to="/about" className={navLink}>
                 About
               </NavLink>
