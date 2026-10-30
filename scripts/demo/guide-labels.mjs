@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 /** The UI labels the capture script finds by text, by translation key. */
 export const LABEL_KEYS = {
   addTransaction: 'nav.addTransaction',
+  dashboardLoading: 'dashboard.loading',
   manageHousehold: 'dashboard.manageHousehold',
   owner: 'household.owner',
   householdSettings: 'household.title',
