@@ -23,7 +23,8 @@ interface AuthContextType {
 // keep a spinner up until the event arrives, never to decide whether a reset is allowed.
 const OPENED_FROM_RECOVERY_LINK =
   typeof window !== 'undefined' && new URLSearchParams(window.location.hash.replace(/^#/, '')).get('type') === 'recovery';
-const RECOVERY_EVENT_WAIT_MS = 3000;
+// Safety cap only: the wait normally ends as soon as supabase-js finishes initialising
+const RECOVERY_EVENT_MAX_WAIT_MS = 15000;
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -39,16 +40,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isRecovery, setIsRecovery] = useState(false);
+  // Tied to the user the reset link signed in, so a later session for someone else doesn't inherit it
+  const [recoveryUserId, setRecoveryUserId] = useState<string | null>(null);
   const [awaitingRecovery, setAwaitingRecovery] = useState(OPENED_FROM_RECOVERY_LINK);
 
   useEffect(() => {
     if (!awaitingRecovery) return;
-    const timer = setTimeout(() => setAwaitingRecovery(false), RECOVERY_EVENT_WAIT_MS);
+    const timer = setTimeout(() => setAwaitingRecovery(false), RECOVERY_EVENT_MAX_WAIT_MS);
     return () => clearTimeout(timer);
   }, [awaitingRecovery]);
 
   useEffect(() => {
+    let cancelled = false;
+    // supabase-js queues PASSWORD_RECOVERY with setTimeout(0) before initialize() resolves, so a
+    // timeout queued after it runs once the event has been delivered (or was never coming)
+    supabase.auth.initialize().then(() => {
+      setTimeout(() => { if (!cancelled) setAwaitingRecovery(false); }, 0);
+    });
+
     // Check active session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -61,11 +70,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        setIsRecovery(true);
+        setRecoveryUserId(session?.user.id ?? null);
         setAwaitingRecovery(false);
       }
+      // Not on SIGNED_IN: supabase-js emits it when the tab regains focus, mid-reset
       if (event === 'SIGNED_OUT') {
-        setIsRecovery(false);
+        setRecoveryUserId(null);
         setAwaitingRecovery(false);
       }
       setSession(session);
@@ -73,7 +83,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
@@ -137,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (!error) {
-        setIsRecovery(false);
+        setRecoveryUserId(null);
         // A reset often follows a suspected compromise, so end every other session
         const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' });
         if (signOutError) console.error('Failed to sign out other sessions:', signOutError);
@@ -157,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
     resetPassword,
     updatePassword,
-    isRecovery,
+    isRecovery: recoveryUserId !== null && recoveryUserId === user?.id,
     awaitingRecovery,
   };
 
