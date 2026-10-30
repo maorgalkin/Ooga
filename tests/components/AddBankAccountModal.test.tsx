@@ -11,9 +11,9 @@ describe('AddBankAccountModal', () => {
     render(<AddBankAccountModal onClose={() => {}} />);
 
     expect(screen.getByRole('button', { name: 'Discount Bank' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Visa Cal (Fast Access)' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Visa Cal (SMS code)' })).toBeEnabled();
 
-    for (const name of ['Visa Cal', 'Isracard', 'Max (Leumi Card)', 'Amex Israel', 'Bank Hapoalim', 'Bank Leumi']) {
+    for (const name of ['Visa Cal (username)', 'Isracard', 'Max (Leumi Card)', 'Amex Israel', 'Bank Hapoalim', 'Bank Leumi']) {
       expect(screen.getByRole('button', { name: `${name} Coming soon` })).toBeDisabled();
     }
   });
