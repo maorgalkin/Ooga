@@ -42,9 +42,9 @@
     "signOut": "התנתקות",
     "about": "אודות",
     "guide": "מדריך",
-    "openOoga": "פתיחת Ooga",
     "signIn": "התחברות",
-    "footer": "ניווט תחתון"
+    "footer": "ניווט תחתון",
+    "dashboard": "תמונת מצב"
   },
   "tabs": {
     "dashboard": "תמונת מצב",
@@ -364,7 +364,8 @@
       "showDetails": "פרטים נוספים",
       "manage": "ניהול התקציב",
       "overBy": "חריגה של {{amount}}"
-    }
+    },
+    "loading": "טוענים את תמונת המצב…"
   },
   "transactions": {
     "title": "תנועות",

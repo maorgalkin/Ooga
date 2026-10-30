@@ -10,6 +10,8 @@ interface FinanceContextType {
   budgets: Budget[];
   familyMembers: FamilyMember[];
   isLoading: boolean;
+  /** True once the signed-in person's transactions have arrived, so "none yet" isn't shown while they load. */
+  hasLoaded: boolean;
   addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
   updateTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
@@ -39,6 +41,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Whose data finished loading; later reloads (a refreshed session) don't hide what's on screen
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
   // Load data from Supabase when user is authenticated
   useEffect(() => {
@@ -46,6 +50,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // User logged out, clear data
       setTransactions([]);
       setFamilyMembers([]);
+      setLoadedFor(null);
       return;
     }
 
@@ -77,6 +82,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       } finally {
         setIsLoading(false);
+        setLoadedFor(user.id);
       }
     };
 
@@ -228,6 +234,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       budgets,
       familyMembers,
       isLoading,
+      hasLoaded: !!user && loadedFor === user.id,
       addTransaction,
       updateTransaction,
       deleteTransaction,

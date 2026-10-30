@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { GlossyBackdrop } from '../../components/info/GlossyBackdrop';
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -53,7 +54,8 @@ const ResetPassword: React.FC = () => {
     'block w-full ps-10 pe-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
+    <div className="relative isolate min-h-screen flex items-center justify-center px-4">
+      <GlossyBackdrop />
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('auth.reset.title')}</h1>

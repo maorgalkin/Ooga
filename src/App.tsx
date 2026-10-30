@@ -16,6 +16,7 @@ import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import { BrandBackdrop, BrandLogo } from './components/info/BrandBar';
+import { GlossyBackdrop } from './components/info/GlossyBackdrop';
 import AboutPage from './pages/info/AboutPage';
 import GuidePage from './pages/info/GuidePage';
 import { Plus, LogOut, Loader2, CircleHelp } from 'lucide-react';
@@ -40,7 +41,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="relative isolate min-h-screen flex items-center justify-center">
+        <GlossyBackdrop />
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-400">{t('common.loading')}</p>
@@ -59,7 +61,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
-  const { signOut, user } = useAuth();
+  const { signOut } = useAuth();
   const t = useT();
 
   // Allow any child component (e.g. DashboardEmptyState) to open the modal
@@ -70,29 +72,17 @@ function AppContent() {
   }, []);
 
   return (
-    <div className="min-h-screen dark:bg-gray-900 transition-colors duration-500">
+    <div className="relative isolate min-h-screen">
+      <GlossyBackdrop />
       <nav className="relative overflow-hidden shadow-md border-b border-gray-200/20">
         <BrandBackdrop />
 
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 relative z-10">
           <div className="h-16 flex items-center justify-between">
-            <BrandLogo>
-              {user && (
-                <span className="hidden md:inline ms-2 text-xs text-white/70 drop-shadow">
-                  {user.email}
-                </span>
-              )}
-            </BrandLogo>
+            <BrandLogo />
             
             {/* Desktop & Mobile Buttons - Glassy style */}
             <div className="flex items-center space-x-2 rtl:space-x-reverse sm:space-x-3">
-              <Link
-                to="/guide"
-                className="flex items-center justify-center px-3 py-2 bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"
-              >
-                <CircleHelp className="h-4 w-4 flex-shrink-0" />
-                <span className="ms-2 max-md:sr-only">{t('nav.help')}</span>
-              </Link>
               <button
                 onClick={() => setIsAddTransactionOpen(true)}
                 className="flex items-center justify-center px-3 py-2 bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"
@@ -100,6 +90,13 @@ function AppContent() {
                 <Plus className="h-4 w-4 flex-shrink-0" />
                 <span className="ms-2 max-md:sr-only">{t('nav.addTransaction')}</span>
               </button>
+              <Link
+                to="/guide"
+                className="flex items-center justify-center px-3 py-2 bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <CircleHelp className="h-4 w-4 flex-shrink-0" />
+                <span className="ms-2 max-md:sr-only">{t('nav.help')}</span>
+              </Link>
               <button
                 onClick={signOut}
                 className="flex items-center justify-center px-3 py-2 bg-red-500/30 backdrop-blur-md text-white rounded-lg hover:bg-red-500/40 transition-all border border-red-400/50 text-sm font-medium min-h-[38px] shadow-lg hover:shadow-xl hover:scale-105"

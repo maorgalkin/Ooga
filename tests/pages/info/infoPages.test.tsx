@@ -55,7 +55,7 @@ describe('About page', () => {
     auth.user = { id: 'test-user-123' };
     renderAt('/about');
     expect(screen.queryByRole('link', { name: 'Create account' })).toBeNull();
-    expect(screen.getAllByRole('link', { name: 'Open Ooga' })[0]).toHaveAttribute('href', '/');
+    expect(screen.getAllByRole('link', { name: 'Dashboard' })[0]).toHaveAttribute('href', '/');
   });
 });
 
