@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import i18n, { applyLanguage, resolveLanguage } from '../../src/i18n';
 import en from '../../src/i18n/locales/en.json';
 import he from '../../src/i18n/locales/he.json';
@@ -13,19 +13,9 @@ const keys = (o: object, prefix = ''): string[] =>
 
 describe('i18n', () => {
   beforeEach(() => localStorage.clear());
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    applyLanguage('en');
-  });
-
-  it('stays English while Hebrew is switched off, whatever was saved', () => {
-    vi.stubEnv('VITE_ENABLE_HEBREW', '');
-    localStorage.setItem('ooga.language', 'he');
-    expect(resolveLanguage('he')).toBe('en');
-  });
+  afterEach(() => applyLanguage('en'));
 
   it('prefers the account, then this browser, then English', () => {
-    vi.stubEnv('VITE_ENABLE_HEBREW', '1');
     expect(resolveLanguage()).toBe('en');
     localStorage.setItem('ooga.language', 'he');
     expect(resolveLanguage()).toBe('he');

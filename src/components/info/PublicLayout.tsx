@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Languages } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { BrandBackdrop, BrandLogo } from './BrandBar';
-import { LANGUAGE_NAMES, applyLanguage, isHebrewEnabled } from '../../i18n';
+import { LANGUAGE_NAMES, applyLanguage } from '../../i18n';
 import { savePreferences } from '../../services/preferencesService';
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
@@ -51,7 +51,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <div className="h-16 flex items-center justify-between gap-2">
             <BrandLogo />
             <div className="flex items-center gap-1 sm:gap-2">
-              {isHebrewEnabled() && <LanguageSwitch />}
+              <LanguageSwitch />
               <NavLink to="/about" className={navLink}>
                 {t('nav.about')}
               </NavLink>

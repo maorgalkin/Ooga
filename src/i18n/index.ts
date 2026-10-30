@@ -18,12 +18,6 @@ export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', he: 'ע
 
 export const isLanguage = (value: unknown): value is Language => LANGUAGES.includes(value as Language);
 
-/**
- * Hebrew stays hidden until every screen is translated: without VITE_ENABLE_HEBREW=1 the app is
- * English only, whatever a person saved earlier.
- */
-export const isHebrewEnabled = () => import.meta.env.VITE_ENABLE_HEBREW === '1';
-
 function storedLanguage(): Language | undefined {
   try {
     const value = localStorage.getItem(STORAGE_KEY);
@@ -35,7 +29,6 @@ function storedLanguage(): Language | undefined {
 
 /** The language to show: the account's choice, else this browser's last choice, else English. */
 export function resolveLanguage(saved?: unknown): Language {
-  if (!isHebrewEnabled()) return 'en';
   if (isLanguage(saved)) return saved;
   return storedLanguage() ?? 'en';
 }
@@ -61,6 +54,10 @@ export const isRtl = () => typeof document !== 'undefined' && document.documentE
 
 /** The language this browser chose while signed out, if any, for carrying over to the account. */
 export const browserLanguage = storedLanguage;
+
+/** True when the browser lists Hebrew among its preferred languages. */
+export const browserPrefersHebrew = () =>
+  typeof navigator !== 'undefined' && (navigator.languages ?? [navigator.language]).some((l) => /^(he|iw)\b/i.test(l));
 
 void i18n.use(initReactI18next).init({
   // The guide's long text has a namespace of its own: useTranslation('guide')

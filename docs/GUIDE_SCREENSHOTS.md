@@ -72,7 +72,7 @@ Run with `npx tsx scripts/demo/seed-demo-household.ts <step>`.
 
 The Hebrew guide shows its own screenshots of the Hebrew app, with a Hebrew household (דנה ואבי לוי, נועה ואיתי). Run the same sequence with the Hebrew app and data:
 
-1. Serve the app with Hebrew on: `VITE_ENABLE_HEBREW=1 node scripts/demo/dev-against-test.mjs --preview`.
+1. Serve the app as usual: `node scripts/demo/dev-against-test.mjs --preview` (the capture script switches it to Hebrew).
 2. Add `--lang he` to every seed and capture call, for example:
 
    ```bash

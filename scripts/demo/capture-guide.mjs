@@ -11,7 +11,7 @@
 // public/guide/mobile/ and src/content/guide-frames.mobile.json under the same keys.
 // --lang he captures the Hebrew app into public/guide/he/ (and he/mobile/) and
 // src/content/guide-frames.he.json (and .he.mobile.json), again under the same keys; the
-// server must run with VITE_ENABLE_HEBREW=1 and the demo household seeded with --lang he.
+// demo household must be seeded with --lang he.
 // Full refresh procedure: docs/GUIDE_SCREENSHOTS.md.
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';

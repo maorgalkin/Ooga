@@ -11,8 +11,6 @@ const { url, anonKey } = testProject();
 // variable it can see, so nothing else with that prefix is passed through.
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('VITE_')));
 Object.assign(env, { VITE_SUPABASE_URL: url, VITE_SUPABASE_ANON_KEY: anonKey });
-// The Hebrew flag is public and harmless, so it may come through to show the app in Hebrew
-if (process.env.VITE_ENABLE_HEBREW) env.VITE_ENABLE_HEBREW = process.env.VITE_ENABLE_HEBREW;
 // Local only: the project folder holds the test project's env files
 const serve = ['--port', '5174', '--strictPort', '--host', '127.0.0.1'];
 
