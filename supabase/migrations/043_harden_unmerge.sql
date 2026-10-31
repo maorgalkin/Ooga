@@ -18,7 +18,9 @@
 -- Not in this migration: stopping the browser from writing merge_snapshot at all.
 -- The import still updates it (a merged entry's billed charge), so that's a
 -- separate, later step.
--- Deploy order: Safe to run before or after deploying any app version.
+-- Deploy order: Safe to run before or after deploying any app version. Independent of
+-- 042: may be applied before or after it. If an entry's original author has since left
+-- the household, undoing the merge restores it under the caller instead.
 
 CREATE OR REPLACE FUNCTION unmerge_bank_transaction(p_entry_id uuid)
 RETURNS uuid -- the restored bank row's id
@@ -91,6 +93,9 @@ BEGIN
   SELECT proconfig INTO v_config FROM pg_proc WHERE oid = 'public.unmerge_bank_transaction(uuid)'::regprocedure;
   IF NOT 'search_path=public' = ANY (COALESCE(v_config, '{}')) THEN
     RAISE EXCEPTION 'unmerge_bank_transaction must SET search_path = public';
+  END IF;
+  IF NOT (SELECT prosecdef FROM pg_proc WHERE oid = 'public.unmerge_bank_transaction(uuid)'::regprocedure) THEN
+    RAISE EXCEPTION 'unmerge_bank_transaction must stay SECURITY DEFINER';
   END IF;
   IF has_function_privilege('anon', 'public.unmerge_bank_transaction(uuid)', 'EXECUTE')
      OR NOT has_function_privilege('authenticated', 'public.unmerge_bank_transaction(uuid)', 'EXECUTE') THEN
