@@ -31,7 +31,7 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="relative isolate min-h-screen flex items-center justify-center px-4">
+    <div className="relative min-h-screen flex items-center justify-center px-4">
       <GlossyBackdrop />
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
