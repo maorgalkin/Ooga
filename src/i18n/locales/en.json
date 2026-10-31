@@ -1038,7 +1038,7 @@
       "choose": "Choose the bank or credit card to connect:",
       "comingSoon": "Coming soon",
       "displayName": "Display name",
-      "cardNote": "Only your ID and the card’s last 4 digits are saved. Each import is confirmed with an SMS code.",
+      "cardNote": "Your ID is stored encrypted by Ooga’s import service, never in your browser. Each import is confirmed with an SMS code.",
       "serverNote": "Sent once to Ooga’s import service and stored encrypted there. They’re never stored in your browser or shown again.",
       "back": "Back",
       "testSave": "Test & save",
@@ -1272,7 +1272,13 @@
     "importFinished": "This import was already finished, maybe in another window.",
     "importStillFetching": "This import is still fetching from the bank. Try again in a minute.",
     "importNotFound": "This import is no longer available.",
-    "importNotRecorded": "Couldn't save the import's progress. Try importing again."
+    "importNotRecorded": "Couldn't save the import's progress. Try importing again.",
+    "importAlreadyRunning": "This account is already being imported. Try again in a few minutes.",
+    "otpTimedOut": "The SMS code wasn’t entered in time. Start the import again.",
+    "smsTooMany": "Too many SMS requests. Try again in a minute.",
+    "smsCodeTooMany": "Too many tries for this code. Ask for a new one.",
+    "smsSendFailed": "Couldn’t send the SMS code. Try again.",
+    "smsCheckFailed": "Couldn’t check the SMS code. Try again."
   },
   "footer": {
     "copyright": "© Maor Galkin"

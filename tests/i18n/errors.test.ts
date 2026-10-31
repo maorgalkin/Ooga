@@ -28,6 +28,10 @@ describe('errorMessage', () => {
     expect(errorMessage(new Error('Discount: Invalid password'), he, 'import.failed')).toBe(
       'הבנק לא קיבל את פרטי ההתחברות. כדאי לבדוק אותם בחשבונות המקושרים ולנסות שוב.',
     );
+    // The import service's answers to an expired sign-in and to its limits
+    expect(errorMessage(new Error('Sign in again to import.'), en, 'import.failed')).toBe(en('errors.signedOut'));
+    expect(errorMessage(new Error('Import service error (HTTP 429)'), he, 'import.failed')).toBe(he('errors.smsTooMany'));
+    expect(errorMessage(new Error('Too many tries for this code. Ask for a new one.'), en, 'import.failed')).toBe(en('errors.smsCodeTooMany'));
   });
 
   it('falls back to the screen\'s own sentence for anything else, including non-errors', () => {

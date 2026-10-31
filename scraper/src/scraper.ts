@@ -2,16 +2,17 @@ import { createScraper, CompanyTypes } from 'israeli-bank-scrapers';
 import type { Transaction } from 'israeli-bank-scrapers/lib/transactions.js';
 import {
   updateSession,
+  unlockImports,
 } from './session-manager.js';
 import {
   type TransactionRow,
-  pushTransactions,
+  supabase,
   recordImportSession,
   createImportSessionRecord,
   getHouseholdConnections,
   updateConnectionLastSync,
 } from './supabase-push.js';
-import { VisaCalFastScraper, type VisaCalFastCredentials } from './scrapers/visa-cal-fast.js';
+import { stageTransactions, supersedeOlderImports } from './staging.js';
 import { isBankProvider, isCardBillPayment } from './bank-rules.js';
 import type { DuplicateSummary, SkippedCardBill } from './session-manager.js';
 
@@ -42,20 +43,36 @@ const proxyArg = process.env.PUPPETEER_PROXY
   : [];
 const BASE_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', ...proxyArg];
 
+/** Marks the import complete; retried once, since the review can't open until it is */
+async function finishImport(dbSessionId: string, imported: number, skipped: number, note?: string): Promise<void> {
+  try {
+    await recordImportSession(dbSessionId, 'complete', imported, skipped, note);
+  } catch {
+    await recordImportSession(dbSessionId, 'complete', imported, skipped, note);
+  }
+}
+
+/**
+ * Fetches the account(s) and puts their new rows in the import's holding area, where they wait
+ * for the person's Import in the app. `lockKeys` (claimed by the caller with tryLockImports) are
+ * released when this ends, however it ends.
+ */
 export async function startScrape(
   sessionId: string,
   userId: string,
   householdId: string,
   startDate: Date,
   endDate: Date,
-  connectionId?: string // Import just this connection (default: all with stored credentials)
+  connectionId: string | undefined, // Import just this connection (default: all with stored credentials)
+  lockKeys: string[]
 ): Promise<void> {
-  const dbSessionId = await createImportSessionRecord(
-    userId,
-    householdId,
-    startDate,
-    endDate
-  );
+  let dbSessionId: string;
+  try {
+    dbSessionId = await createImportSessionRecord(userId, householdId, startDate, endDate, connectionId);
+  } catch (err) {
+    unlockImports(lockKeys, sessionId);
+    throw err;
+  }
 
   updateSession(sessionId, { status: 'logging_in', dbSessionId });
 
@@ -73,40 +90,16 @@ export async function startScrape(
       connections.map(async (conn) => {
         console.log(`→ Scraping ${conn.displayName} (${conn.provider})`);
 
-        let result;
-
-        if (conn.provider === 'visaCalFast') {
-          // Use the custom fast-access scraper with OTP support
-          const requestOtp = (): Promise<string> =>
-            new Promise((resolve) => {
-              updateSession(sessionId, { status: 'awaiting_otp', otpResolver: resolve });
-            });
-
-          const scraper = new VisaCalFastScraper(
-            {
-              companyId: 'visaCal' as CompanyTypes,
-              startDate,
-              combineInstallments: false,
-              showBrowser: false,
-              args: BASE_ARGS,
-            },
-            requestOtp,
-          );
-
-          result = await scraper.scrape(conn.credentials as never);
-          // Resume from awaiting_otp back to importing once scraper finishes
-          updateSession(sessionId, { status: 'importing', otpResolver: undefined });
-        } else {
-          const scraper = createScraper({
-            companyId: conn.provider as CompanyTypes,
-            startDate,
-            combineInstallments: false,
-            showBrowser: false,
-            args: BASE_ARGS,
-          });
-
-          result = await scraper.scrape(conn.credentials as never);
-        }
+        // Visa Cal with an SMS code is imported in the browser and never reaches here
+        // (getHouseholdConnections leaves it out), so there's no code to wait for
+        const scraper = createScraper({
+          companyId: conn.provider as CompanyTypes,
+          startDate,
+          combineInstallments: false,
+          showBrowser: false,
+          args: BASE_ARGS,
+        });
+        const result = await scraper.scrape(conn.credentials as never);
 
         if (!result.success) {
           throw new Error(`${conn.displayName}: ${result.errorMessage ?? 'Scrape failed'}`);
@@ -130,22 +123,22 @@ export async function startScrape(
             });
           }
 
-          const stats = await pushTransactions(
+          // A failure here throws, so this account counts as failed and isn't marked synced
+          const stats = await stageTransactions(supabase, {
             userId,
             householdId,
-            txns,
-            account.accountNumber,
-            conn.id,
-            dbSessionId,
-            conn.provider
-          );
-          imported += stats.imported;
+            transactions: txns,
+            accountNumber: account.accountNumber,
+            connectionId: conn.id,
+            sessionId: dbSessionId,
+            provider: conn.provider,
+          });
+          imported += stats.staged;
           skipped += stats.skipped;
           duplicates.push(...stats.duplicates);
         }
 
-        await updateConnectionLastSync(conn.id);
-        console.log(`✓ ${conn.displayName}: ${imported} imported, ${skipped} skipped`);
+        console.log(`✓ ${conn.displayName}: ${imported} waiting for review, ${skipped} already in the account`);
         return { connectionId: conn.id, imported, skipped };
       })
     );
@@ -168,20 +161,28 @@ export async function startScrape(
       // All scrapers failed
       const errorMsg = errors.join('; ');
       updateSession(sessionId, { status: 'error', error: errorMsg });
-      await recordImportSession(dbSessionId, 'error', 0, 0, errorMsg);
+      await recordImportSession(dbSessionId, 'error', 0, 0, errorMsg).catch(() => {});
       return;
     }
 
     const partialError = errors.length > 0 ? `Partial errors: ${errors.join('; ')}` : undefined;
+    await finishImport(dbSessionId, totalImported, totalSkipped, partialError);
+    // Synced only once its rows are kept and the import recorded, so a failed one is fetched again
+    for (const r of results) {
+      if (r.status === 'fulfilled') await updateConnectionLastSync(r.value.connectionId).catch(() => {});
+    }
+    // This fetch replaces the person's older imports of the account still waiting for a decision
+    if (connectionId) await supersedeOlderImports(supabase, userId, connectionId, dbSessionId).catch(() => 0);
     updateSession(sessionId, {
       status: 'complete',
-      result: { imported: totalImported, skipped: totalSkipped, skippedCardBills, duplicates },
+      result: { imported: totalImported, skipped: totalSkipped, skippedCardBills, duplicates, mode: 'staged' },
       error: partialError,
     });
-    await recordImportSession(dbSessionId, 'complete', totalImported, totalSkipped, partialError);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unexpected error';
     updateSession(sessionId, { status: 'error', error: msg });
-    await recordImportSession(dbSessionId, 'error', 0, 0, msg);
+    await recordImportSession(dbSessionId, 'error', 0, 0, msg).catch(() => {});
+  } finally {
+    unlockImports(lockKeys, sessionId);
   }
 }
