@@ -273,6 +273,17 @@ describe('planImport', () => {
     expect(plan.toInsert).toEqual([]);
   });
 
+  it('can leave a stored pending row alone when another pending version arrives (re-planning waiting rows)', async () => {
+    const earlier = await normalize({ ...pendingForeign, trnCurrencySymbol: '₪', trnAmt: 100 }, true);
+    const later = await normalize({ ...pendingForeign, trnCurrencySymbol: '₪', trnAmt: 120 }, true);
+    const plan = planImport([earlier], [], 'ILS', { pendingRows: [existingRow(later)], refreshPending: false });
+    expect(plan.toUpdate).toEqual([]);
+    expect(plan.duplicates).toEqual([earlier]);
+    // A billed version still updates it
+    const billed = await billedForeign();
+    expect(planImport([billed], [], 'ILS', { pendingRows: [existingRow(later)], refreshPending: false }).toUpdate).toHaveLength(1);
+  });
+
   it('keeps only the billed version when a charge is both pending and billed in one fetch', async () => {
     const pending = await normalize(pendingForeign, true);
     const billed = await billedForeign();

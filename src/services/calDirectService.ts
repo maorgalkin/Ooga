@@ -547,8 +547,17 @@ export function planImport(
   incoming: NormalizedTx[],
   existing: ExistingImportRow[],
   budgetCurrency: string,
-  { pendingRows = [], billedRows = [], tombstoneKeys = new Set<string>() }:
-    { pendingRows?: ExistingImportRow[]; billedRows?: ExistingImportRow[]; tombstoneKeys?: Set<string> } = {}
+  { pendingRows = [], billedRows = [], tombstoneKeys = new Set<string>(), refreshPending = true }: {
+    pendingRows?: ExistingImportRow[];
+    billedRows?: ExistingImportRow[];
+    tombstoneKeys?: Set<string>;
+    /**
+     * Whether an incoming pending row may update a stored pending one whose amount differs. True
+     * for a fetch (the bank's latest word). False when re-planning rows that waited in the holding
+     * area: the stored row came from a later fetch, so it's the newer one.
+     */
+    refreshPending?: boolean;
+  } = {}
 ): {
   toInsert: NormalizedTx[];
   toUpdate: { id: string; tx: NormalizedTx }[];
@@ -594,7 +603,7 @@ export function planImport(
     claimed.add(row.id);
 
     const pendingNowBilledOrChanged = row.status === 'pending' &&
-      (tx.status === 'completed' || tx.amount !== Number(row.amount));
+      (tx.status === 'completed' || (refreshPending && tx.amount !== Number(row.amount)));
     const realChargeForUnconverted = isUnconvertedForeign(row, budgetCurrency) &&
       tx._chargeCurrency === budgetCurrency && tx.amount !== Number(row.amount);
     if (pendingNowBilledOrChanged || realChargeForUnconverted) toUpdate.push({ id: row.id, tx });
@@ -827,16 +836,25 @@ async function convertStoredForeignRows(householdId: string, budgetCurrency: str
   return converted;
 }
 
-/** Cancels the person's other postponed imports of this account (best effort). */
-async function discardOlderUnfinished(userId: string, connectionId: string, keepSessionId: string): Promise<void> {
+// A fetch still "importing" after this long has stopped; anything newer may be running in another tab
+export const STALLED_IMPORT_MS = 10 * 60 * 1000;
+
+/**
+ * Cancels the person's other postponed imports of this account (best effort): fetched ones, and
+ * ones that stopped while fetching. A fetch that may still be running is left alone. Exported for tests.
+ */
+export async function discardOlderUnfinished(userId: string, connectionId: string, keepSessionId: string): Promise<void> {
   const { data } = await supabase
     .from('bank_import_sessions')
-    .select('id')
+    .select('id, status, started_at')
     .eq('user_id', userId)
     .eq('bank_connection_id', connectionId)
     .is('reviewed_at', null)
     .neq('id', keepSessionId);
-  for (const { id } of (data ?? []) as { id: string }[]) {
+  const stalledBefore = Date.now() - STALLED_IMPORT_MS;
+  const older = ((data ?? []) as { id: string; status: string; started_at: string }[]).filter(s =>
+    s.status === 'complete' || (s.status === 'importing' && Date.parse(s.started_at) < stalledBefore));
+  for (const { id } of older) {
     await discardStagedSession(id).catch(() => {});
   }
 }

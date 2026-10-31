@@ -7,6 +7,7 @@ import {
   applyBilledUpdates,
   planImport,
   discardStagedSession,
+  STALLED_IMPORT_MS,
   type NormalizedTx,
 } from './calDirectService';
 import { PersonalBudgetService } from './personalBudgetService';
@@ -294,7 +295,8 @@ export async function commitImportWithReplan(dbSessionId: string, selected: Sele
 
     const { existing, pendingRows, billedRows } = await loadStoredForPlanning([...asTx.values()], householdId, connectionId);
     // The person ticked them, so rows deleted earlier aren't held back by their tombstones
-    const { toInsert, toUpdate, duplicates } = planImport([...asTx.values()], existing, budgetCurrency, { pendingRows, billedRows });
+    // A waiting pending row never overwrites a stored pending one: that came from a later fetch
+    const { toInsert, toUpdate, duplicates } = planImport([...asTx.values()], existing, budgetCurrency, { pendingRows, billedRows, refreshPending: false });
 
     await applyBilledUpdates(toUpdate);
     const settled = new Set<string>();
@@ -344,8 +346,6 @@ export interface UnfinishedImport {
   stalled: boolean;
 }
 
-// A fetch that's still "importing" after this long has stopped; anything newer may still be running
-const STALLED_AFTER_MS = 10 * 60 * 1000;
 
 /**
  * The person's own imports whose rows still wait for a decision: postponed with "Finish later",
@@ -363,7 +363,7 @@ export async function listUnfinishedImports(): Promise<UnfinishedImport[]> {
     .order('started_at', { ascending: false });
   if (error) return [];
   type Row = { id: string; status: string; started_at: string; bank_connections: { display_name: string } | null; import_staged_rows: { count: number }[] };
-  const stalledBefore = Date.now() - STALLED_AFTER_MS;
+  const stalledBefore = Date.now() - STALLED_IMPORT_MS;
   return ((data ?? []) as unknown as Row[])
     .filter(r => r.status === 'complete' || Date.parse(r.started_at) < stalledBefore)
     .map(r => ({

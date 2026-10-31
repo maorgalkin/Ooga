@@ -131,6 +131,7 @@ Only the person who fetched an import sees its holding area. Imports are recorde
 - **Joins to "Paid with" entries run in the browser, after `commit_import`.** If the tab closes in between, the bank rows are imported but not joined to their manual entries, so those purchases count twice until merged by hand. Making the joins resumable means moving them into `commit_import` (planned as migration 042).
 - **Nothing clears abandoned holding areas yet.** Rows postponed and never reviewed stay until the person reviews or cancels them, or fetches the same account again; a cleanup after ~14 days is still to come.
 - **Imports through the import service (Discount) don't use the holding area yet.** They need the scraper change and a deploy.
+- **A pending row merged into a "Paid with" entry isn't paired with its billed version.** The pairing key includes the description, and the merge keeps the entry's own, so the billed version can come in as a new row. This predates the holding area and affects ordinary fetches too; a fix will follow.
 
 **Still writing straight to transactions:** imports through the import service (Discount), until the scraper writes to the holding area too. They also do so as a fallback before migration 041. There, the review is of rows already in the budget: unticked rows are deleted, and closing the window undoes the import.
 

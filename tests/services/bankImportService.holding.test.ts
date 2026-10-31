@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { normalizeTransaction, convertToBudgetCurrency, type CalTransaction, type NormalizedTx } from '../../src/services/calDirectService';
+import { normalizeTransaction, convertToBudgetCurrency, discardOlderUnfinished, type CalTransaction, type NormalizedTx } from '../../src/services/calDirectService';
 
 type Row = Record<string, unknown>;
 const db = vi.hoisted(() => ({
@@ -139,6 +139,18 @@ describe('the import holding area', () => {
       expect(db.rpc).toHaveBeenCalledWith('commit_import', { p_session_id: 'session-1', p_selected: [] });
     });
 
+    it("doesn't let a waiting pending row overwrite a newer stored pending one", async () => {
+      const waiting = await normalize({ ...pendingCal, trnCurrencySymbol: '₪', trnAmt: 100 }, true);
+      const newer = await normalize({ ...pendingCal, trnCurrencySymbol: '₪', trnAmt: 120 }, true);
+      db.tables.transactions = [storedFrom('stored-p', newer)];
+      db.tables.import_staged_rows = [stagedFrom('s-pending', waiting)];
+
+      const outcomes = await commitImportWithReplan('session-1', [{ id: 's-pending' }]);
+      expect(outcomes).toEqual([{ stagedId: 's-pending', transactionId: null, outcome: 'already_imported' }]);
+      expect(db.tables.transactions[0]).toMatchObject({ amount: 120, status: 'pending' });
+      expect(db.rpc).toHaveBeenCalledWith('commit_import', { p_session_id: 'session-1', p_selected: [] });
+    });
+
     it('reports a row stored meanwhile as already imported', async () => {
       const billed = await normalize(billedCal, false);
       db.tables.transactions = [storedFrom('stored', billed)];
@@ -196,6 +208,26 @@ describe('the import holding area', () => {
       { id: 'd', user_id: 'u1', status: 'importing', reviewed_at: null, started_at: justNow, bank_connections: null, import_staged_rows: [{ count: 3 }] },
     ];
     expect((await listUnfinishedImports()).map((u) => [u.id, u.rows, u.stalled])).toEqual([['a', 12, false], ['c', 3, true]]);
+  });
+
+  it('a new fetch cancels my older imports of the account, but not one that may still be fetching', async () => {
+    const longAgo = new Date(Date.now() - 30 * 60_000).toISOString();
+    const justNow = new Date().toISOString();
+    const session = (id: string, status: string, started_at: string, extra: Row = {}) =>
+      ({ id, user_id: 'u1', bank_connection_id: 'conn', status, started_at, reviewed_at: null, ...extra });
+    db.tables.bank_import_sessions = [
+      session('new', 'complete', justNow),
+      session('fetched', 'complete', longAgo),
+      session('stalled', 'importing', longAgo),
+      session('running', 'importing', justNow),
+      session('other-account', 'complete', longAgo, { bank_connection_id: 'other' }),
+    ];
+    db.tables.import_staged_rows = ['new', 'fetched', 'stalled', 'running', 'other-account'].map((id) => ({ id: `s-${id}`, session_id: id }));
+
+    await discardOlderUnfinished('u1', 'conn', 'new');
+    const status = Object.fromEntries(db.tables.bank_import_sessions.map((s) => [s.id, s.status]));
+    expect(status).toEqual({ new: 'complete', fetched: 'cancelled', stalled: 'cancelled', running: 'importing', 'other-account': 'complete' });
+    expect(db.tables.import_staged_rows.map((r) => r.id)).toEqual(['s-new', 's-running', 's-other-account']);
   });
 
   it('reopens an import that stopped while fetching, so it can be imported', async () => {
