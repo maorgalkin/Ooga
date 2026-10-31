@@ -17,6 +17,7 @@ import { getUserLocale } from '../utils/locale';
 import { DashboardTabNavigation } from './dashboard/DashboardTabNavigation';
 import { DashboardEmptyState } from './dashboard/DashboardEmptyState';
 import { DashboardSkeleton } from './dashboard/DashboardSkeleton';
+import { UnfinishedImportsBanner } from './dashboard/UnfinishedImportsBanner';
 import { DashboardTileLayout } from './dashboard/DashboardTileLayout';
 import { ProjectedMonthView } from './dashboard/ProjectedMonthView';
 import {
@@ -272,6 +273,8 @@ const Dashboard: React.FC = () => {
 
       {activeTab === 'dashboard' && (
         <div>
+          {/* Imports postponed with "Finish later" */}
+          <UnfinishedImportsBanner />
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between">

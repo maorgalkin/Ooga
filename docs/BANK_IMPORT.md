@@ -107,14 +107,35 @@ Choose your provider, enter credentials, and click **Test & Save**.
 
 ## Import Flow
 
-1. Click **Import from Bank** in the Transactions tab.
-2. Choose the import period (1–12 months).
-3. Click **Start Import** — all connected accounts are scraped in parallel.
-4. A summary shows how many transactions were imported and how many duplicates were skipped.
+1. **Start it:** Add transaction → a connected account under "Import transactions" (or the account's import in Settings). Choose the period, then send the code (Visa Cal) or start the import (accounts the import service logs in to).
+2. **Fetch:** the bank's rows are read and compared with what the household already has:
+   - **Already there:** rows any member imported before. They're skipped and listed in the "skipped" bubble.
+   - **Already there, but changed:** a pending charge that's now billed, or a foreign amount now charged in shekels. These update the stored row straight away; that's bookkeeping on a row that's already in the budget, not a new decision.
+   - **New:** wait in the **holding area** (`import_staged_rows`, migration 041) and aren't in the budget yet.
+   - **Deleted earlier:** rows a household member deleted on purpose (they have a tombstone in `import_tombstones`). They wait in the holding area too, **unticked**, tagged "Deleted earlier".
+3. **Review:** the waiting rows, with a category picker for each. Before anything is imported, the review also previews which manual "Paid with" entries the rows will join.
+   - **Import N:** first plans the ticked rows again against what's stored *now* (`commitImportWithReplan`). Rows can wait while another import stores the same charge, possibly as its pending or billed version under another key, which the database's unique keys can't catch:
+     - a waiting billed row whose pending version is stored updates that row ("updated");
+     - a waiting pending row whose billed version is stored, or a row stored meanwhile, counts as "already imported".
 
-All imported transactions are assigned **Uncategorized** and `source = 'bank_import'`.
+     Then one step in the database (`commit_import`): what's still new moves into transactions, rows deleted earlier lose their tombstone, and the holding area empties. The previewed matches are joined after that. Import is disabled when nothing is ticked, in both review modes.
+   - **Unticked rows are "not now":** they're not imported, and the next import offers them again.
+   - **Finish later** (or closing the window): the rows keep waiting. The Dashboard shows "Unfinished imports", and Review reopens them. A new fetch of the same account cancels the person's older postponed imports of it, so one charge never waits twice.
+   - **Cancel import:** the holding area empties, and nothing ever reached the budget.
+4. **Summary:** how many were imported, skipped, or already imported by someone else.
 
-**Duplicate detection:** SHA-256 of `date + chargedAmount + description`. Same user + same hash = skipped.
+Only the person who fetched an import sees its holding area. Imports are recorded in `bank_import_sessions` (`importing` → `complete` or `error`; `cancelled`; `reviewed_at` once imported or cancelled). Cancelling claims the session (`reviewed_at` still empty) before emptying it, so it can't race an Import running elsewhere. An import that stopped while fetching (still `importing` after 10 minutes, with rows waiting) also shows as unfinished; Review marks it fetched first.
+
+### Known gaps
+
+- **Joins to "Paid with" entries run in the browser, after `commit_import`.** If the tab closes in between, the bank rows are imported but not joined to their manual entries, so those purchases count twice until merged by hand. Making the joins resumable means moving them into `commit_import` (planned as migration 042).
+- **Nothing clears abandoned holding areas yet.** Rows postponed and never reviewed stay until the person reviews or cancels them, or fetches the same account again; a cleanup after ~14 days is still to come.
+- **Imports through the import service (Discount) don't use the holding area yet.** They need the scraper change and a deploy.
+- **A pending row merged into a "Paid with" entry isn't paired with its billed version.** The pairing key includes the description, and the merge keeps the entry's own, so the billed version can come in as a new row. This predates the holding area and affects ordinary fetches too; a fix will follow.
+
+**Still writing straight to transactions:** imports through the import service (Discount), until the scraper writes to the holding area too. They also do so as a fallback before migration 041. There, the review is of rows already in the budget: unticked rows are deleted, and closing the window undoes the import.
+
+Imported rows start **Uncategorized**, with `source = 'bank_import'`. Duplicates are recognised household-wide by `dedupe_hash` (browser imports) or `external_id` (import service), each with a unique index.
 
 ---
 
