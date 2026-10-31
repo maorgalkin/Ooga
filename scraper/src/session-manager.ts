@@ -21,10 +21,13 @@ export interface ScrapeSession {
   status: 'logging_in' | 'awaiting_otp' | 'importing' | 'complete' | 'error';
   otpResolver?: (code: string) => void;
   result?: {
+    /** Rows now waiting in the holding area for the person's Import (kept as `imported` for older apps) */
     imported: number;
     skipped: number;
     skippedCardBills?: SkippedCardBill[];
     duplicates?: DuplicateSummary[];
+    /** 'staged': the rows wait in the import's holding area; apps check this to open that review */
+    mode?: 'staged';
   };
   error?: string;
   createdAt: Date;
@@ -35,6 +38,20 @@ export interface ScrapeSession {
 const sessions = new Map<string, ScrapeSession>();
 
 const SESSION_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// One import per account at a time: two logins to the same bank at once can fail or lock it
+const importsRunning = new Set<string>();
+
+/** Claims `key` (a connection, or a whole household) for an import; false if one is running. */
+export function tryLockImport(key: string): boolean {
+  if (importsRunning.has(key)) return false;
+  importsRunning.add(key);
+  return true;
+}
+
+export function unlockImport(key: string): void {
+  importsRunning.delete(key);
+}
 
 export function createSession(userId: string): ScrapeSession {
   const id = crypto.randomUUID();
@@ -64,7 +81,7 @@ export function deleteSession(id: string): void {
 }
 
 // Periodically clean up expired sessions
-setInterval(() => {
+const sweep = setInterval(() => {
   const now = Date.now();
   for (const [id, session] of sessions.entries()) {
     if (now - session.createdAt.getTime() > SESSION_TTL_MS) {
@@ -72,3 +89,4 @@ setInterval(() => {
     }
   }
 }, 60_000);
+sweep.unref?.(); // never the reason the process stays up

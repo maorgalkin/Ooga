@@ -29,6 +29,12 @@ router.post('/add', async (req: Request, res: Response) => {
     const credJson = JSON.stringify(credentials);
     const credentialsEncrypted = encrypt(credJson);
 
+    // Cal (SMS code) is imported in the browser; the server keeps its ID for the SMS request.
+    // `secure` tells the app to ask the server; the card's last digits stay readable for display.
+    const metadata = provider === 'visaCalFast'
+      ? { secure: true, last4Digits: String((credentials as Record<string, unknown>).last4Digits ?? '') }
+      : undefined;
+
     const { data, error } = await supabase
       .from('bank_connections')
       .insert({
@@ -37,6 +43,7 @@ router.post('/add', async (req: Request, res: Response) => {
         provider,
         display_name: displayName ?? provider,
         credentials_encrypted: credentialsEncrypted,
+        ...(metadata ? { metadata } : {}),
       })
       .select('id, provider, display_name, created_at')
       .single();

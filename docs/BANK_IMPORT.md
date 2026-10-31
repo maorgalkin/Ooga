@@ -131,11 +131,14 @@ Only the person who fetched an import sees its holding area. Imports are recorde
 
 - **Until migration 042 is applied, joins to "Paid with" entries run in the browser after `commit_import`.** If the tab closes in between, those rows count twice until merged by hand. With 042 they're joined in the same step.
 - **Abandoned holding areas are cleared only when their owner next presses Import** (after 14 days). Someone who never imports again keeps an invisible holding area until then.
-- **Imports through the import service (Discount) don't use the holding area yet.** They need the scraper change and a deploy.
+- **Imports through the import service (Discount) use the holding area once the updated scraper is deployed.** Until then the app keeps today's review for them: it tells the two apart by the service's answer (`result.mode === 'staged'`).
+- **Cal connections added before the ID moved to the import service keep it in `metadata` until the one-off move** (`migrate-cal-ids`, see [SCRAPER_DEPLOY.md](SCRAPER_DEPLOY.md)). Until then they sign in from the browser as before.
 
 A pending charge merged into a "Paid with" entry is paired with its billed version by the bank row's own description, kept in the entry's `merge_snapshot`; the billed update keeps the entry's description, category and memo and updates the snapshot, so undoing the merge restores the billed charge.
 
-**Still writing straight to transactions:** imports through the import service (Discount), until the scraper writes to the holding area too. They also do so as a fallback before migration 041. There, the review is of rows already in the budget: unticked rows are deleted, and closing the window undoes the import.
+**Imports through the import service (Discount)** stage their rows the same way (`scraper/src/staging.ts`): the service records the import (`importing` → `complete`, with the account), keeps new and deleted-earlier rows in the holding area under their `external_id`, and reports the rest as already there. It runs one import per account at a time (a second gets 409), marks the account synced only when its rows were kept, and replaces the person's older postponed imports of the account. Their rows have no pending/billed versions, so Import's re-plan passes them straight to `commit_import`, whose unique keys catch any stored meanwhile.
+
+**Still writing straight to transactions:** a scraper older than this change, and browser imports before migration 041. There, the review is of rows already in the budget: unticked rows are deleted, and closing the window undoes the import.
 
 Imported rows start **Uncategorized**, with `source = 'bank_import'`. Duplicates are recognised household-wide by `dedupe_hash` (browser imports) or `external_id` (import service), each with a unique index.
 
@@ -165,6 +168,7 @@ The web app reads `VITE_SCRAPER_URL` and defaults to `https://api.haooga.com`. F
 ## Security Notes
 
 - **Credentials encrypted at rest**: AES-256-GCM with a key that lives only in the scraper's environment. Supabase stores only the ciphertext + IV + auth tag.
+- **Visa Cal's national ID** is stored the same way (`credentials_encrypted`, with `metadata.secure`; only the card's last 4 digits stay readable). The SMS sign-in goes through the import service (`POST /cal/otp/request`, `POST /cal/otp/verify`): it decrypts the ID for those two calls to Cal and returns only Cal's handle and short-lived token. Any member of the account's household may start it; the code still goes to the cardholder's phone. Transactions are then fetched in the browser, so none pass through the service.
 - **Service role key**: Never exposed to clients. The scraper is the only service that holds it.
 - **Credential isolation**: Each user's credentials are separate rows — household members cannot see each other's bank credentials.
 - **No logging of credentials**: Puppeteer runs headless, no screenshots.

@@ -28,6 +28,8 @@ export interface ServerImportState {
     skipped: number;
     skippedCardBills?: SkippedCardBill[];
     duplicates?: DuplicateSummary[];
+    /** 'staged' from a service that keeps rows in the holding area for Import; absent from older ones (rows written on fetch) */
+    mode?: 'staged';
   } | null;
   error: string | null;
 }
@@ -66,6 +68,27 @@ export async function addSecureConnection(
     { method: 'POST', body: JSON.stringify({ provider, credentials, displayName }) }
   );
   return connection;
+}
+
+/**
+ * Cal's SMS sign-in for an account whose ID the service holds (metadata.secure): the service
+ * decrypts it and asks Cal to text the code. Returns Cal's handle for this sign-in.
+ */
+export async function requestCalOtpViaServer(connectionId: string): Promise<string> {
+  const { calSessionToken } = await request<{ calSessionToken: string }>('/cal/otp/request', {
+    method: 'POST',
+    body: JSON.stringify({ connectionId }),
+  });
+  return calSessionToken;
+}
+
+/** Checks the texted code through the service; returns the short-lived token to fetch transactions with. */
+export async function verifyCalOtpViaServer(connectionId: string, calSessionToken: string, code: string): Promise<string> {
+  const { otpToken } = await request<{ otpToken: string }>('/cal/otp/verify', {
+    method: 'POST',
+    body: JSON.stringify({ connectionId, calSessionToken, code }),
+  });
+  return otpToken;
 }
 
 /** Start importing one connection; returns the session id to poll */

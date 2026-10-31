@@ -85,6 +85,29 @@ curl -fsS https://api.haooga.com/health
 
 The next deploy (`git checkout master && git pull --ff-only`) returns the clone to `master`.
 
+### One-off: move Cal IDs into encrypted storage
+
+Visa Cal connections added before the ID moved to the import service keep the cardholder's national ID readable in `bank_connections.metadata`. This moves each into the encrypted column and drops it from `metadata`. **It removes data from `metadata`, so:**
+
+1. Deploy the scraper version with `/cal/otp/*` first, and make sure the web app with the matching change is live (merged to `master`). Both work before the move, so the order between them doesn't matter, but both must be live before it.
+2. Dry run: it prints how many connections it would move and their connection ids (never an ID number), and changes nothing:
+   ```bash
+   ssh ooga-scraper
+   cd /opt/ooga
+   docker compose -f docker-compose.prod.yml exec scraper node dist/scripts/migrate-cal-ids.js
+   ```
+3. If the count and ids look right, move them:
+   ```bash
+   docker compose -f docker-compose.prod.yml exec scraper node dist/scripts/migrate-cal-ids.js --apply
+   ```
+4. Check, in the Supabase SQL editor (expect 0):
+   ```sql
+   select count(*) from bank_connections where provider = 'visaCalFast' and metadata ? 'id';
+   ```
+5. Import from a Cal account once: the SMS should arrive as before.
+
+Running it again changes nothing more. To undo a single connection, there's nothing to restore in `metadata`: the ID is in `credentials_encrypted`, which the server decrypts; a browser older than this change would ask to reconnect the account.
+
 ---
 
 ## Operations

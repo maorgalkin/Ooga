@@ -10,6 +10,8 @@ const KNOWN: [RegExp, string][] = [
   [/import session not found/i, 'errors.importNotFound'],
   [/import could not be recorded/i, 'errors.importNotRecorded'],
   [/import is taking too long/i, 'errors.importTimeout'],
+  [/already being imported/i, 'errors.importAlreadyRunning'],
+  [/sms code wasn't entered in time/i, 'errors.otpTimedOut'],
   [/^(user )?not authenticated$/i, 'errors.signedOut'],
   [/not (a )?part of (a|any) household|not a member of this household|no household found|only household members can/i, 'errors.noHousehold'],
   [/owner cannot leave household/i, 'errors.ownerCannotLeave'],

@@ -2,15 +2,17 @@ import { createScraper, CompanyTypes } from 'israeli-bank-scrapers';
 import type { Transaction } from 'israeli-bank-scrapers/lib/transactions.js';
 import {
   updateSession,
+  unlockImport,
 } from './session-manager.js';
 import {
   type TransactionRow,
-  pushTransactions,
+  supabase,
   recordImportSession,
   createImportSessionRecord,
   getHouseholdConnections,
   updateConnectionLastSync,
 } from './supabase-push.js';
+import { stageTransactions, supersedeOlderImports } from './staging.js';
 import { VisaCalFastScraper, type VisaCalFastCredentials } from './scrapers/visa-cal-fast.js';
 import { isBankProvider, isCardBillPayment } from './bank-rules.js';
 import type { DuplicateSummary, SkippedCardBill } from './session-manager.js';
@@ -42,20 +44,39 @@ const proxyArg = process.env.PUPPETEER_PROXY
   : [];
 const BASE_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', ...proxyArg];
 
+/** How long a login waits for its SMS code before giving up (the session itself expires at 10 minutes) */
+const OTP_WAIT_MS = 5 * 60 * 1000;
+
+/** Marks the import complete; retried once, since the review can't open until it is */
+async function finishImport(dbSessionId: string, imported: number, skipped: number, note?: string): Promise<void> {
+  try {
+    await recordImportSession(dbSessionId, 'complete', imported, skipped, note);
+  } catch {
+    await recordImportSession(dbSessionId, 'complete', imported, skipped, note);
+  }
+}
+
+/**
+ * Fetches the account(s) and puts their new rows in the import's holding area, where they wait
+ * for the person's Import in the app. `lockKey` (claimed by the caller with tryLockImport) is
+ * released when this ends, however it ends.
+ */
 export async function startScrape(
   sessionId: string,
   userId: string,
   householdId: string,
   startDate: Date,
   endDate: Date,
-  connectionId?: string // Import just this connection (default: all with stored credentials)
+  connectionId: string | undefined, // Import just this connection (default: all with stored credentials)
+  lockKey: string
 ): Promise<void> {
-  const dbSessionId = await createImportSessionRecord(
-    userId,
-    householdId,
-    startDate,
-    endDate
-  );
+  let dbSessionId: string;
+  try {
+    dbSessionId = await createImportSessionRecord(userId, householdId, startDate, endDate, connectionId);
+  } catch (err) {
+    unlockImport(lockKey);
+    throw err;
+  }
 
   updateSession(sessionId, { status: 'logging_in', dbSessionId });
 
@@ -78,8 +99,18 @@ export async function startScrape(
         if (conn.provider === 'visaCalFast') {
           // Use the custom fast-access scraper with OTP support
           const requestOtp = (): Promise<string> =>
-            new Promise((resolve) => {
-              updateSession(sessionId, { status: 'awaiting_otp', otpResolver: resolve });
+            new Promise((resolve, reject) => {
+              const timer = setTimeout(() => {
+                updateSession(sessionId, { otpResolver: undefined });
+                reject(new Error("The SMS code wasn't entered in time."));
+              }, OTP_WAIT_MS);
+              updateSession(sessionId, {
+                status: 'awaiting_otp',
+                otpResolver: (code: string) => {
+                  clearTimeout(timer);
+                  resolve(code);
+                },
+              });
             });
 
           const scraper = new VisaCalFastScraper(
@@ -130,22 +161,23 @@ export async function startScrape(
             });
           }
 
-          const stats = await pushTransactions(
+          // A failure here throws, so this account counts as failed and isn't marked synced
+          const stats = await stageTransactions(supabase, {
             userId,
             householdId,
-            txns,
-            account.accountNumber,
-            conn.id,
-            dbSessionId,
-            conn.provider
-          );
-          imported += stats.imported;
+            transactions: txns,
+            accountNumber: account.accountNumber,
+            connectionId: conn.id,
+            sessionId: dbSessionId,
+            provider: conn.provider,
+          });
+          imported += stats.staged;
           skipped += stats.skipped;
           duplicates.push(...stats.duplicates);
         }
 
         await updateConnectionLastSync(conn.id);
-        console.log(`✓ ${conn.displayName}: ${imported} imported, ${skipped} skipped`);
+        console.log(`✓ ${conn.displayName}: ${imported} waiting for review, ${skipped} already in the account`);
         return { connectionId: conn.id, imported, skipped };
       })
     );
@@ -168,20 +200,24 @@ export async function startScrape(
       // All scrapers failed
       const errorMsg = errors.join('; ');
       updateSession(sessionId, { status: 'error', error: errorMsg });
-      await recordImportSession(dbSessionId, 'error', 0, 0, errorMsg);
+      await recordImportSession(dbSessionId, 'error', 0, 0, errorMsg).catch(() => {});
       return;
     }
 
     const partialError = errors.length > 0 ? `Partial errors: ${errors.join('; ')}` : undefined;
+    await finishImport(dbSessionId, totalImported, totalSkipped, partialError);
+    // This fetch replaces the person's older imports of the account still waiting for a decision
+    if (connectionId) await supersedeOlderImports(supabase, userId, connectionId, dbSessionId).catch(() => 0);
     updateSession(sessionId, {
       status: 'complete',
-      result: { imported: totalImported, skipped: totalSkipped, skippedCardBills, duplicates },
+      result: { imported: totalImported, skipped: totalSkipped, skippedCardBills, duplicates, mode: 'staged' },
       error: partialError,
     });
-    await recordImportSession(dbSessionId, 'complete', totalImported, totalSkipped, partialError);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unexpected error';
     updateSession(sessionId, { status: 'error', error: msg });
-    await recordImportSession(dbSessionId, 'error', 0, 0, msg);
+    await recordImportSession(dbSessionId, 'error', 0, 0, msg).catch(() => {});
+  } finally {
+    unlockImport(lockKey);
   }
 }

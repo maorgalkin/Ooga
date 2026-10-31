@@ -3,6 +3,7 @@ import {
   createSession,
   getSession,
   updateSession,
+  tryLockImport,
 } from '../session-manager.js';
 import { startScrape } from '../scraper.js';
 import { getUserAndHousehold } from '../supabase-push.js';
@@ -44,10 +45,17 @@ router.post('/start', async (req: Request, res: Response) => {
     const startDate = startParam ? new Date(`${startParam}T00:00:00Z`) : new Date();
     if (!startParam) startDate.setMonth(startDate.getMonth() - months);
 
+    // One import per account (or per household, for "all accounts") at a time
+    const lockKey = connectionId ? `connection:${connectionId}` : `household:${householdId}`;
+    if (!tryLockImport(lockKey)) {
+      res.status(409).json({ error: 'This account is already being imported. Try again in a few minutes.' });
+      return;
+    }
+
     const session = createSession(userId);
 
     // Run the scrape asynchronously — don't await here
-    startScrape(session.id, userId, householdId, startDate, endDate, connectionId).catch(
+    startScrape(session.id, userId, householdId, startDate, endDate, connectionId, lockKey).catch(
       (err) => {
         console.error('Unhandled scrape error:', err);
         updateSession(session.id, {

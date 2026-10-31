@@ -4,14 +4,11 @@ import { Trans } from 'react-i18next';
 import i18n from '../i18n';
 import { useT } from '../hooks/useT';
 import { X, Building2, CreditCard, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { addConnection } from '../services/bankImportService';
 import { addSecureConnection } from '../services/scraperService';
 
 // Cal fast access is imported straight from the browser; it only needs the (non-secret) ID and
 // last 4 card digits to request the SMS code. Every other provider logs in on the import service,
 // which stores the credentials encrypted and never returns them.
-const BROWSER_IMPORT_PROVIDERS = new Set(['visaCalFast']);
-
 interface Props {
   onClose: () => void;
   onAdded?: () => void;
@@ -146,11 +143,8 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
     if (!selectedProvider) return;
     setStep('testing');
     try {
-      if (BROWSER_IMPORT_PROVIDERS.has(selectedProvider.id)) {
-        await addConnection(selectedProvider.id, fieldValues, displayName);
-      } else {
-        await addSecureConnection(selectedProvider.id, fieldValues, displayName);
-      }
+      // Every account's details are encrypted by the import service, Cal's ID included
+      await addSecureConnection(selectedProvider.id, fieldValues, displayName);
       setStep('success');
     } catch (err) {
       setErrorMsg(errorMessage(err, t, 'import.addAccount.saveFailed'));
@@ -242,7 +236,7 @@ export default function AddBankAccountModal({ onClose, onAdded }: Props) {
               ))}
 
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {BROWSER_IMPORT_PROVIDERS.has(selectedProvider.id)
+                {selectedProvider.id === 'visaCalFast'
                   ? t('import.addAccount.cardNote')
                   : t('import.addAccount.serverNote')}
               </p>

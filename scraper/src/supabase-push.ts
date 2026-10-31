@@ -1,8 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
 import { decrypt } from './encryption.js';
-import { isBankProvider, makeBankExternalId } from './bank-rules.js';
-import type { DuplicateSummary } from './session-manager.js';
 
 export const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -32,15 +29,13 @@ export interface BankConnection {
   credentials: Record<string, string>;
 }
 
-function makeExternalId(tx: TransactionRow): string {
-  const raw = `${tx.date}|${tx.chargedAmount}|${tx.description}`;
-  return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 32);
-}
+/** Providers imported in the browser (Cal with an SMS code); the server only holds their encrypted ID */
+export const BROWSER_IMPORT_PROVIDERS = new Set(['visaCalFast']);
 
 /**
  * The household's active connections with server-stored (encrypted) credentials. Connections are
- * shared: any household member can import any of them. Connections imported directly from the
- * browser (Cal fast access) have no stored credentials and are left out.
+ * shared: any household member can import any of them. Connections imported in the browser (Cal
+ * with an SMS code) are left out: the server only keeps their ID for the SMS request.
  * With `connectionId`, returns just that connection or throws if it can't be imported here.
  */
 export async function getHouseholdConnections(householdId: string, connectionId?: string): Promise<BankConnection[]> {
@@ -56,10 +51,13 @@ export async function getHouseholdConnections(householdId: string, connectionId?
 
   if (error) throw new Error(`Failed to fetch bank connections: ${error.message}`);
   if (connectionId && (!data || data.length === 0)) throw new Error('Bank connection not found.');
+  if (connectionId && BROWSER_IMPORT_PROVIDERS.has(data![0].provider)) {
+    throw new Error('This account is imported in the browser.');
+  }
   if (connectionId && !data![0].credentials_encrypted) {
     throw new Error('This account has no securely stored credentials. Remove it and add it again.');
   }
-  const importable = (data ?? []).filter((row) => row.credentials_encrypted);
+  const importable = (data ?? []).filter((row) => row.credentials_encrypted && !BROWSER_IMPORT_PROVIDERS.has(row.provider));
   if (importable.length === 0) throw new Error('No bank accounts connected. Add a bank account in Settings first.');
 
   return importable.map((row) => ({
@@ -68,95 +66,6 @@ export async function getHouseholdConnections(householdId: string, connectionId?
     displayName: row.display_name ?? row.provider,
     credentials: JSON.parse(decrypt(row.credentials_encrypted)),
   }));
-}
-
-export async function pushTransactions(
-  userId: string,
-  householdId: string,
-  transactions: TransactionRow[],
-  accountNumber: string,
-  connectionId: string,
-  importSessionId?: string,
-  provider?: string
-): Promise<{ imported: number; skipped: number; duplicates: DuplicateSummary[] }> {
-  let imported = 0;
-  let skipped = 0;
-  const duplicates: DuplicateSummary[] = [];
-  const isBank = !!provider && isBankProvider(provider);
-
-  const summarize = (tx: TransactionRow, reason: 'exists' | 'deleted'): DuplicateSummary => ({
-    date: tx.date.slice(0, 10),
-    description: tx.description,
-    amount: Math.abs(tx.chargedAmount),
-    type: tx.chargedAmount < 0 ? 'expense' : 'income',
-    reason,
-  });
-
-  for (const tx of transactions) {
-    const externalId = isBank ? makeBankExternalId(provider!, accountNumber, tx) : makeExternalId(tx);
-
-    // Household-wide: any member may already have imported this account
-    const { data: existing } = await supabase
-      .from('transactions')
-      .select('id')
-      .eq('household_id', householdId)
-      .eq('external_id', externalId)
-      .maybeSingle();
-
-    if (existing) {
-      skipped++;
-      duplicates.push(summarize(tx, 'exists'));
-      continue;
-    }
-
-    // Deleted on purpose by a member earlier: don't bring it back (no table before migration 036)
-    const { data: tombstone } = await supabase
-      .from('import_tombstones')
-      .select('import_key')
-      .eq('household_id', householdId)
-      .eq('import_key', externalId)
-      .maybeSingle();
-
-    if (tombstone) {
-      skipped++;
-      duplicates.push(summarize(tx, 'deleted'));
-      continue;
-    }
-
-    const { error } = await supabase.from('transactions').insert({
-      user_id: userId,
-      household_id: householdId,
-      date: tx.date.slice(0, 10),
-      description: tx.description,
-      amount: Math.abs(tx.chargedAmount),
-      category: tx.category ?? 'Uncategorized',
-      type: tx.chargedAmount < 0 ? 'expense' : 'income',
-      source: 'bank_import',
-      external_id: externalId,
-      bank_account_number: accountNumber,
-      bank_connection_id: connectionId,
-      import_session_id: importSessionId ?? null,
-      // Extended credit-card fields
-      processed_date: tx.processedDate?.slice(0, 10) ?? null,
-      original_amount: tx.originalAmount ?? null,
-      original_currency: tx.originalCurrency ?? null,
-      installment_number: tx.installments?.number ?? null,
-      installment_total: tx.installments?.total ?? null,
-      memo: tx.memo ?? null,
-    });
-
-    if (error?.code === '23505') {
-      // Another member imported it moments ago
-      skipped++;
-      duplicates.push(summarize(tx, 'exists'));
-    } else if (error) {
-      console.error('Failed to insert transaction:', error.message);
-    } else {
-      imported++;
-    }
-  }
-
-  return { imported, skipped, duplicates };
 }
 
 export async function updateConnectionLastSync(connectionId: string): Promise<void> {
@@ -173,7 +82,9 @@ export async function recordImportSession(
   skipped: number,
   error?: string
 ): Promise<void> {
-  await supabase
+  // Only the Supabase/bank error text, cut short; never credentials
+  error = error?.slice(0, 500);
+  const { error: updateError } = await supabase
     .from('bank_import_sessions')
     .update({
       status,
@@ -184,20 +95,27 @@ export async function recordImportSession(
       updated_at: new Date().toISOString(),
     })
     .eq('id', sessionDbId);
+  if (updateError) throw new Error(`Couldn't record the import: ${updateError.message}`);
 }
 
+/**
+ * The import's record, 'importing' until its rows wait in the holding area ('complete') or it
+ * fails ('error'). Its review is finished (reviewed_at) by the person's Import or Cancel.
+ */
 export async function createImportSessionRecord(
   userId: string,
   householdId: string,
   dateRangeStart: Date,
-  dateRangeEnd: Date
+  dateRangeEnd: Date,
+  connectionId?: string
 ): Promise<string> {
   const { data, error } = await supabase
     .from('bank_import_sessions')
     .insert({
       user_id: userId,
       household_id: householdId,
-      status: 'logging_in',
+      status: 'importing',
+      bank_connection_id: connectionId ?? null,
       date_range_start: dateRangeStart.toISOString().slice(0, 10),
       date_range_end: dateRangeEnd.toISOString().slice(0, 10),
     })
