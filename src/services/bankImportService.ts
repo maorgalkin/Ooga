@@ -59,11 +59,27 @@ export type { CalCard } from './calDirectService';
 
 // ─── Connection management (direct Supabase — no server needed) ───────────────
 
+/** The household's active connected accounts, plus the person's own from before accounts were shared. */
 export async function listConnections(): Promise<BankConnection[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data: membership } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+
+  // Accounts left behind in a household the person moved away from stay visible to them by row
+  // security (they own them), but can't be used here
+  const scope = membership?.household_id
+    ? `household_id.eq.${membership.household_id},and(household_id.is.null,user_id.eq.${user.id})`
+    : `user_id.eq.${user.id}`;
   const { data, error } = await supabase
     .from('bank_connections')
     .select('id, user_id, provider, display_name, last_sync_at, is_active, created_at, metadata')
     .eq('is_active', true)
+    .or(scope)
     .order('created_at', { ascending: true });
 
   if (error) throw new Error(error.message);
