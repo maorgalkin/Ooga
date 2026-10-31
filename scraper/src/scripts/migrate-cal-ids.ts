@@ -19,4 +19,5 @@ const result = await migrateCalIds(db, { apply, encrypt });
 
 console.log(`Cal connections with the ID in plain text: ${result.found}`);
 for (const id of result.connectionIds) console.log(`  connection ${id}`);
+if (result.skippedNoHousehold > 0) console.log(`Left as they are (no household): ${result.skippedNoHousehold}`);
 console.log(apply ? `Moved to encrypted storage: ${result.moved}` : 'Dry run: nothing changed. Run again with --apply to move them.');

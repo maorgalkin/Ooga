@@ -57,17 +57,20 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
-/** Store a connection's credentials encrypted on the import service */
+/**
+ * Store a connection's credentials encrypted on the import service. `secure` says the service
+ * holds a Visa Cal ID for its SMS sign-in; a service from before that change doesn't say so.
+ */
 export async function addSecureConnection(
   provider: string,
   credentials: Record<string, string>,
   displayName: string
-): Promise<{ id: string; provider: string; display_name: string }> {
-  const { connection } = await request<{ connection: { id: string; provider: string; display_name: string } }>(
+): Promise<{ id: string; provider: string; display_name: string; secure: boolean }> {
+  const { connection, secure } = await request<{ connection: { id: string; provider: string; display_name: string }; secure?: boolean }>(
     '/connections/add',
     { method: 'POST', body: JSON.stringify({ provider, credentials, displayName }) }
   );
-  return connection;
+  return { ...connection, secure: secure === true };
 }
 
 /**

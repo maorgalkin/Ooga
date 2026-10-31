@@ -2,7 +2,7 @@ import { createScraper, CompanyTypes } from 'israeli-bank-scrapers';
 import type { Transaction } from 'israeli-bank-scrapers/lib/transactions.js';
 import {
   updateSession,
-  unlockImport,
+  unlockImports,
 } from './session-manager.js';
 import {
   type TransactionRow,
@@ -13,7 +13,6 @@ import {
   updateConnectionLastSync,
 } from './supabase-push.js';
 import { stageTransactions, supersedeOlderImports } from './staging.js';
-import { VisaCalFastScraper, type VisaCalFastCredentials } from './scrapers/visa-cal-fast.js';
 import { isBankProvider, isCardBillPayment } from './bank-rules.js';
 import type { DuplicateSummary, SkippedCardBill } from './session-manager.js';
 
@@ -44,9 +43,6 @@ const proxyArg = process.env.PUPPETEER_PROXY
   : [];
 const BASE_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', ...proxyArg];
 
-/** How long a login waits for its SMS code before giving up (the session itself expires at 10 minutes) */
-const OTP_WAIT_MS = 5 * 60 * 1000;
-
 /** Marks the import complete; retried once, since the review can't open until it is */
 async function finishImport(dbSessionId: string, imported: number, skipped: number, note?: string): Promise<void> {
   try {
@@ -58,7 +54,7 @@ async function finishImport(dbSessionId: string, imported: number, skipped: numb
 
 /**
  * Fetches the account(s) and puts their new rows in the import's holding area, where they wait
- * for the person's Import in the app. `lockKey` (claimed by the caller with tryLockImport) is
+ * for the person's Import in the app. `lockKeys` (claimed by the caller with tryLockImports) are
  * released when this ends, however it ends.
  */
 export async function startScrape(
@@ -68,13 +64,13 @@ export async function startScrape(
   startDate: Date,
   endDate: Date,
   connectionId: string | undefined, // Import just this connection (default: all with stored credentials)
-  lockKey: string
+  lockKeys: string[]
 ): Promise<void> {
   let dbSessionId: string;
   try {
     dbSessionId = await createImportSessionRecord(userId, householdId, startDate, endDate, connectionId);
   } catch (err) {
-    unlockImport(lockKey);
+    unlockImports(lockKeys);
     throw err;
   }
 
@@ -94,50 +90,16 @@ export async function startScrape(
       connections.map(async (conn) => {
         console.log(`→ Scraping ${conn.displayName} (${conn.provider})`);
 
-        let result;
-
-        if (conn.provider === 'visaCalFast') {
-          // Use the custom fast-access scraper with OTP support
-          const requestOtp = (): Promise<string> =>
-            new Promise((resolve, reject) => {
-              const timer = setTimeout(() => {
-                updateSession(sessionId, { otpResolver: undefined });
-                reject(new Error("The SMS code wasn't entered in time."));
-              }, OTP_WAIT_MS);
-              updateSession(sessionId, {
-                status: 'awaiting_otp',
-                otpResolver: (code: string) => {
-                  clearTimeout(timer);
-                  resolve(code);
-                },
-              });
-            });
-
-          const scraper = new VisaCalFastScraper(
-            {
-              companyId: 'visaCal' as CompanyTypes,
-              startDate,
-              combineInstallments: false,
-              showBrowser: false,
-              args: BASE_ARGS,
-            },
-            requestOtp,
-          );
-
-          result = await scraper.scrape(conn.credentials as never);
-          // Resume from awaiting_otp back to importing once scraper finishes
-          updateSession(sessionId, { status: 'importing', otpResolver: undefined });
-        } else {
-          const scraper = createScraper({
-            companyId: conn.provider as CompanyTypes,
-            startDate,
-            combineInstallments: false,
-            showBrowser: false,
-            args: BASE_ARGS,
-          });
-
-          result = await scraper.scrape(conn.credentials as never);
-        }
+        // Visa Cal with an SMS code is imported in the browser and never reaches here
+        // (getHouseholdConnections leaves it out), so there's no code to wait for
+        const scraper = createScraper({
+          companyId: conn.provider as CompanyTypes,
+          startDate,
+          combineInstallments: false,
+          showBrowser: false,
+          args: BASE_ARGS,
+        });
+        const result = await scraper.scrape(conn.credentials as never);
 
         if (!result.success) {
           throw new Error(`${conn.displayName}: ${result.errorMessage ?? 'Scrape failed'}`);
@@ -176,7 +138,6 @@ export async function startScrape(
           duplicates.push(...stats.duplicates);
         }
 
-        await updateConnectionLastSync(conn.id);
         console.log(`✓ ${conn.displayName}: ${imported} waiting for review, ${skipped} already in the account`);
         return { connectionId: conn.id, imported, skipped };
       })
@@ -206,6 +167,10 @@ export async function startScrape(
 
     const partialError = errors.length > 0 ? `Partial errors: ${errors.join('; ')}` : undefined;
     await finishImport(dbSessionId, totalImported, totalSkipped, partialError);
+    // Synced only once its rows are kept and the import recorded, so a failed one is fetched again
+    for (const r of results) {
+      if (r.status === 'fulfilled') await updateConnectionLastSync(r.value.connectionId).catch(() => {});
+    }
     // This fetch replaces the person's older imports of the account still waiting for a decision
     if (connectionId) await supersedeOlderImports(supabase, userId, connectionId, dbSessionId).catch(() => 0);
     updateSession(sessionId, {
@@ -218,6 +183,6 @@ export async function startScrape(
     updateSession(sessionId, { status: 'error', error: msg });
     await recordImportSession(dbSessionId, 'error', 0, 0, msg).catch(() => {});
   } finally {
-    unlockImport(lockKey);
+    unlockImports(lockKeys);
   }
 }

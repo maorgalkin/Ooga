@@ -85,28 +85,49 @@ curl -fsS https://api.haooga.com/health
 
 The next deploy (`git checkout master && git pull --ff-only`) returns the clone to `master`.
 
+### This change: Cal sign-in through the service, imports in the holding area
+
+Deploy the scraper **before** merging the app change, so the app never meets an older service. The server normally runs `master`, so build the branch there first:
+
+1. **Scraper first,** from the PR's branch:
+   ```bash
+   ssh ooga-scraper
+   cd /opt/ooga
+   git rev-parse --short HEAD                       # rollback point
+   git fetch origin feat/scraper-holding-area-cal-id
+   git checkout --detach origin/feat/scraper-holding-area-cal-id
+   docker compose -f docker-compose.prod.yml up -d --build
+   curl -fsS https://api.haooga.com/health
+   ```
+2. **Then merge the app** (the PR). The next `/deploy-scraper` returns the server to `master`, which then holds the same code.
+
+Merging first is safe too: the app keeps today's Discount review with an older service, and when adding a Cal account it falls back to the old way if the service doesn't confirm it holds the ID. But scraper first means no Cal account is ever added the old way.
+
+3. **nginx (one-off):** the SMS sign-in also gets a per-address limit in nginx. `scraper/nginx.conf` has it, but the live site file was edited by certbot, so add these two parts to `/etc/nginx/sites-available/ooga-scraper` by hand: the `limit_req_zone` line at the top, and the `location /cal/ { … }` block inside **each** `server` block that proxies to the service (the HTTPS one certbot made included). Then `nginx -t && systemctl reload nginx`.
+
 ### One-off: move Cal IDs into encrypted storage
 
-Visa Cal connections added before the ID moved to the import service keep the cardholder's national ID readable in `bank_connections.metadata`. This moves each into the encrypted column and drops it from `metadata`. **It removes data from `metadata`, so:**
+Visa Cal connections added before this change keep the cardholder's national ID readable in `bank_connections.metadata`. This moves each into the encrypted column and drops it from `metadata`. **It removes data from `metadata`, so run it only after the steps above (scraper and app both live):**
 
-1. Deploy the scraper version with `/cal/otp/*` first, and make sure the web app with the matching change is live (merged to `master`). Both work before the move, so the order between them doesn't matter, but both must be live before it.
-2. Dry run: it prints how many connections it would move and their connection ids (never an ID number), and changes nothing:
+1. Dry run: it prints how many connections it would move and their connection ids (never an ID number), plus any it leaves alone because they have no household (nobody can import those through the service). It changes nothing:
    ```bash
    ssh ooga-scraper
    cd /opt/ooga
    docker compose -f docker-compose.prod.yml exec scraper node dist/scripts/migrate-cal-ids.js
    ```
-3. If the count and ids look right, move them:
+2. If the count and ids look right, move them:
    ```bash
    docker compose -f docker-compose.prod.yml exec scraper node dist/scripts/migrate-cal-ids.js --apply
    ```
-4. Check, in the Supabase SQL editor (expect 0):
+3. Check, in the Supabase SQL editor. The first should be 0; the second lists any left because they have no household:
    ```sql
-   select count(*) from bank_connections where provider = 'visaCalFast' and metadata ? 'id';
+   select count(*) from bank_connections where provider = 'visaCalFast' and household_id is not null and metadata ? 'id';
+   select id, user_id, created_at from bank_connections where provider = 'visaCalFast' and household_id is null and metadata ? 'id';
    ```
-5. Import from a Cal account once: the SMS should arrive as before.
+4. Import from a Cal account once: the SMS should arrive as before.
+5. **A few days later, run the dry run again.** A browser still open on the old app could add a Cal account the old way meanwhile; the run would show it, and `--apply` moves it.
 
-Running it again changes nothing more. To undo a single connection, there's nothing to restore in `metadata`: the ID is in `credentials_encrypted`, which the server decrypts; a browser older than this change would ask to reconnect the account.
+Running it again changes nothing more. There's no undo into `metadata`: the ID lives in `credentials_encrypted`, which only the service can read. An app older than this change would ask to reconnect a moved account.
 
 ---
 

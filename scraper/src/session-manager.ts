@@ -39,18 +39,26 @@ const sessions = new Map<string, ScrapeSession>();
 
 const SESSION_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-// One import per account at a time: two logins to the same bank at once can fail or lock it
-const importsRunning = new Set<string>();
+// One import per account at a time: two logins to the same bank at once can fail or lock it.
+// A lock older than LOCK_STALE_MS is treated as left behind (an import never takes that long).
+const importsRunning = new Map<string, number>(); // `connection:<id>` → when it was taken
+export const LOCK_STALE_MS = 15 * 60 * 1000;
 
-/** Claims `key` (a connection, or a whole household) for an import; false if one is running. */
-export function tryLockImport(key: string): boolean {
-  if (importsRunning.has(key)) return false;
-  importsRunning.add(key);
+/**
+ * Claims every key for one import, or none: false if any is held by an import still running.
+ * An import of all the household's accounts claims each of them.
+ */
+export function tryLockImports(keys: string[], now = Date.now()): boolean {
+  if (keys.some(k => {
+    const since = importsRunning.get(k);
+    return since !== undefined && now - since < LOCK_STALE_MS;
+  })) return false;
+  for (const k of keys) importsRunning.set(k, now);
   return true;
 }
 
-export function unlockImport(key: string): void {
-  importsRunning.delete(key);
+export function unlockImports(keys: string[]): void {
+  for (const k of keys) importsRunning.delete(k);
 }
 
 export function createSession(userId: string): ScrapeSession {

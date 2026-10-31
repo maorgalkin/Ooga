@@ -7,6 +7,8 @@ export interface CalIdMigrationResult {
   moved: number;
   /** Their connection ids (never the national IDs) */
   connectionIds: string[];
+  /** Cal connections with the ID in plain text but no household, left as they are (see the deploy doc) */
+  skippedNoHousehold: number;
 }
 
 /**
@@ -19,11 +21,14 @@ export async function migrateCalIds(
   db: Db,
   { apply, encrypt }: { apply: boolean; encrypt: (plain: string) => string },
 ): Promise<CalIdMigrationResult> {
-  const { data, error } = await db.from('bank_connections').select('id, metadata').eq('provider', 'visaCalFast');
+  const { data, error } = await db.from('bank_connections').select('id, household_id, metadata').eq('provider', 'visaCalFast');
   if (error) throw new Error(`Couldn't read connections: ${error.message}`);
 
-  const pending = ((data ?? []) as { id: string; metadata: Record<string, unknown> | null }[])
+  const withId = ((data ?? []) as { id: string; household_id: string | null; metadata: Record<string, unknown> | null }[])
     .filter(c => typeof c.metadata?.id === 'string' && (c.metadata.id as string).length > 0);
+  // No household: nobody can import it through the service, which checks the household. Left as is
+  const pending = withId.filter(c => c.household_id);
+  const skippedNoHousehold = withId.length - pending.length;
 
   let moved = 0;
   if (apply) {
@@ -37,6 +42,7 @@ export async function migrateCalIds(
           metadata: { ...rest, last4Digits, secure: true },
         })
         .eq('id', conn.id)
+        .not('household_id', 'is', null)
         .not('metadata->>id', 'is', null)
         .select('id');
       if (updateError) throw new Error(`Couldn't move connection ${conn.id}: ${updateError.message}`);
@@ -44,5 +50,5 @@ export async function migrateCalIds(
     }
   }
 
-  return { found: pending.length, moved, connectionIds: pending.map(c => c.id) };
+  return { found: pending.length, moved, connectionIds: pending.map(c => c.id), skippedNoHousehold };
 }

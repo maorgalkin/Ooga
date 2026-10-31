@@ -19,11 +19,13 @@ vi.mock('../../scraper/src/supabase-push', () => ({
 }));
 
 import { encrypt } from '../../scraper/src/encryption';
+import { allowSms, allowCheck, resetRateLimits } from '../../scraper/src/rate-limit';
 import { loadCalCredentials, NotFoundError } from '../../scraper/src/cal-otp';
 import { handleOtpRequest, handleOtpVerify } from '../../scraper/src/cal-handlers';
 import { migrateCalIds } from '../../scraper/src/cal-id-migration';
 
 const SECRET = { id: '123456782', last4Digits: '4321' };
+const C1 = 'c1c1c1c1-0000-4000-8000-000000000001';
 
 function calDb(rows: Record<string, { household_id: string; provider: string; credentials_encrypted: string | null }>) {
   return fakeDb(q => {
@@ -54,7 +56,8 @@ describe('Cal SMS sign-in through the service', () => {
   const fetchMock = vi.fn();
   beforeEach(() => {
     auth.household = 'h1';
-    stand.db = calDb({ c1: { household_id: 'h1', provider: 'visaCalFast', credentials_encrypted: encrypt(JSON.stringify(SECRET)) } }).db;
+    stand.db = calDb({ [C1]: { household_id: 'h1', provider: 'visaCalFast', credentials_encrypted: encrypt(JSON.stringify(SECRET)) } }).db;
+    resetRateLimits();
     fetchMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -62,7 +65,7 @@ describe('Cal SMS sign-in through the service', () => {
 
   it('asks Cal for the SMS with the server-held ID, and returns only Cal’s handle', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({ token: 'cal-session' }) });
-    const res = await handleOtpRequest('Bearer jwt', { connectionId: 'c1' });
+    const res = await handleOtpRequest('Bearer jwt', { connectionId: C1 });
     expect(res).toEqual({ status: 200, body: { calSessionToken: 'cal-session' } });
     const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect([sent.userId, sent.last4Digits]).toEqual([SECRET.id, SECRET.last4Digits]);
@@ -71,36 +74,83 @@ describe('Cal SMS sign-in through the service', () => {
 
   it('verifies the code and returns the short-lived token', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({ token: 'otp-token' }) });
-    const res = await handleOtpVerify('Bearer jwt', { connectionId: 'c1', calSessionToken: 'cal-session', code: ' 123456 ' });
+    const res = await handleOtpVerify('Bearer jwt', { connectionId: C1, calSessionToken: 'cal-session', code: ' 123456 ' });
     expect(res).toEqual({ status: 200, body: { otpToken: 'otp-token' } });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ custID: SECRET.id, password: '123456', token: 'cal-session' });
   });
 
   it('turns away a caller who isn’t signed in, another household, and incomplete requests', async () => {
     auth.household = null;
-    expect((await handleOtpRequest('', { connectionId: 'c1' })).status).toBe(401);
+    expect((await handleOtpRequest('', { connectionId: C1 })).status).toBe(401);
     auth.household = 'h2';
-    expect(await handleOtpRequest('Bearer jwt', { connectionId: 'c1' })).toEqual({ status: 404, body: { error: 'Account not found' } });
-    expect((await handleOtpVerify('Bearer jwt', { connectionId: 'c1' })).status).toBe(400);
+    expect(await handleOtpRequest('Bearer jwt', { connectionId: C1 })).toEqual({ status: 404, body: { error: 'Account not found' } });
+    expect((await handleOtpVerify('Bearer jwt', { connectionId: C1 })).status).toBe(400);
+    expect((await handleOtpRequest('Bearer jwt', { connectionId: 'c1' })).status).toBe(400); // not a UUID
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('sends at most one SMS a minute per account', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ token: 'cal-session' }) });
+    expect((await handleOtpRequest('Bearer jwt', { connectionId: C1 })).status).toBe(200);
+    expect(await handleOtpRequest('Bearer jwt', { connectionId: C1 })).toEqual({ status: 429, body: { error: 'Too many SMS requests. Try again in a minute.' } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows five tries per code', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 400, json: async () => ({ message: 'wrong code' }) });
+    for (let i = 0; i < 5; i++) {
+      expect(await handleOtpVerify('Bearer jwt', { connectionId: C1, calSessionToken: 'cs', code: '000000' })).toEqual({ status: 400, body: { error: 'OTP verification failed: wrong code' } });
+    }
+    expect((await handleOtpVerify('Bearer jwt', { connectionId: C1, calSessionToken: 'cs', code: '000000' })).status).toBe(429);
+  });
+
+  it('never passes database or decryption errors to the browser', async () => {
+    stand.db = calDb({ [C1]: { household_id: 'h1', provider: 'visaCalFast', credentials_encrypted: 'not-a-valid-blob' } }).db;
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await handleOtpRequest('Bearer jwt', { connectionId: C1 });
+    expect(res).toEqual({ status: 500, body: { error: "Couldn't send the SMS code. Try again." } });
+    expect(spy.mock.calls.flat().join(' ')).not.toMatch(/blob|JSON|Unexpected token/i);
+    spy.mockRestore();
+  });
+});
+
+describe('rate limits', () => {
+  beforeEach(() => resetRateLimits());
+
+  it('limits SMS per account and per person: one a minute, five an hour', () => {
+    const t0 = Date.parse('2026-11-01T10:00:00Z');
+    for (let i = 0; i < 5; i++) expect(allowSms(['connection:a', 'user:u'], t0 + i * 61_000)).toBe(true);
+    expect(allowSms(['connection:a', 'user:u'], t0 + 5 * 61_000)).toBe(false);
+    // The same person on another account is still limited; someone else on it isn't
+    expect(allowSms(['connection:b', 'user:u'], t0 + 6 * 61_000)).toBe(false);
+    expect(allowSms(['connection:c', 'user:v'], t0 + 6 * 61_000)).toBe(true);
+    expect(allowSms(['connection:a', 'user:u'], t0 + 3_600_000 + 1)).toBe(true);
+  });
+
+  it('allows five checks per sign-in', () => {
+    for (let i = 0; i < 5; i++) expect(allowCheck('cs')).toBe(true);
+    expect(allowCheck('cs')).toBe(false);
+    expect(allowCheck('other')).toBe(true);
   });
 });
 
 describe('migrateCalIds', () => {
   const connections = [
-    { id: 'c1', metadata: { id: '123456782', last4Digits: '4321' } },
-    { id: 'c2', metadata: { secure: true, last4Digits: '9999' } },
+    { id: 'c1', household_id: 'h1', metadata: { id: '123456782', last4Digits: '4321' } },
+    { id: 'c2', household_id: 'h1', metadata: { secure: true, last4Digits: '9999' } },
+    { id: 'c3', household_id: null, metadata: { id: '999999998', last4Digits: '1111' } },
   ];
 
   it('dry run: counts the connections to move and changes nothing', async () => {
     const { db, queries } = fakeDb(() => ({ data: connections }));
-    expect(await migrateCalIds(db, { apply: false, encrypt })).toEqual({ found: 1, moved: 0, connectionIds: ['c1'] });
+    expect(await migrateCalIds(db, { apply: false, encrypt })).toEqual({ found: 1, moved: 0, connectionIds: ['c1'], skippedNoHousehold: 1 });
     expect(queries.every(q => q.op === 'select')).toBe(true);
   });
 
   it('apply: encrypts the ID, drops it from metadata, and only while it’s still there', async () => {
     const { db, queries } = fakeDb(q => (q.op === 'update' ? { data: [{ id: 'c1' }] } : { data: connections }));
-    expect(await migrateCalIds(db, { apply: true, encrypt })).toEqual({ found: 1, moved: 1, connectionIds: ['c1'] });
+    expect(await migrateCalIds(db, { apply: true, encrypt })).toEqual({ found: 1, moved: 1, connectionIds: ['c1'], skippedNoHousehold: 1 });
+    expect(queries.filter(q => q.op === 'update')).toHaveLength(1);
 
     const update = queries.find(q => q.op === 'update')!;
     expect(filterValue(update, 'eq', 'id')).toBe('c1');

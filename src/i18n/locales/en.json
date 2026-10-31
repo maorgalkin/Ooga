@@ -1274,7 +1274,11 @@
     "importNotFound": "This import is no longer available.",
     "importNotRecorded": "Couldn't save the import's progress. Try importing again.",
     "importAlreadyRunning": "This account is already being imported. Try again in a few minutes.",
-    "otpTimedOut": "The SMS code wasn’t entered in time. Start the import again."
+    "otpTimedOut": "The SMS code wasn’t entered in time. Start the import again.",
+    "smsTooMany": "Too many SMS requests. Try again in a minute.",
+    "smsCodeTooMany": "Too many tries for this code. Ask for a new one.",
+    "smsSendFailed": "Couldn’t send the SMS code. Try again.",
+    "smsCheckFailed": "Couldn’t check the SMS code. Try again."
   },
   "footer": {
     "copyright": "© Maor Galkin"

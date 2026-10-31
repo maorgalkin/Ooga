@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { decrypt } from './encryption.js';
+import { BROWSER_IMPORT_PROVIDERS } from './scrape-guards.js';
 
 export const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -28,9 +29,6 @@ export interface BankConnection {
   displayName: string;
   credentials: Record<string, string>;
 }
-
-/** Providers imported in the browser (Cal with an SMS code); the server only holds their encrypted ID */
-export const BROWSER_IMPORT_PROVIDERS = new Set(['visaCalFast']);
 
 /**
  * The household's active connections with server-stored (encrypted) credentials. Connections are

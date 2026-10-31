@@ -8,6 +8,11 @@ import { decrypt } from './encryption.js';
 const OTP_URL = 'https://connect.cal-online.co.il/col-rest/calconnect/authentication/otp';
 const AUTH_SITE_ID = '5B5160DD-F84A-4D72-B67E-65891BA194FF';
 
+/** A refusal from Cal itself; its message ("OTP request failed: …") is safe to show */
+export class CalError extends Error {
+  name = 'CalError';
+}
+
 function calConnectHeaders(): Record<string, string> {
   return {
     'Content-Type': 'application/json',
@@ -25,10 +30,10 @@ export async function requestCalOtp(nationalId: string, last4Digits: string, fet
     body: JSON.stringify({ userId: nationalId, last4Digits, bankAccountNum: last4Digits, sMSTemplate: null, recaptcha: '' }),
   });
   const body = await res.json().catch(() => ({})) as Record<string, unknown>;
-  if (!res.ok) throw new Error(`OTP request failed: ${(body.message ?? body.error ?? `HTTP ${res.status}`) as string}`);
+  if (!res.ok) throw new CalError(`OTP request failed: ${(body.message ?? body.error ?? `HTTP ${res.status}`) as string}`);
 
   const token = (body.token ?? (body.result as Record<string, unknown>)?.token ?? body.sessionToken) as string | undefined;
-  if (!token) throw new Error('OTP request failed: no session token in the response');
+  if (!token) throw new CalError('OTP request failed: no session token in the response');
   return token;
 }
 
@@ -40,14 +45,16 @@ export async function verifyCalOtp(nationalId: string, calSessionToken: string, 
     body: JSON.stringify({ custID: nationalId, password: code, token: calSessionToken }),
   });
   const body = await res.json().catch(() => ({})) as Record<string, unknown>;
-  if (!res.ok) throw new Error(`OTP verification failed: ${(body.message ?? body.error ?? body.description ?? `HTTP ${res.status}`) as string}`);
+  if (!res.ok) throw new CalError(`OTP verification failed: ${(body.message ?? body.error ?? body.description ?? `HTTP ${res.status}`) as string}`);
 
   const token = body.token as string | undefined;
-  if (!token) throw new Error('OTP verification failed: no token in the response');
+  if (!token) throw new CalError('OTP verification failed: no token in the response');
   return token;
 }
 
-export class NotFoundError extends Error {}
+export class NotFoundError extends Error {
+  name = 'NotFoundError';
+}
 
 /**
  * A Cal connection's ID and card digits, for a member of its household. Throws NotFoundError for
@@ -62,7 +69,7 @@ export async function loadCalCredentials(db: Db, householdId: string, connection
     .eq('household_id', householdId)
     .eq('is_active', true)
     .maybeSingle();
-  if (error) throw new Error(`Couldn't read the account: ${error.message}`);
+  if (error) throw new Error("Couldn't read the account");
   if (!data || data.provider !== 'visaCalFast' || !data.credentials_encrypted) throw new NotFoundError('Account not found');
 
   const creds = JSON.parse(decrypt(data.credentials_encrypted)) as Record<string, unknown>;

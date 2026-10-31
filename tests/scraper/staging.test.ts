@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { externalIdFor, stageTransactions, supersedeOlderImports, STALLED_IMPORT_MS } from '../../scraper/src/staging';
-import { tryLockImport, unlockImport } from '../../scraper/src/session-manager';
+import { tryLockImports, unlockImports, LOCK_STALE_MS } from '../../scraper/src/session-manager';
+import { importableConnectionIds, GuardError } from '../../scraper/src/scrape-guards';
 import type { TransactionRow } from '../../scraper/src/supabase-push';
 import { fakeDb, filterValue } from './fakeDb';
 
@@ -80,13 +81,53 @@ describe('supersedeOlderImports', () => {
 });
 
 describe('import lock', () => {
-  it('lets one import per account run at a time', () => {
-    expect(tryLockImport('connection:c1')).toBe(true);
-    expect(tryLockImport('connection:c1')).toBe(false);
-    expect(tryLockImport('connection:c2')).toBe(true);
-    unlockImport('connection:c1');
-    expect(tryLockImport('connection:c1')).toBe(true);
-    unlockImport('connection:c1');
-    unlockImport('connection:c2');
+  it('lets one import per account run at a time, and an all-accounts import claims each', () => {
+    expect(tryLockImports(['connection:c1'])).toBe(true);
+    expect(tryLockImports(['connection:c1'])).toBe(false);
+    // "All accounts" can't start while one of them is running, and claims nothing when it can't
+    expect(tryLockImports(['connection:c1', 'connection:c2'])).toBe(false);
+    expect(tryLockImports(['connection:c2'])).toBe(true);
+    unlockImports(['connection:c1', 'connection:c2']);
+    expect(tryLockImports(['connection:c1', 'connection:c2'])).toBe(true);
+    expect(tryLockImports(['connection:c2'])).toBe(false);
+    unlockImports(['connection:c1', 'connection:c2']);
+  });
+
+  it('treats a lock left for more than 15 minutes as stale', () => {
+    const start = Date.parse('2026-11-01T10:00:00Z');
+    expect(tryLockImports(['connection:c9'], start)).toBe(true);
+    expect(tryLockImports(['connection:c9'], start + LOCK_STALE_MS - 1)).toBe(false);
+    expect(tryLockImports(['connection:c9'], start + LOCK_STALE_MS + 1)).toBe(true);
+    unlockImports(['connection:c9']);
+  });
+});
+
+describe('importableConnectionIds (checked before an import locks or records anything)', () => {
+  const ID = '11111111-1111-4111-8111-111111111111';
+  const rows = [
+    { id: ID, provider: 'discount', credentials_encrypted: 'x' },
+    { id: '22222222-2222-4222-8222-222222222222', provider: 'visaCalFast', credentials_encrypted: 'x' },
+    { id: '33333333-3333-4333-8333-333333333333', provider: 'discount', credentials_encrypted: null },
+  ];
+
+  it('refuses an id that isn’t a UUID without asking the database', async () => {
+    const { db, queries } = fakeDb(() => ({ data: rows }));
+    await expect(importableConnectionIds(db, 'h1', "1' or 1=1")).rejects.toMatchObject({ status: 400 });
+    expect(queries).toHaveLength(0);
+  });
+
+  it('only finds the account within the caller’s household', async () => {
+    const { db, queries } = fakeDb(() => ({ data: [] }));
+    const err = await importableConnectionIds(db, 'h1', ID).catch(e => e);
+    expect(err).toBeInstanceOf(GuardError);
+    expect(err.status).toBe(404);
+    expect(filterValue(queries[0], 'eq', 'household_id')).toBe('h1');
+  });
+
+  it('lists every account an all-accounts import fetches, never browser-imported ones', async () => {
+    const { db } = fakeDb(() => ({ data: rows }));
+    expect(await importableConnectionIds(db, 'h1')).toEqual([ID]);
+    const { db: one } = fakeDb(() => ({ data: [rows[1]] }));
+    await expect(importableConnectionIds(one, 'h1', rows[1].id)).rejects.toMatchObject({ status: 400 });
   });
 });

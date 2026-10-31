@@ -50,7 +50,8 @@ router.post('/add', async (req: Request, res: Response) => {
 
     if (error) throw new Error(error.message);
 
-    res.json({ connection: data });
+    // The app checks this: an older service didn't hold Cal's ID this way
+    res.json({ connection: data, secure: Boolean(metadata) });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to add connection' });
   }
