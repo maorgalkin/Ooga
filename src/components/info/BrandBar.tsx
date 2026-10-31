@@ -14,12 +14,12 @@ export function BrandBackdrop() {
   );
 }
 
-/** The cake wordmark (the cake is the O, its slice the A) with the tagline, linking home. */
+/** The wordmark (its second o is a pie with a slice taken) with the tagline, linking home. */
 export function BrandLogo({ children }: { children?: ReactNode }) {
   const { t } = useTranslation();
   return (
     <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-      <img src={wordmark} alt="Ooga" width={92} height={56} className="h-14 w-auto" />
+      <img src={wordmark} alt="Ooga" width={146} height={56} className="h-11 sm:h-14 w-auto" />
       <span className="hidden sm:inline text-xs text-white/90 drop-shadow leading-tight">{t('brand.tagline')}</span>
       {children}
     </Link>
