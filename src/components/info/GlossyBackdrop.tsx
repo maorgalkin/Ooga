@@ -2,7 +2,9 @@ import { FloatingShapes } from './LandingSections';
 
 /**
  * The landing hero's soft brand gradient with drifting blobs, fixed behind the whole page so it
- * stays put while the content scrolls. Its parent needs `relative isolate` to keep it behind.
+ * stays put while the content scrolls. No ancestor may start a stacking context (`isolate`, a
+ * z-index, a transform): the page's windows that aren't portalled, such as the bank import
+ * opened from Add transaction, must stack with the portalled ones at the top level.
  */
 export function GlossyBackdrop() {
   return (

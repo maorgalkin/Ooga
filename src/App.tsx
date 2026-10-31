@@ -41,7 +41,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="relative isolate min-h-screen flex items-center justify-center">
+      <div className="relative min-h-screen flex items-center justify-center">
         <GlossyBackdrop />
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
@@ -72,7 +72,7 @@ function AppContent() {
   }, []);
 
   return (
-    <div className="relative isolate min-h-screen">
+    <div className="relative min-h-screen">
       <GlossyBackdrop />
       <nav className="relative overflow-hidden shadow-md border-b border-gray-200/20">
         <BrandBackdrop />
@@ -132,33 +132,34 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <LanguageSync />
-        <HebrewOffer />
-        <BrowserRouter>
-          <FinanceProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              {/* Public: the reset email's link signs the person in on arrival */}
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/guide" element={<GuidePage />} />
-              <Route path="/guide/:chapter" element={<GuidePage />} />
+        <LanguageSync>
+          <HebrewOffer />
+          <BrowserRouter>
+            <FinanceProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                {/* Public: the reset email's link signs the person in on arrival */}
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/guide" element={<GuidePage />} />
+                <Route path="/guide/:chapter" element={<GuidePage />} />
               
-              {/* Protected routes */}
-              <Route
-                path="/*"
-                element={
-                  <ProtectedRoute>
-                    <AppContent />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </FinanceProvider>
-        </BrowserRouter>
+                {/* Protected routes */}
+                <Route
+                  path="/*"
+                  element={
+                    <ProtectedRoute>
+                      <AppContent />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </FinanceProvider>
+          </BrowserRouter>
+        </LanguageSync>
       </AuthProvider>
     </QueryClientProvider>
   );

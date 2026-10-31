@@ -45,7 +45,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
 
   return (
-    <div className="relative isolate min-h-screen flex flex-col">
+    <div className="relative min-h-screen flex flex-col">
       <GlossyBackdrop />
       <nav className="relative overflow-hidden shadow-md border-b border-gray-200/20">
         <BrandBackdrop />
