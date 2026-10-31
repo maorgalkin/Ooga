@@ -34,6 +34,16 @@ export const getMonthStart = (date: Date): Date => {
 };
 
 /**
+ * A transaction's date as local midnight of that day. `new Date('2026-10-31')` means midnight
+ * UTC, which in Israel is 02:00 that day: after "now" just past midnight, and after a range that
+ * ends at the day's 00:00.
+ */
+export const parseTransactionDate = (date: string): Date => {
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  return day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(date);
+};
+
+/**
  * Get last day of the month (at end of day 23:59:59.999)
  */
 export const getMonthEnd = (date: Date): Date => {
