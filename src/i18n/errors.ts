@@ -8,6 +8,7 @@ const KNOWN: [RegExp, string][] = [
   [/import session already finished/i, 'errors.importFinished'],
   [/import still fetching/i, 'errors.importStillFetching'],
   [/import session not found/i, 'errors.importNotFound'],
+  [/import could not be recorded/i, 'errors.importNotRecorded'],
   [/import is taking too long/i, 'errors.importTimeout'],
   [/^(user )?not authenticated$/i, 'errors.signedOut'],
   [/not (a )?part of (a|any) household|not a member of this household|no household found|only household members can/i, 'errors.noHousehold'],

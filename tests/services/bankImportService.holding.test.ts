@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { normalizeTransaction, convertToBudgetCurrency, type CalTransaction, type NormalizedTx } from '../../src/services/calDirectService';
 
 type Row = Record<string, unknown>;
 const db = vi.hoisted(() => ({
@@ -7,13 +8,30 @@ const db = vi.hoisted(() => ({
   rpc: vi.fn(),
 }));
 
-/** A chainable query on `table` that records what it was asked and resolves to that table's rows */
+/** A small in-memory table: applies eq / neq / in / is filters and range, and records what it was asked */
 function query(table: string) {
+  const filters: ((row: Row) => boolean)[] = [];
+  let op: 'select' | 'update' | 'delete' = 'select';
+  let patch: Row = {};
+  let range: [number, number] | null = null;
+  const matching = () => (db.tables[table] ?? []).filter((row) => filters.every((f) => f(row)));
   const chain: Record<string, unknown> = {};
-  for (const method of ['select', 'eq', 'in', 'is', 'order', 'update', 'delete']) {
-    chain[method] = (...args: unknown[]) => { db.log.push(`${table}.${method}:${JSON.stringify(args)}`); return chain; };
-  }
-  chain.then = (resolve: (v: { data: Row[]; error: null }) => unknown) => resolve({ data: db.tables[table] ?? [], error: null });
+  const record = (method: string, args: unknown[]) => db.log.push(`${table}.${method}:${JSON.stringify(args)}`);
+  chain.select = (...args: unknown[]) => { record('select', args); return chain; };
+  chain.order = () => chain;
+  chain.eq = (col: string, val: unknown) => { record('eq', [col, val]); filters.push((r) => r[col] === val); return chain; };
+  chain.neq = (col: string, val: unknown) => { record('neq', [col, val]); filters.push((r) => r[col] !== val); return chain; };
+  chain.in = (col: string, vals: unknown[]) => { record('in', [col, vals]); filters.push((r) => vals.includes(r[col])); return chain; };
+  chain.is = (col: string, val: unknown) => { record('is', [col, val]); filters.push((r) => (r[col] ?? null) === val); return chain; };
+  chain.range = (from: number, to: number) => { range = [from, to]; return chain; };
+  chain.update = (values: Row) => { record('update', [values]); op = 'update'; patch = values; return chain; };
+  chain.delete = () => { record('delete', []); op = 'delete'; return chain; };
+  chain.then = (resolve: (v: { data: Row[]; error: null }) => unknown) => {
+    const rows = matching();
+    if (op === 'update') rows.forEach((r) => Object.assign(r, patch));
+    if (op === 'delete') db.tables[table] = (db.tables[table] ?? []).filter((r) => !rows.includes(r));
+    return resolve({ data: range ? rows.slice(range[0], range[1] + 1) : rows, error: null });
+  };
   return chain;
 }
 
@@ -24,71 +42,165 @@ vi.mock('../../src/lib/supabase', () => ({
     auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
   },
 }));
+vi.mock('../../src/services/personalBudgetService', () => ({
+  PersonalBudgetService: { getActiveBudget: async () => ({ global_settings: { currency: 'ILS' } }) },
+}));
+vi.mock('../../src/services/exchangeRateService', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/services/exchangeRateService')>()),
+  convertAmount: vi.fn(async (amount: number, _from: string, _to: string, date: string) =>
+    ({ amount: Math.round(amount * 3 * 100) / 100, rate: 3, rateDate: date, source: 'ECB' })),
+}));
 
-import { commitImport, discardImport, fetchStagedRows, listUnfinishedImports } from '../../src/services/bankImportService';
+import {
+  commitImportWithReplan,
+  discardImport,
+  fetchStagedRows,
+  listUnfinishedImports,
+  reopenImport,
+} from '../../src/services/bankImportService';
 
 const payload = (date: string, description: string, amount: number) =>
   ({ date, description, amount, type: 'expense', category: 'Uncategorized', category_id: null, bank_connection_id: 'conn', bank_card_last4: '7466' });
+
+// A $5.99 subscription: pending first, then billed at ₪18.14, under a different key
+const pendingCal: CalTransaction = { merchantName: 'Streaming service', trnPurchaseDate: '2026-09-22T08:00:00', trnAmt: 5.99, trnCurrencySymbol: '$', numberOfPayments: 0 };
+const billedCal: CalTransaction = { ...pendingCal, debCrdDate: '2026-10-02', amtBeforeConvAndIndex: 18.14, debCrdCurrencySymbol: '₪', numOfPayments: 0 };
+const normalize = async (tx: CalTransaction, pending: boolean) => {
+  const n = await normalizeTransaction(tx, 'card-1', pending, '7466');
+  await convertToBudgetCurrency([n], 'ILS');
+  return n;
+};
+/** A row as the holding area keeps it: the transaction plus its match fields */
+const stagedFrom = (id: string, tx: NormalizedTx) => ({
+  id, household_id: 'h1', session_id: 'session-1', import_key: tx.dedupe_hash, tombstone_key: null,
+  payload: { ...Object.fromEntries(Object.entries(tx).filter(([k]) => !k.startsWith('_'))), bank_connection_id: 'conn',
+    _linkKey: tx._linkKey, _legacyHash: tx._legacyHash, _chargeCurrency: tx._chargeCurrency },
+});
+/** A row as transactions stores it */
+const storedFrom = (id: string, tx: NormalizedTx) => ({
+  id, household_id: 'h1', bank_connection_id: 'conn', dedupe_hash: tx.dedupe_hash, status: tx.status, amount: tx.amount,
+  original_amount: tx.original_amount, original_currency: tx.original_currency, date: tx.date, description: tx.description,
+  type: tx.type, bank_card_last4: tx.bank_card_last4, installment_number: null, installment_total: null,
+});
 
 describe('the import holding area', () => {
   beforeEach(() => {
     db.tables = {};
     db.log = [];
-    db.rpc.mockReset();
+    db.rpc.mockReset().mockImplementation(async (_fn: string, args: { p_selected: { id: string }[] }) => ({
+      data: args.p_selected.map((s) => ({ staged_id: s.id, transaction_id: `t-${s.id}`, outcome: 'imported' })),
+      error: null,
+    }));
   });
 
   it('reads waiting rows newest first, flagging the ones deleted earlier with when', async () => {
     db.tables.import_staged_rows = [
-      { id: 's1', import_key: 'k1', tombstone_key: null, payload: payload('2026-10-01', 'Shufersal', 120) },
-      { id: 's2', import_key: 'k2', tombstone_key: 'legacy-k2', payload: payload('2026-10-20', 'Aroma', 40) },
+      { id: 's1', household_id: 'h1', session_id: 'session-1', import_key: 'k1', tombstone_key: null, payload: payload('2026-10-01', 'Shufersal', 120) },
+      { id: 's2', household_id: 'h1', session_id: 'session-1', import_key: 'k2', tombstone_key: 'legacy-k2', payload: payload('2026-10-20', 'Aroma', 40) },
     ];
-    db.tables.import_tombstones = [{ import_key: 'legacy-k2', deleted_at: '2026-10-05T10:00:00Z' }];
+    db.tables.import_tombstones = [{ household_id: 'h1', import_key: 'legacy-k2', deleted_at: '2026-10-05T10:00:00Z' }];
     const rows = await fetchStagedRows('session-1');
     expect(rows.map((r) => [r.id, r.description, r.deletedEarlier])).toEqual([
       ['s2', 'Aroma', { at: '2026-10-05T10:00:00Z' }],
       ['s1', 'Shufersal', undefined],
     ]);
-    expect(db.log).toContain('import_staged_rows.eq:["session_id","session-1"]');
-    expect(db.log).toContain('import_tombstones.in:["import_key",["legacy-k2"]]');
+    expect(db.log).toContain('import_tombstones.eq:["household_id","h1"]');
   });
 
-  it('imports the ticked rows in one call and reports each outcome', async () => {
-    db.rpc.mockResolvedValue({
-      data: [
-        { staged_id: 's1', transaction_id: 't1', outcome: 'imported' },
-        { staged_id: 's2', transaction_id: null, outcome: 'already_imported' },
-      ],
-      error: null,
+  it('reads past the first thousand waiting rows', async () => {
+    db.tables.import_staged_rows = Array.from({ length: 1001 }, (_, i) => ({
+      id: `s${i}`, household_id: 'h1', session_id: 'session-1', import_key: `k${i}`, tombstone_key: null, payload: payload('2026-10-01', `Shop ${i}`, 1),
+    }));
+    expect(await fetchStagedRows('session-1')).toHaveLength(1001);
+  });
+
+  describe('Import, planned again against what is stored now', () => {
+    it('updates the stored pending charge with a waiting billed one, instead of importing it again', async () => {
+      const pending = await normalize(pendingCal, true);
+      const billed = await normalize(billedCal, false);
+      db.tables.transactions = [storedFrom('stored-p', pending)];
+      db.tables.import_staged_rows = [stagedFrom('s-billed', billed)];
+
+      const outcomes = await commitImportWithReplan('session-1', [{ id: 's-billed' }]);
+      expect(outcomes).toEqual([{ stagedId: 's-billed', transactionId: null, outcome: 'updated' }]);
+      expect(db.tables.transactions[0]).toMatchObject({ status: 'completed', dedupe_hash: billed.dedupe_hash });
+      // The import still finishes, with nothing left to add
+      expect(db.rpc).toHaveBeenCalledWith('commit_import', { p_session_id: 'session-1', p_selected: [] });
     });
-    const picked = [{ id: 's1', category: 'Groceries', category_id: 'c1' }, { id: 's2' }];
-    const outcomes = await commitImport('session-1', picked);
-    expect(db.rpc).toHaveBeenCalledWith('commit_import', { p_session_id: 'session-1', p_selected: picked });
-    expect(outcomes).toEqual([
-      { stagedId: 's1', transactionId: 't1', outcome: 'imported' },
-      { stagedId: 's2', transactionId: null, outcome: 'already_imported' },
-    ]);
+
+    it("doesn't import a waiting pending charge once its billed version is stored", async () => {
+      const pending = await normalize(pendingCal, true);
+      const billed = await normalize(billedCal, false);
+      db.tables.transactions = [storedFrom('stored-b', billed)];
+      db.tables.import_staged_rows = [stagedFrom('s-pending', pending)];
+
+      const outcomes = await commitImportWithReplan('session-1', [{ id: 's-pending' }]);
+      expect(outcomes).toEqual([{ stagedId: 's-pending', transactionId: null, outcome: 'already_imported' }]);
+      expect(db.rpc).toHaveBeenCalledWith('commit_import', { p_session_id: 'session-1', p_selected: [] });
+    });
+
+    it('reports a row stored meanwhile as already imported', async () => {
+      const billed = await normalize(billedCal, false);
+      db.tables.transactions = [storedFrom('stored', billed)];
+      db.tables.import_staged_rows = [stagedFrom('s1', billed)];
+      const outcomes = await commitImportWithReplan('session-1', [{ id: 's1', category: 'Fun', category_id: 'c1' }]);
+      expect(outcomes).toEqual([{ stagedId: 's1', transactionId: null, outcome: 'already_imported' }]);
+    });
+
+    it('imports what is still new, with the chosen category, and brings back rows deleted earlier', async () => {
+      const billed = await normalize(billedCal, false);
+      db.tables.import_staged_rows = [{ ...stagedFrom('s1', billed), tombstone_key: billed.dedupe_hash }];
+      db.tables.import_tombstones = [{ household_id: 'h1', import_key: billed.dedupe_hash }];
+      const outcomes = await commitImportWithReplan('session-1', [{ id: 's1', category: 'Fun', category_id: 'c1' }]);
+      expect(db.rpc).toHaveBeenCalledWith('commit_import', { p_session_id: 'session-1', p_selected: [{ id: 's1', category: 'Fun', category_id: 'c1' }] });
+      expect(outcomes).toEqual([{ stagedId: 's1', transactionId: 't-s1', outcome: 'imported' }]);
+    });
+
+    it('imports only the billed version when both versions of a charge are ticked', async () => {
+      const pending = await normalize(pendingCal, true);
+      const billed = await normalize(billedCal, false);
+      db.tables.import_staged_rows = [stagedFrom('s-pending', pending), stagedFrom('s-billed', billed)];
+      const outcomes = await commitImportWithReplan('session-1', [{ id: 's-pending' }, { id: 's-billed' }]);
+      expect(db.rpc).toHaveBeenCalledWith('commit_import', { p_session_id: 'session-1', p_selected: [{ id: 's-billed' }] });
+      expect(outcomes).toContainEqual({ stagedId: 's-pending', transactionId: null, outcome: 'already_imported' });
+    });
+
+    it('passes on what the database says when the import cannot be finished', async () => {
+      db.rpc.mockResolvedValue({ data: null, error: { message: 'import session already finished' } });
+      await expect(commitImportWithReplan('session-1', [])).rejects.toThrow('import session already finished');
+    });
   });
 
-  it('passes on what the database says when the import cannot be finished', async () => {
-    db.rpc.mockResolvedValue({ data: null, error: { message: 'import session already finished' } });
-    await expect(commitImport('session-1', [])).rejects.toThrow('import session already finished');
-  });
-
-  it('cancelling empties the holding area and marks the import cancelled', async () => {
+  it('cancelling claims the import first, then empties its holding area', async () => {
+    db.tables.bank_import_sessions = [{ id: 'session-1', reviewed_at: null, status: 'complete' }];
+    db.tables.import_staged_rows = [{ id: 's1', session_id: 'session-1' }];
     await discardImport('session-1');
-    expect(db.log).toContain('import_staged_rows.delete:[]');
-    expect(db.log).toContain('import_staged_rows.eq:["session_id","session-1"]');
-    expect(db.log.find((l) => l.startsWith('bank_import_sessions.update'))).toContain('"status":"cancelled"');
-    expect(db.log).toContain('bank_import_sessions.eq:["id","session-1"]');
+    expect(db.tables.bank_import_sessions[0]).toMatchObject({ status: 'cancelled' });
+    expect(db.tables.import_staged_rows).toEqual([]);
   });
 
-  it('lists only my postponed imports that still have rows waiting', async () => {
+  it('cancelling an import that was already finished says so and leaves it alone', async () => {
+    db.tables.bank_import_sessions = [{ id: 'session-1', reviewed_at: '2026-10-31T10:00:00Z', status: 'complete' }];
+    db.tables.import_staged_rows = [{ id: 's1', session_id: 'session-1' }];
+    await expect(discardImport('session-1')).rejects.toThrow('import session already finished');
+    expect(db.tables.import_staged_rows).toHaveLength(1);
+  });
+
+  it('lists my postponed imports with rows waiting, and ones that stopped while fetching', async () => {
+    const longAgo = new Date(Date.now() - 30 * 60_000).toISOString();
+    const justNow = new Date().toISOString();
     db.tables.bank_import_sessions = [
-      { id: 'a', started_at: '2026-10-30T08:00:00Z', bank_connections: { display_name: 'Visa Cal' }, import_staged_rows: [{ count: 12 }] },
-      { id: 'b', started_at: '2026-10-29T08:00:00Z', bank_connections: null, import_staged_rows: [{ count: 0 }] },
+      { id: 'a', user_id: 'u1', status: 'complete', reviewed_at: null, started_at: '2026-10-30T08:00:00Z', bank_connections: { display_name: 'Visa Cal' }, import_staged_rows: [{ count: 12 }] },
+      { id: 'b', user_id: 'u1', status: 'complete', reviewed_at: null, started_at: '2026-10-29T08:00:00Z', bank_connections: null, import_staged_rows: [{ count: 0 }] },
+      { id: 'c', user_id: 'u1', status: 'importing', reviewed_at: null, started_at: longAgo, bank_connections: null, import_staged_rows: [{ count: 3 }] },
+      { id: 'd', user_id: 'u1', status: 'importing', reviewed_at: null, started_at: justNow, bank_connections: null, import_staged_rows: [{ count: 3 }] },
     ];
-    expect(await listUnfinishedImports()).toEqual([{ id: 'a', startedAt: '2026-10-30T08:00:00Z', connectionName: 'Visa Cal', rows: 12 }]);
-    expect(db.log).toContain('bank_import_sessions.eq:["user_id","u1"]');
-    expect(db.log).toContain('bank_import_sessions.is:["reviewed_at",null]');
+    expect((await listUnfinishedImports()).map((u) => [u.id, u.rows, u.stalled])).toEqual([['a', 12, false], ['c', 3, true]]);
+  });
+
+  it('reopens an import that stopped while fetching, so it can be imported', async () => {
+    db.tables.bank_import_sessions = [{ id: 'c', status: 'importing', reviewed_at: null }];
+    await reopenImport('c');
+    expect(db.tables.bank_import_sessions[0].status).toBe('complete');
   });
 });

@@ -17,7 +17,7 @@ import { useCategories } from '../hooks/useCategories';
 import {
   fetchImportedTransactions,
   fetchStagedRows,
-  commitImport,
+  commitImportWithReplan,
   discardImport,
   updateTransactionCategory,
   deleteTransactions,
@@ -32,6 +32,8 @@ export interface ImportOutcome {
   imported: number;
   /** Ticked rows another household member's import had brought in first */
   alreadyImported: number;
+  /** Ticked rows that turned out to be the billed version of a charge already stored, which they updated */
+  updated: number;
   /** Rows imported on their own because joining them to an entry failed */
   notJoined: number;
 }
@@ -212,7 +214,7 @@ export default function ImportReviewStep({ dbSessionId, result, mode = 'live', o
           const override = categoryOverrides.get(tx.id);
           return override ? { id: tx.id, category: override.name, category_id: override.id } : { id: tx.id };
         });
-        const outcomes = await commitImport(dbSessionId, picked);
+        const outcomes = await commitImportWithReplan(dbSessionId, picked);
         const imported = new Map(outcomes.filter((o) => o.outcome === 'imported' && o.transactionId).map((o) => [o.stagedId, o.transactionId!]));
         // Join the imported rows to the entries they matched; a failure leaves the row on its own
         let notJoined = 0;
@@ -228,6 +230,7 @@ export default function ImportReviewStep({ dbSessionId, result, mode = 'live', o
         onDone({
           imported: imported.size,
           alreadyImported: outcomes.filter((o) => o.outcome === 'already_imported').length,
+          updated: outcomes.filter((o) => o.outcome === 'updated').length,
           notJoined,
         });
       } catch (e) {
@@ -245,7 +248,7 @@ export default function ImportReviewStep({ dbSessionId, result, mode = 'live', o
       );
       await Promise.all(updatePromises);
 
-      onDone({ imported: selected.size, alreadyImported: 0, notJoined: 0 });
+      onDone({ imported: selected.size, alreadyImported: 0, updated: 0, notJoined: 0 });
     } catch (e) {
       setError(errorMessage(e, t, 'import.review.saveFailed'));
       setSaving(false);

@@ -491,6 +491,9 @@ function CompleteStep({ result, outcome, onClose }: { result: { imported: number
           {result.skipped > 0 && (
             <Trans i18nKey="import.duplicatesSkipped" count={result.skipped} values={{ count: result.skipped }} components={{ b: <span className="font-medium" /> }} />
           )}
+          {!!outcome?.updated && (
+            <Trans i18nKey="import.updatedExisting" count={outcome.updated} values={{ count: outcome.updated }} components={{ b: <span className="font-medium" /> }} />
+          )}
           {!!outcome?.alreadyImported && (
             <Trans i18nKey="import.alreadyImported" count={outcome.alreadyImported} values={{ count: outcome.alreadyImported }} components={{ b: <span className="font-medium" /> }} />
           )}

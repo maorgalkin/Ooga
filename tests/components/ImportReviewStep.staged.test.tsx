@@ -18,7 +18,7 @@ vi.mock('../../src/services/reconcileService', () => ({
 vi.mock('../../src/services/bankImportService', () => ({
   fetchImportedTransactions: vi.fn(),
   fetchStagedRows: vi.fn(),
-  commitImport: vi.fn(),
+  commitImportWithReplan: vi.fn(),
   discardImport: vi.fn(async () => {}),
   deleteTransactions: vi.fn(async () => {}),
   updateTransactionCategory: vi.fn(async () => {}),
@@ -47,9 +47,10 @@ describe('ImportReviewStep with rows in the holding area', () => {
       staged('s3', 'Paz', { deletedEarlier: { at: '2026-10-05T10:00:00Z' } }),
     ]);
     vi.mocked(reconcile.previewMatches).mockResolvedValue({ certain: [willJoin], possible: [] });
-    vi.mocked(bankImport.commitImport).mockResolvedValue([
+    vi.mocked(bankImport.commitImportWithReplan).mockResolvedValue([
       { stagedId: 's1', transactionId: 't1', outcome: 'imported' },
       { stagedId: 's2', transactionId: null, outcome: 'already_imported' },
+      { stagedId: 's9', transactionId: null, outcome: 'updated' },
     ]);
   });
 
@@ -70,8 +71,8 @@ describe('ImportReviewStep with rows in the holding area', () => {
     fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'c-food' } });
     fireEvent.click(screen.getByRole('button', { name: 'Import 2 transactions' }));
 
-    await waitFor(() => expect(onDone).toHaveBeenCalledWith({ imported: 1, alreadyImported: 1, notJoined: 0 }));
-    expect(bankImport.commitImport).toHaveBeenCalledWith('session-1', [
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith({ imported: 1, alreadyImported: 1, updated: 1, notJoined: 0 }));
+    expect(bankImport.commitImportWithReplan).toHaveBeenCalledWith('session-1', [
       { id: 's1', category: 'Groceries', category_id: 'c-food' },
       { id: 's2' },
     ]);
@@ -83,7 +84,7 @@ describe('ImportReviewStep with rows in the holding area', () => {
     renderStaged();
     fireEvent.click(await screen.findByRole('button', { name: 'Keep separate' }));
     fireEvent.click(screen.getByRole('button', { name: 'Import 2 transactions' }));
-    await waitFor(() => expect(bankImport.commitImport).toHaveBeenCalled());
+    await waitFor(() => expect(bankImport.commitImportWithReplan).toHaveBeenCalled());
     expect(reconcile.mergeBankIntoEntry).not.toHaveBeenCalled();
   });
 
@@ -101,7 +102,7 @@ describe('ImportReviewStep with rows in the holding area', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Finish later' }));
     expect(onFinishLater).toHaveBeenCalled();
     expect(bankImport.discardImport).not.toHaveBeenCalled();
-    expect(bankImport.commitImport).not.toHaveBeenCalled();
+    expect(bankImport.commitImportWithReplan).not.toHaveBeenCalled();
   });
 
   it('cancelling empties the holding area', async () => {
@@ -113,7 +114,7 @@ describe('ImportReviewStep with rows in the holding area', () => {
   });
 
   it('explains when the import was already finished elsewhere', async () => {
-    vi.mocked(bankImport.commitImport).mockRejectedValue(new Error('import session already finished'));
+    vi.mocked(bankImport.commitImportWithReplan).mockRejectedValue(new Error('import session already finished'));
     renderStaged();
     fireEvent.click(await screen.findByRole('button', { name: 'Import 2 transactions' }));
     expect(await screen.findByText('This import was already finished, maybe in another window.')).toBeInTheDocument();

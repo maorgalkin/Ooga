@@ -56,7 +56,9 @@ describe('pushToSupabase', () => {
     expect(rows.map((r) => [r.import_key, r.tombstone_key])).toEqual([['k1', null], ['k2', 'legacy-k2']]);
     expect(rows[0]).toMatchObject({ household_id: 'h1', session_id: 'session-1' });
     expect(rows[0].payload).toMatchObject({ dedupe_hash: 'k1', household_id: 'h1', bank_connection_id: 'conn', import_session_id: 'session-1' });
-    expect(rows[0].payload).not.toHaveProperty('_legacyHash');
+    // The match fields come along so Import can plan the row again; other internals stay out
+    expect(rows[0].payload).toMatchObject({ _linkKey: 'link-k1', _legacyHash: 'legacy-k1', _chargeCurrency: 'ILS' });
+    expect(rows[0].payload).not.toHaveProperty('_cardUniqueId');
     // The deleted row is in the list now, so it isn't reported as skipped
     expect(result.duplicates.map((d) => d.reason)).toEqual(['exists']);
   });

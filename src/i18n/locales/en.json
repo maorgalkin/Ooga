@@ -1071,7 +1071,9 @@
       "body_other": "{{count}} transactions from {{account}} are waiting for your decision · {{date}}",
       "yourAccount": "your account",
       "review": "Review"
-    }
+    },
+    "updatedExisting_one": ", <b>{{count}}</b> updated a charge already in your budget",
+    "updatedExisting_other": ", <b>{{count}}</b> updated charges already in your budget"
   },
   "insights": {
     "loading": "Loading insights...",
@@ -1267,7 +1269,8 @@
     "duplicateName": "That name is already taken. Choose another one.",
     "importFinished": "This import was already finished, maybe in another window.",
     "importStillFetching": "This import is still fetching from the bank. Try again in a minute.",
-    "importNotFound": "This import is no longer available."
+    "importNotFound": "This import is no longer available.",
+    "importNotRecorded": "Couldn't save the import's progress. Try importing again."
   },
   "footer": {
     "copyright": "© Maor Galkin"

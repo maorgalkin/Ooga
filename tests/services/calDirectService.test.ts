@@ -264,6 +264,15 @@ describe('planImport', () => {
     expect(plan.toInsert).toEqual([]);
   });
 
+  it("treats a pending row as a duplicate once its billed version is stored (a row that waited in the holding area)", async () => {
+    const pending = await normalize(pendingForeign, true);
+    await convertToBudgetCurrency([pending], 'ILS');
+    const billed = await billedForeign();
+    const plan = planImport([pending], [], 'ILS', { billedRows: [existingRow(billed, { id: 'stored-billed' })] });
+    expect(plan.duplicates).toEqual([pending]);
+    expect(plan.toInsert).toEqual([]);
+  });
+
   it('keeps only the billed version when a charge is both pending and billed in one fetch', async () => {
     const pending = await normalize(pendingForeign, true);
     const billed = await billedForeign();

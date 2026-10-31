@@ -539,12 +539,16 @@ function isUnconvertedForeign(row: Pick<ExistingImportRow, 'amount' | 'original_
  * - A stored row is updated when the incoming one is its billed version, its pending amount
  *   changed, or it carries the real budget-currency charge for a row stored in a foreign amount.
  * - Rows a household member deleted on purpose (tombstones) aren't brought back.
+ * - A pending row whose billed version is already stored (`billedRows`) is a duplicate. A fetch
+ *   never has this (Cal drops the pending version once it bills), but rows waiting in the holding
+ *   area do when another import stores the billed version first.
  */
 export function planImport(
   incoming: NormalizedTx[],
   existing: ExistingImportRow[],
   budgetCurrency: string,
-  { pendingRows = [], tombstoneKeys = new Set<string>() }: { pendingRows?: ExistingImportRow[]; tombstoneKeys?: Set<string> } = {}
+  { pendingRows = [], billedRows = [], tombstoneKeys = new Set<string>() }:
+    { pendingRows?: ExistingImportRow[]; billedRows?: ExistingImportRow[]; tombstoneKeys?: Set<string> } = {}
 ): {
   toInsert: NormalizedTx[];
   toUpdate: { id: string; tx: NormalizedTx }[];
@@ -553,6 +557,7 @@ export function planImport(
 } {
   const existingByHash = new Map(existing.map(row => [row.dedupe_hash, row]));
   const pendingByLink = new Map(pendingRows.map(row => [storedLinkKey(row), row]));
+  const storedBilledLinks = new Set(billedRows.map(storedLinkKey));
   const seenInBatch = new Set<string>();
   const claimed = new Set<string>(); // stored rows already matched in this batch
   const toInsert: NormalizedTx[] = [];
@@ -569,6 +574,11 @@ export function planImport(
     if (seenInBatch.has(tx.dedupe_hash)) continue;
     seenInBatch.add(tx.dedupe_hash);
     if (tx.status === 'pending' && billedLinks.has(tx._linkKey)) continue;
+
+    if (tx.status === 'pending' && storedBilledLinks.has(tx._linkKey)) {
+      duplicates.push(tx);
+      continue;
+    }
 
     if (tombstoneKeys.has(tx.dedupe_hash) || tombstoneKeys.has(tx._legacyHash)) {
       deleted.push(tx);
@@ -628,16 +638,13 @@ export interface CalImportResult {
 const isMissingRelation = (error: { code?: string } | null) =>
   !!error && ['42P01', 'PGRST205', 'PGRST204'].includes(error.code ?? '');
 
-/** Writes a fetch's rows: updates to stored rows straight away, new ones to the holding area. Exported for tests. */
-export async function pushToSupabase(
-  txns: NormalizedTx[],
-  userId: string,
-  householdId: string,
-  connectionId: string,
-  dbSessionId: string | null,
-  budgetCurrency: string
-): Promise<Omit<CalImportResult, 'dbSessionId'>> {
-  const keys = [...new Set(txns.flatMap(t => [t.dedupe_hash, t._legacyHash]))];
+/**
+ * What the household has stored for these rows now: rows under their keys (current or legacy),
+ * the connection's pending rows (to pair with a billed version) and tombstones. Used when a fetch
+ * is planned, and again just before Import, since the holding area can wait while things change.
+ */
+export async function loadStoredForPlanning(txns: NormalizedTx[], householdId: string, connectionId: string) {
+  const keys = [...new Set(txns.flatMap(t => [t.dedupe_hash, t._legacyHash]).filter(Boolean))];
 
   // Stored rows under any of the keys (household-wide: any member may have imported them)
   const existing = await selectInChunks<ExistingImportRow>(keys, chunk => supabase
@@ -661,13 +668,27 @@ export async function pushToSupabase(
     .eq('household_id', householdId)
     .in('import_key', chunk)).catch(() => []);
 
-  const tombstoneKeys = new Set(tombstones.map(t => t.import_key));
-  const { toInsert, toUpdate, duplicates, deleted } = planImport(txns, existing, budgetCurrency, {
-    pendingRows: (pendingRows ?? []) as ExistingImportRow[],
-    tombstoneKeys,
-  });
+  // Billed rows of this account on the dates of incoming pending rows, to recognise a pending
+  // row whose billed version is stored already
+  const pendingDates = [...new Set(txns.filter(t => t.status === 'pending').map(t => t.date))];
+  const billedRows = await selectInChunks<ExistingImportRow>(pendingDates, chunk => supabase
+    .from('transactions')
+    .select('id, dedupe_hash, status, amount, original_amount, original_currency, date, description, type, bank_card_last4, installment_number, installment_total')
+    .eq('household_id', householdId)
+    .eq('bank_connection_id', connectionId)
+    .eq('status', 'completed')
+    .in('date', chunk));
 
-  // Replace pending / unconverted rows with the billed amounts; keep the user's category and description
+  return {
+    existing,
+    pendingRows: (pendingRows ?? []) as ExistingImportRow[],
+    billedRows,
+    tombstoneKeys: new Set(tombstones.map(t => t.import_key)),
+  };
+}
+
+/** Puts a charge's billed amount (or its real shekel charge) on the stored row; the user's category and description stay. */
+export async function applyBilledUpdates(toUpdate: { id: string; tx: NormalizedTx }[]): Promise<void> {
   for (const { id, tx } of toUpdate) {
     const { error } = await supabase
       .from('transactions')
@@ -683,6 +704,22 @@ export async function pushToSupabase(
       .eq('id', id);
     if (error) throw new Error(`Supabase update failed: ${error.message}`);
   }
+}
+
+/** Writes a fetch's rows: updates to stored rows straight away, new ones to the holding area. Exported for tests. */
+export async function pushToSupabase(
+  txns: NormalizedTx[],
+  userId: string,
+  householdId: string,
+  connectionId: string,
+  dbSessionId: string | null,
+  budgetCurrency: string
+): Promise<Omit<CalImportResult, 'dbSessionId'>> {
+  const { existing, pendingRows, billedRows, tombstoneKeys } = await loadStoredForPlanning(txns, householdId, connectionId);
+  const { toInsert, toUpdate, duplicates, deleted } = planImport(txns, existing, budgetCurrency, { pendingRows, billedRows, tombstoneKeys });
+
+  // Replace pending / unconverted rows with the billed amounts; keep the user's category and description
+  await applyBilledUpdates(toUpdate);
 
   // Drop internal `_` fields (card id, charge currency, match keys) that aren't columns
   const toRow = (tx: NormalizedTx) => ({
@@ -707,7 +744,8 @@ export async function pushToSupabase(
         session_id: dbSessionId,
         import_key: tx.dedupe_hash,
         tombstone_key: tombstoneKey,
-        payload: toRow(tx),
+        // The match fields come along so Import can plan the row again; commit_import ignores them
+        payload: { ...toRow(tx), _linkKey: tx._linkKey, _legacyHash: tx._legacyHash, _chargeCurrency: tx._chargeCurrency },
       })),
       { onConflict: 'session_id,import_key', ignoreDuplicates: true }
     );
@@ -787,6 +825,38 @@ async function convertStoredForeignRows(householdId: string, budgetCurrency: str
     }
   }
   return converted;
+}
+
+/** Cancels the person's other postponed imports of this account (best effort). */
+async function discardOlderUnfinished(userId: string, connectionId: string, keepSessionId: string): Promise<void> {
+  const { data } = await supabase
+    .from('bank_import_sessions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('bank_connection_id', connectionId)
+    .is('reviewed_at', null)
+    .neq('id', keepSessionId);
+  for (const { id } of (data ?? []) as { id: string }[]) {
+    await discardStagedSession(id).catch(() => {});
+  }
+}
+
+/**
+ * Cancels an import whose rows wait in the holding area: claims the session first, so an Import
+ * running elsewhere and this can't both finish it, then empties the holding area.
+ */
+export async function discardStagedSession(dbSessionId: string): Promise<void> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('bank_import_sessions')
+    .update({ status: 'cancelled', reviewed_at: now, updated_at: now })
+    .eq('id', dbSessionId)
+    .is('reviewed_at', null)
+    .select('id');
+  if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error('import session already finished');
+  const { error: rowsError } = await supabase.from('import_staged_rows').delete().eq('session_id', dbSessionId);
+  if (rowsError) throw new Error(rowsError.message);
 }
 
 // ─── Main import ──────────────────────────────────────────────────────────────
@@ -869,9 +939,11 @@ export async function importCalTransactions(
   const dbSessionId = (sessionRow as { id: string } | null)?.id ?? null;
   const finishSession = async (fields: Record<string, unknown>) => {
     if (!dbSessionId) return;
-    await supabase.from('bank_import_sessions')
+    const write = () => supabase.from('bank_import_sessions')
       .update({ ...fields, completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', dbSessionId);
+    // Once more on failure: a session left "importing" can't be imported until it's reopened
+    if ((await write()).error && (await write()).error) throw new Error('import could not be recorded');
   };
 
   // Convert foreign amounts into the budget currency (estimates until billed)
@@ -885,11 +957,16 @@ export async function importCalTransactions(
   try {
     pushed = await pushToSupabase(filtered, user.id, householdId, connectionId, dbSessionId, budgetCurrency);
   } catch (err) {
-    await finishSession({ status: 'error', error_message: err instanceof Error ? err.message.slice(0, 500) : 'Import failed' });
+    // Recording the failure must not hide it
+    await finishSession({ status: 'error', error_message: err instanceof Error ? err.message.slice(0, 500) : 'Import failed' }).catch(() => {});
     throw err;
   }
   const { mode, imported, staged, updated, skipped, duplicates } = pushed;
   await finishSession({ status: 'complete', transactions_imported: imported, transactions_skipped: skipped });
+
+  // This fetch supersedes my postponed imports of the same account: their rows would otherwise
+  // wait next to these ones, and the same charge could be imported twice
+  if (mode === 'staged' && dbSessionId) await discardOlderUnfinished(user.id, connectionId, dbSessionId);
 
   // Older rows still stored in a foreign amount (e.g. outside this import's window)
   const storedConverted = await convertStoredForeignRows(householdId, budgetCurrency);

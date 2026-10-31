@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Download } from 'lucide-react';
 import { useT } from '../../hooks/useT';
 import { useUnfinishedImports } from '../../hooks/useUnfinishedImports';
+import { reopenImport } from '../../services/bankImportService';
 import { useFinance } from '../../context/FinanceContext';
 import { getUserLocale } from '../../utils/locale';
 import BankImportModal from '../BankImportModal';
@@ -37,7 +38,11 @@ export function UnfinishedImportsBanner() {
               </p>
               <button
                 type="button"
-                onClick={() => setReviewing(item.id)}
+                onClick={async () => {
+                  // An import that stopped while fetching is marked fetched first, so it can be imported
+                  if (item.stalled) await reopenImport(item.id).catch(() => {});
+                  setReviewing(item.id);
+                }}
                 className="flex-shrink-0 min-h-[32px] rounded-md bg-amber-600 px-3 text-xs font-medium text-white hover:bg-amber-700"
               >
                 {t('import.unfinished.review')}

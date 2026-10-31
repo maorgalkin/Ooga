@@ -1128,7 +1128,10 @@
       "body_other": "{{count}} תנועות מ־{{account}} מחכות להחלטה · {{date}}",
       "yourAccount": "החשבון",
       "review": "סקירה"
-    }
+    },
+    "updatedExisting_one": ", <b>אחת</b> עדכנה חיוב שכבר היה בתקציב",
+    "updatedExisting_two": ", <b>{{count}}</b> עדכנו חיובים שכבר היו בתקציב",
+    "updatedExisting_other": ", <b>{{count}}</b> עדכנו חיובים שכבר היו בתקציב"
   },
   "insights": {
     "loading": "טוענים את התובנות…",
@@ -1330,7 +1333,8 @@
     "duplicateName": "השם הזה כבר תפוס. כדאי לבחור שם אחר.",
     "importFinished": "הייבוא הזה כבר הסתיים, אולי בחלון אחר.",
     "importStillFetching": "הייבוא עדיין מושך תנועות מהבנק. אפשר לנסות שוב בעוד דקה.",
-    "importNotFound": "הייבוא הזה כבר לא זמין."
+    "importNotFound": "הייבוא הזה כבר לא זמין.",
+    "importNotRecorded": "לא הצלחנו לשמור את התקדמות הייבוא. אפשר לנסות לייבא שוב."
   },
   "footer": {
     "copyright": "© Maor Galkin"
