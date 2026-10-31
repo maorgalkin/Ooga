@@ -161,7 +161,10 @@ async function shot(chapter, name, { area, target, focus, ring = true, pad = 24 
 async function signIn() {
   const demo = parse(readFileSync('.env.demo.local'));
   await go('/login');
-  if (!page.url().includes('/login')) return;
+  // A session kept from an earlier run carries the account's language as it was then, which the
+  // app prefers to ooga.language; sign in afresh so it carries the one the seed just set
+  await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('sb-')).forEach((k) => localStorage.removeItem(k)));
+  await go('/login');
   await type('#email', demo.DEMO_EMAIL);
   await type('#password', demo.DEMO_PASSWORD);
   await click('button[type=submit]');
@@ -194,8 +197,10 @@ async function waitText(t) {
   await pause(500);
 }
 
+// The tab whose whole label is `name`: a text match would also hit the Dashboard tab, whose
+// screen-reader alert count ("4 התראות תקציב") contains the Budget tab's label
 async function tab(name) {
-  await click(`nav ${text(name)}`).catch(() => click(`button${text(name)}`));
+  await click(`::-p-xpath(//nav//button[normalize-space()=${JSON.stringify(name)}])`).catch(() => click(`button${text(name)}`));
   await settled();
   await pause(1200);
 }

@@ -28,12 +28,16 @@ export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            <span className="relative">
+            {/* The badge sits beside the label, raised, so it never covers the label's last letters */}
+            <span className="inline-flex items-start gap-0.5">
               {t('tabs.dashboard')}
               {alertsCount > 0 && (
-                <span className="absolute -top-1 -end-3 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {alertsCount}
-                </span>
+                <>
+                  <span aria-hidden className="-mt-1.5 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-red-500 text-white text-[0.6875rem] leading-none font-semibold flex items-center justify-center">
+                    {alertsCount}
+                  </span>
+                  <span className="sr-only">{t('dashboard.performance.alerts', { count: alertsCount })}</span>
+                </>
               )}
             </span>
             <span className={`mt-2 w-4 h-1 rounded-full translate-y-[7px] ${activeTab === 'dashboard' ? 'bg-purple-500' : 'bg-transparent'}`} />
