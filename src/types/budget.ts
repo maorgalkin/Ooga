@@ -98,7 +98,8 @@ export interface BudgetComparison {
   actual: number;
   variance: number;
   variancePercentage: number;
-  status: 'under' | 'over' | 'onTarget';
+  /** over: past the limit · near: at or past the category's warning threshold · under: below it */
+  status: 'under' | 'over' | 'near';
   trend: 'increasing' | 'decreasing' | 'stable';
 }
 
@@ -131,7 +132,7 @@ export interface BudgetUtils {
   loadBudgetTemplate: () => BudgetTemplate;
   calculateBudgetVariance: (category: string, month: string, year: number) => BudgetComparison;
   generateBudgetAlerts: (month: string, year: number) => BudgetAlert[];
-  getBudgetStatus: (category: string, spent: number, budgeted: number) => 'under' | 'over' | 'onTarget';
+  getBudgetStatus: (category: string, spent: number, budgeted: number) => 'under' | 'over' | 'near';
   calculateSavingsRate: (income: number, expenses: number) => number;
   adjustBudgetForInflation: (amount: number, rate: number) => number;
   validateBudgetConfig: (template: BudgetTemplate) => boolean;

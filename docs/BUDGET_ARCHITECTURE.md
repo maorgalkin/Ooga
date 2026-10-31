@@ -270,6 +270,24 @@ CREATE TABLE monthly_budgets (
 
 ---
 
+## 🔔 Budget Alerts
+
+One source: `useBudgetAlerts(month)` (`src/hooks/useBudgetAlerts.ts`). Everything that shows alerts reads from it.
+
+- **What is an alert:** at most one per active category per month, from `budgetService.generateBudgetAlertsWithConfig`:
+  - `over`: spending is past the category's limit;
+  - `near`: spending is at or past its warning threshold (default 80%), but not over.
+
+  A budget with "Warning notifications" off has no alerts.
+- **Seen:** opening a category marks its alert seen for that person, saved in `user_alert_views` so it follows them across devices. Opening means its tile or pie slice on desktop, its row on phones, or its transactions. Each alert's key is `YYYY-MM:level:category` (`budgetAlertKey`): more spending at the same level stays seen, while going from near to over is a new alert.
+- **Where it shows:**
+  - **The Dashboard tab's badge:** unseen alerts of the current month.
+  - **Dots on category tiles (desktop) and rows (phones):** red for over, amber for near, until opened.
+  - **The "Over budget" tile:** every over-limit category in the month shown, seen or not. It's a fact, not a notification, so it can be higher than the badge.
+- **Old rows:** before October 2026, alert keys included the amount spent and only the phone layout recorded anything. Rows in the old format are ignored.
+
+---
+
 ## 🎨 UI Terminology
 
 ### Current User-Facing Labels

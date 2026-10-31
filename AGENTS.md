@@ -43,7 +43,8 @@ Before calling a change done, run `npm run typecheck && npm run test:run` (plus 
 App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → BankImportModal; Sign Out)
 ├── / Dashboard — tabs:
 │   ├── Dashboard: tiled layout on desktop, wide on phones; pulsing tiles while loading;
-│   │              empty state; projected months
+│   │              empty state; projected months; budget alerts (hooks/useBudgetAlerts,
+│   │              docs/BUDGET_ARCHITECTURE.md): tab badge + dots until a category is opened
 │   ├── Transactions → pages/Transactions (MonthCarousel, filter tree, list, EditTransactionModal)
 │   ├── Budget → pages/BudgetManagement
 │   │   ├── Overview: BudgetOverviewTab, or PersonalBudgetEditor when no budget exists

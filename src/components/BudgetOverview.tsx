@@ -79,19 +79,19 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ selectedMonth, isCompac
     return formatCurrencyFromSettings(amount, personalBudget?.global_settings);
   };
 
-  const getStatusColor = (status: 'under' | 'over' | 'onTarget') => {
+  const getStatusColor = (status: 'under' | 'over' | 'near') => {
     switch (status) {
       case 'under': return 'text-green-600';
       case 'over': return 'text-red-600';
-      case 'onTarget': return 'text-blue-600';
+      case 'near': return 'text-blue-600';
     }
   };
 
-  const getStatusIcon = (status: 'under' | 'over' | 'onTarget') => {
+  const getStatusIcon = (status: 'under' | 'over' | 'near') => {
     switch (status) {
       case 'under': return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'over': return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      case 'onTarget': return <Target className="h-4 w-4 text-blue-600" />;
+      case 'near': return <Target className="h-4 w-4 text-blue-600" />;
     }
   };
 

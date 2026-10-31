@@ -4,6 +4,7 @@ import { useT } from '../hooks/useT';
 import { useFinance } from '../context/FinanceContext';
 import { useActiveBudget, useMonthlyBudget, useNextMonthAdjustments } from '../hooks/useBudgets';
 import { budgetService } from '../services/budgetService';
+import { toBudgetConfiguration, useBudgetAlerts } from '../hooks/useBudgetAlerts';
 import { getUserLocale } from '../utils/locale';
 import { 
   AlertTriangle, 
@@ -26,7 +27,6 @@ interface BudgetPerformanceCardProps {
   isCompact?: boolean;
   themeColor?: ThemeColor;
   onBreakdownVisible?: (visible: boolean) => void;
-  onAlertsViewed?: () => void;
   onCategoryClick?: (category: string) => void;
 }
 
@@ -35,7 +35,6 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
   isCompact = false,
   themeColor = 'purple',
   onBreakdownVisible,
-  onAlertsViewed,
   onCategoryClick
 }) => {
   const navigate = useNavigate();
@@ -53,56 +52,6 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
   const [viewingAlerts, setViewingAlerts] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
   const categoryBreakdownRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const alertsMarkedAsViewed = useRef(false); // Track if we've already marked alerts as viewed
-  const hasScrolledPastCard = useRef(false); // Track if user has scrolled past the card at least once
-  const initialIntersectionHandled = useRef(false); // Track if we've handled the initial load
-
-  // Intersection observer to mark alerts as viewed when user interacts with card
-  useEffect(() => {
-    if (!onAlertsViewed || !cardRef.current) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Ignore the very first intersection event (happens on mount when card is visible)
-        if (!initialIntersectionHandled.current) {
-          initialIntersectionHandled.current = true;
-          return;
-        }
-        
-        // If card is NOT visible, user has scrolled past it
-        if (!entry.isIntersecting) {
-          hasScrolledPastCard.current = true;
-        }
-        
-        // Mark alerts as viewed only if:
-        // 1. Card is visible AND
-        // 2. User has scrolled past it before (meaning they're coming back to it) AND
-        // 3. We haven't already marked alerts as viewed
-        if (entry.isIntersecting && hasScrolledPastCard.current && !alertsMarkedAsViewed.current) {
-          alertsMarkedAsViewed.current = true;
-          onAlertsViewed();
-        }
-      },
-      {
-        threshold: [0, 0.1, 0.5, 1.0], // Multiple thresholds for better detection
-        rootMargin: '0px'
-      }
-    );
-
-    observer.observe(cardRef.current);
-
-    return () => observer.disconnect();
-  }, [onAlertsViewed]);
-
-  // Mark alerts as viewed when user expands the details section
-  useEffect(() => {
-    if (showDetails && onAlertsViewed && !alertsMarkedAsViewed.current) {
-      alertsMarkedAsViewed.current = true;
-      onAlertsViewed();
-    }
-  }, [showDetails, onAlertsViewed]);
-
   // Intersection observer to detect when summary scrolls out of view (breakdown is visible)
   useEffect(() => {
     if (!onBreakdownVisible || isCompact || loadingActive || loadingMonthly) return;
@@ -133,19 +82,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
   // Use monthly budget categories (current month values including mid-month edits)
   // with fallback to personal budget
   const budgetConfig = useMemo((): BudgetConfiguration => {
-    if (personalBudget) {
-      // Build categories from monthly budget if available, otherwise from personal budget
-      const categories = monthlyBudget?.categories 
-        ? { ...monthlyBudget.categories }
-        : { ...personalBudget.categories };
-      
-      return {
-        version: "2.0.0",
-        lastUpdated: monthlyBudget?.updated_at || personalBudget.updated_at,
-        categories,
-        globalSettings: personalBudget.global_settings
-      };
-    }
+    if (personalBudget) return toBudgetConfiguration(personalBudget, monthlyBudget);
     // Default minimal config if no budget exists
     return {
       version: "2.0.0",
@@ -161,6 +98,12 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
 
   // Get current month or use selected month
   const currentDate = selectedMonth || new Date();
+  // Unseen alerts show as dots on their rows; opening a row marks its alert seen
+  const { unseenFor, markCategorySeen } = useBudgetAlerts(currentDate);
+  const openCategory = (category: string) => {
+    markCategorySeen(category);
+    onCategoryClick?.(category);
+  };
   // English month name required by budget service for date parsing
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long' });
   const displayMonthName = currentDate.toLocaleDateString(getUserLocale(), { month: 'long' });
@@ -190,11 +133,11 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
     return formatCurrencyFromSettings(amount, personalBudget?.global_settings);
   };
 
-  const getStatusIcon = (status: 'under' | 'over' | 'onTarget') => {
+  const getStatusIcon = (status: 'under' | 'over' | 'near') => {
     switch (status) {
       case 'under': return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'over': return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      case 'onTarget': return <Target className="h-4 w-4 text-blue-600" />;
+      case 'near': return <Target className="h-4 w-4 text-blue-600" />;
     }
   };
 
@@ -269,7 +212,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
   }
 
   return (
-    <div ref={cardRef} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       {/* Header - Hidden on mobile, shown on desktop */}
       <div className={`max-md:hidden px-6 py-4 ${getHeaderGradient(themeColor)}`}>
         <div className="flex items-center justify-between">
@@ -444,6 +387,7 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
                 .sort((a, b) => b.budgeted - a.budgeted)
                 .map((comparison) => {
                   const utilization = comparison.budgeted > 0 ? (comparison.actual / comparison.budgeted) * 100 : 0;
+                  const categoryAlert = unseenFor(comparison.category);
                   
                   return (
                     <div
@@ -452,19 +396,24 @@ export const BudgetPerformanceCard: React.FC<BudgetPerformanceCardProps> = ({
                       tabIndex={0}
                       aria-label={t('dashboard.performance.viewDetails', { category: comparison.category })}
                       className="block w-full border border-gray-200 dark:border-gray-700 rounded-lg p-3 cursor-pointer active:bg-gray-100 dark:active:bg-gray-700/50 transition-colors"
-                      onClick={() => {
-                        onCategoryClick?.(comparison.category);
-                      }}
+                      onClick={() => openCategory(comparison.category)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          onCategoryClick?.(comparison.category);
+                          openCategory(comparison.category);
                         }
                       }}
                     >                      <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center">
                           {getStatusIcon(comparison.status)}
                           <span className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-100">{comparison.category}</span>
+                          {categoryAlert && (
+                            <span
+                              role="img"
+                              aria-label={t(categoryAlert.level === 'over' ? 'dashboard.alertDot.over' : 'dashboard.alertDot.near')}
+                              className={`ms-2 w-2 h-2 rounded-full ${categoryAlert.level === 'over' ? 'bg-red-500' : 'bg-amber-400'}`}
+                            />
+                          )}
                         </div>
                         <div className="text-end">
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
