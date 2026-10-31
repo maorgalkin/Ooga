@@ -9,7 +9,7 @@ import { LANGUAGE_NAMES, applyLanguage } from '../../i18n';
 import { savePreferences } from '../../services/preferencesService';
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
-  `px-3 py-2 rounded-lg text-sm font-medium text-white transition-all min-h-[38px] flex items-center ${
+  `px-3 py-2 rounded-lg text-sm font-medium text-white whitespace-nowrap transition-all min-h-[38px] flex items-center ${
     isActive ? 'bg-white/30' : 'hover:bg-white/20'
   }`;
 
@@ -62,7 +62,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               </NavLink>
               <Link
                 to={user ? '/' : '/login'}
-                className="px-3 py-2 min-h-[38px] flex items-center bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium shadow-lg"
+                className="px-3 py-2 min-h-[38px] flex items-center whitespace-nowrap bg-white/20 backdrop-blur-md text-white rounded-lg hover:bg-white/30 transition-all border border-white/40 text-sm font-medium shadow-lg"
               >
                 {user ? t('nav.dashboard') : t('nav.signIn')}
               </Link>
