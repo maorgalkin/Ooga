@@ -54,15 +54,28 @@ const toMatchable = (row: Row, connectionId: string | null | undefined): Matchab
 const shiftDays = (isoDate: string, days: number) =>
   new Date(Date.parse(`${isoDate}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
-export async function reconcileImport(dbSessionId: string): Promise<ReconcileResult> {
-  const empty: ReconcileResult = { merged: [], suggestions: [] };
+/** A bank row to pair with manual entries: a stored transaction, or a row waiting in the holding area */
+export type BankRowForMatching = RowSummary & {
+  bank_connection_id: string | null;
+  installment_number: number | null;
+  installment_total: number | null;
+};
 
-  const { data: bankData, error: bankError } = await supabase
-    .from('transactions')
-    .select('id, date, description, amount, type, bank_connection_id, installment_number, installment_total')
-    .eq('import_session_id', dbSessionId);
-  if (bankError || !bankData?.length) return empty;
-  const bankRows = bankData as Row[];
+export interface MatchPreview {
+  /** Unambiguous pairs: merged on import unless the person keeps them separate */
+  certain: MatchedEntry[];
+  /** Pairs that might be the same purchase: the person decides */
+  possible: MatchedEntry[];
+}
+
+/**
+ * Pairs bank rows with the manual entries awaiting them, without changing anything. The holding
+ * area shows these before Import; reconcileImport merges the certain ones of a stored import.
+ */
+export async function previewMatches(rows: BankRowForMatching[]): Promise<MatchPreview> {
+  const empty: MatchPreview = { certain: [], possible: [] };
+  const bankRows = rows as Row[];
+  if (bankRows.length === 0) return empty;
 
   const connectionIds = [...new Set(bankRows.map(r => r.bank_connection_id).filter((id): id is string => !!id))];
   if (connectionIds.length === 0) return empty;
@@ -92,18 +105,29 @@ export async function reconcileImport(dbSessionId: string): Promise<ReconcileRes
     bank: summary(bankById.get(p.bankId)!),
   });
 
+  return { certain: autoMerge.map(describe), possible: suggestions.map(describe) };
+}
+
+export async function reconcileImport(dbSessionId: string): Promise<ReconcileResult> {
+  const { data: bankData, error: bankError } = await supabase
+    .from('transactions')
+    .select('id, date, description, amount, type, bank_connection_id, installment_number, installment_total')
+    .eq('import_session_id', dbSessionId);
+  if (bankError || !bankData?.length) return { merged: [], suggestions: [] };
+
+  const { certain, possible } = await previewMatches(bankData as BankRowForMatching[]);
   const merged: MatchedEntry[] = [];
   const unmerged: MatchedEntry[] = [];
-  for (const pair of autoMerge) {
+  for (const pair of certain) {
     try {
-      await mergeBankIntoEntry(pair.entryId, pair.bankId);
-      merged.push(describe(pair));
+      await mergeBankIntoEntry(pair.entry.id, pair.bank.id);
+      merged.push(pair);
     } catch {
-      unmerged.push(describe(pair)); // leave it to the user
+      unmerged.push(pair); // leave it to the user
     }
   }
 
-  return { merged, suggestions: [...unmerged, ...suggestions.map(describe)] };
+  return { merged, suggestions: [...unmerged, ...possible] };
 }
 
 export async function mergeBankIntoEntry(entryId: string, bankId: string): Promise<void> {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { reconcileImport, undoMergesForSession } from '../../src/services/reconcileService';
+import { previewMatches, reconcileImport, undoMergesForSession } from '../../src/services/reconcileService';
 import { supabase } from '../../src/lib/supabase';
 
 vi.mock('../../src/lib/supabase', () => ({
@@ -84,5 +84,28 @@ describe('undoMergesForSession', () => {
     expect(log).toContain('eq:["merge_snapshot->bank_row->>import_session_id","session-7"]');
     expect(supabase.rpc).toHaveBeenCalledWith('unmerge_bank_transaction', { p_entry_id: 'e1' });
     expect(supabase.rpc).toHaveBeenCalledWith('unmerge_bank_transaction', { p_entry_id: 'e2' });
+  });
+});
+
+describe('previewMatches', () => {
+  beforeEach(() => {
+    vi.mocked(supabase.from).mockReset();
+    vi.mocked(supabase.rpc).mockReset();
+  });
+
+  it('pairs rows waiting in the holding area with entries, without merging anything', async () => {
+    vi.mocked(supabase.from).mockImplementation((() => query([entryRow('e1', '2026-09-22', 250), entryRow('e2', '2026-09-24', 98)])) as never);
+    const preview = await previewMatches([
+      bankRow('staged-1', '2026-09-23', 250) as never,
+      bankRow('staged-2', '2026-09-24', 99.5) as never,
+    ]);
+    expect(preview.certain.map(m => [m.entry.id, m.bank.id])).toEqual([['e1', 'staged-1']]);
+    expect(preview.possible.map(m => [m.entry.id, m.bank.id])).toEqual([['e2', 'staged-2']]);
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it('has nothing to pair without rows', async () => {
+    expect(await previewMatches([])).toEqual({ certain: [], possible: [] });
+    expect(supabase.from).not.toHaveBeenCalled();
   });
 });

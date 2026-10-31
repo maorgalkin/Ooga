@@ -951,7 +951,19 @@
       "undoFailed": "Failed to undo",
       "mergeFailed": "Failed to merge",
       "saveFailed": "Failed to save changes",
-      "cancelFailed": "Failed to cancel import"
+      "cancelFailed": "Failed to cancel import",
+      "willMatchTitle": "Will join your entries ({{count}})",
+      "willMatchHint": "On import, each bank row joins the entry you added by hand: your category, family member and description stay, and the amount and date come from the bank.",
+      "keepSeparate": "Keep separate",
+      "match": "Match",
+      "deletedEarlier": "Deleted earlier",
+      "deletedOn": "Deleted on {{date}}. Tick it to bring it back.",
+      "deletedHint": "Deleted before by someone in your household. Tick it to bring it back.",
+      "notNowNote": "Unticked rows aren't imported now. The next import offers them again.",
+      "finishLater": "Finish later",
+      "importing": "Importing…",
+      "import_one": "Import {{count}} transaction",
+      "import_other": "Import {{count}} transactions"
     },
     "duplicates": {
       "skipped_one": "{{count}} duplicate skipped",
@@ -1049,7 +1061,19 @@
       "removeFailed": "Couldn't remove this account. Try again in a minute.",
       "remove": "Remove connection",
       "confirmRemove": "Remove this account connection? You can re-add it later."
-    }
+    },
+    "alreadyImported_one": ", <b>{{count}}</b> already imported by someone in your household",
+    "alreadyImported_other": ", <b>{{count}}</b> already imported by someone in your household",
+    "notJoined": "Some rows couldn't join your entries, so they were imported on their own.",
+    "unfinished": {
+      "label": "Unfinished imports",
+      "body_one": "{{count}} transaction from {{account}} is waiting for your decision · {{date}}",
+      "body_other": "{{count}} transactions from {{account}} are waiting for your decision · {{date}}",
+      "yourAccount": "your account",
+      "review": "Review"
+    },
+    "updatedExisting_one": ", <b>{{count}}</b> updated a charge already in your budget",
+    "updatedExisting_other": ", <b>{{count}}</b> updated charges already in your budget"
   },
   "insights": {
     "loading": "Loading insights...",
@@ -1242,7 +1266,11 @@
     "bankPasswordExpired": "The bank wants a new password. Change it on the bank's site, then update the account here.",
     "budgetLocked": "This month's budget is locked and can't be changed.",
     "noBudget": "There's no budget yet. Create one on the Budget tab.",
-    "duplicateName": "That name is already taken. Choose another one."
+    "duplicateName": "That name is already taken. Choose another one.",
+    "importFinished": "This import was already finished, maybe in another window.",
+    "importStillFetching": "This import is still fetching from the bank. Try again in a minute.",
+    "importNotFound": "This import is no longer available.",
+    "importNotRecorded": "Couldn't save the import's progress. Try importing again."
   },
   "footer": {
     "copyright": "© Maor Galkin"
