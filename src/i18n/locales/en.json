@@ -1073,7 +1073,9 @@
       "review": "Review"
     },
     "updatedExisting_one": ", <b>{{count}}</b> updated a charge already in your budget",
-    "updatedExisting_other": ", <b>{{count}}</b> updated charges already in your budget"
+    "updatedExisting_other": ", <b>{{count}}</b> updated charges already in your budget",
+    "deletedMeanwhile_one": ", <b>{{count}}</b> left out: someone in your household deleted it after it was fetched",
+    "deletedMeanwhile_other": ", <b>{{count}}</b> left out: someone in your household deleted them after they were fetched"
   },
   "insights": {
     "loading": "Loading insights...",

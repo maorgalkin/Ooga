@@ -253,6 +253,22 @@ describe('planImport', () => {
     expect(plan.duplicates).toEqual([billed]);
   });
 
+  it('pairs a pending charge merged into a "Paid with" entry with its billed version', async () => {
+    const pending = await normalize(pendingForeign, true);
+    await convertToBudgetCurrency([pending], 'ILS');
+    const billed = await billedForeign();
+    // The entry keeps the person's description; the merge's record keeps the bank's
+    const entry = existingRow(pending, {
+      description: 'Netflix for the kids',
+      memo: 'Family plan | Bank: Streaming service',
+      merge_snapshot: { entry: { description: 'Netflix for the kids' }, bank_row: { description: pending.description, date: pending.date, type: pending.type, bank_card_last4: pending.bank_card_last4, installment_number: null, installment_total: null } },
+    });
+
+    const plan = planImport([billed], [], 'ILS', { pendingRows: [entry] });
+    expect(plan.toUpdate).toEqual([{ id: 'row-1', tx: billed }]);
+    expect(plan.toInsert).toEqual([]);
+  });
+
   it('pairs a stored pending row with its billed version, even when the amount changed', async () => {
     const pending = await normalize(pendingForeign, true);
     await convertToBudgetCurrency([pending], 'ILS');

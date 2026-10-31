@@ -497,6 +497,9 @@ function CompleteStep({ result, outcome, onClose }: { result: { imported: number
           {!!outcome?.alreadyImported && (
             <Trans i18nKey="import.alreadyImported" count={outcome.alreadyImported} values={{ count: outcome.alreadyImported }} components={{ b: <span className="font-medium" /> }} />
           )}
+          {!!outcome?.deletedMeanwhile && (
+            <Trans i18nKey="import.deletedMeanwhile" count={outcome.deletedMeanwhile} values={{ count: outcome.deletedMeanwhile }} components={{ b: <span className="font-medium" /> }} />
+          )}
         </p>
         {!!outcome?.notJoined && (
           <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">{t('import.notJoined')}</p>
