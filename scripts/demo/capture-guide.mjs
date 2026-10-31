@@ -68,10 +68,20 @@ const text = (t) => `::-p-text(${JSON.stringify(t)})`;
 // On phones the top bar shows only the + icon
 const ADD = MOBILE ? 'nav button:has(.lucide-plus)' : `nav ${text(L.addTransaction)}`;
 
+// The Dashboard shows pulsing placeholder tiles until its data arrives; never capture those
+async function settled() {
+  await page.waitForFunction(
+    (label) => !document.querySelector(`[role=status][aria-label=${JSON.stringify(label)}]`),
+    { timeout: 20000 },
+    L.dashboardLoading,
+  );
+}
+
 async function go(path) {
   await page.goto(BASE + path, { waitUntil: 'networkidle0' });
   // The build-info footer (branch, commit, build time) would date every screenshot
   await page.addStyleTag({ content: 'div.font-mono.border-t { display: none !important; }' });
+  await settled();
   await pause(600);
 }
 
@@ -186,6 +196,7 @@ async function waitText(t) {
 
 async function tab(name) {
   await click(`nav ${text(name)}`).catch(() => click(`button${text(name)}`));
+  await settled();
   await pause(1200);
 }
 
