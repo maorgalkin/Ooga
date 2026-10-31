@@ -716,7 +716,11 @@ export async function loadStoredForPlanning(txns: NormalizedTx[], householdId: s
  * the entry's own memo stays too, and the merge's record of the bank row is brought up to date, so
  * undoing the merge restores the billed charge rather than the pending one.
  */
-export async function applyBilledUpdates(toUpdate: { id: string; tx: NormalizedTx }[], stored: ExistingImportRow[] = []): Promise<void> {
+export async function applyBilledUpdates(
+  toUpdate: { id: string; tx: NormalizedTx }[],
+  stored: ExistingImportRow[] = [],
+  householdId?: string,
+): Promise<void> {
   const storedById = new Map(stored.map(row => [row.id, row]));
   for (const { id, tx } of toUpdate) {
     const bankFields = {
@@ -728,10 +732,21 @@ export async function applyBilledUpdates(toUpdate: { id: string; tx: NormalizedT
       dedupe_hash: tx.dedupe_hash,
     };
     const snapshot = storedById.get(id)?.merge_snapshot;
-    const update = snapshot?.bank_row
-      ? { ...bankFields, merge_snapshot: { ...snapshot, bank_row: { ...snapshot.bank_row, ...bankFields, memo: tx.memo } } }
-      : { ...bankFields, memo: tx.memo };
-    const { error } = await supabase.from('transactions').update(update).eq('id', id);
+    let query;
+    if (snapshot?.bank_row && householdId) {
+      // Rewrites the merge's record only on a merged entry of this household
+      query = supabase.from('transactions')
+        .update({ ...bankFields, merge_snapshot: { ...snapshot, bank_row: { ...snapshot.bank_row, ...bankFields, memo: tx.memo } } })
+        .eq('id', id)
+        .not('merge_snapshot', 'is', null)
+        .eq('household_id', householdId);
+    } else if (snapshot?.bank_row) {
+      // Without the household to scope it, leave the merge's record as it is
+      query = supabase.from('transactions').update(bankFields).eq('id', id);
+    } else {
+      query = supabase.from('transactions').update({ ...bankFields, memo: tx.memo }).eq('id', id);
+    }
+    const { error } = await query;
     if (error) throw new Error(`Supabase update failed: ${error.message}`);
   }
 }
@@ -749,7 +764,7 @@ export async function pushToSupabase(
   const { toInsert, toUpdate, duplicates, deleted } = planImport(txns, existing, budgetCurrency, { pendingRows, billedRows, tombstoneKeys });
 
   // Replace pending / unconverted rows with the billed amounts; keep the user's category and description
-  await applyBilledUpdates(toUpdate, [...existing, ...pendingRows]);
+  await applyBilledUpdates(toUpdate, [...existing, ...pendingRows], householdId);
 
   // Drop internal `_` fields (card id, charge currency, match keys) that aren't columns
   const toRow = (tx: NormalizedTx) => ({

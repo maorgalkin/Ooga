@@ -303,7 +303,7 @@ export async function commitImportWithReplan(dbSessionId: string, selected: Sele
     // A waiting pending row never overwrites a stored pending one: that came from a later fetch
     const { toInsert, toUpdate, duplicates } = planImport([...asTx.values()], existing, budgetCurrency, { pendingRows, billedRows, refreshPending: false });
 
-    await applyBilledUpdates(toUpdate, [...existing, ...pendingRows]);
+    await applyBilledUpdates(toUpdate, [...existing, ...pendingRows], householdId);
     const settled = new Set<string>();
     for (const { tx } of toUpdate) {
       const stagedId = stagedIdOf.get(tx)!;

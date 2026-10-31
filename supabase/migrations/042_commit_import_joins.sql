@@ -17,8 +17,10 @@
 --     but has been deleted by a household member since is skipped (deleted_meanwhile).
 --     A row the person ticked to bring back (tombstone_key set) comes in as before.
 --   * cleanup_stale_import_holding(): empties the caller's own holding areas left
---     unreviewed for more than 14 days and marks those imports cancelled. Import
---     runs it first; the rows come back on the next fetch anyway ("not now").
+--     unreviewed for more than 14 days (only ones that still hold rows, in the
+--     caller's current household) and marks those imports cancelled. Import runs
+--     it first and carries on whatever it does; the rows come back on the next
+--     fetch anyway ("not now").
 -- Requires 038 and 041.
 -- Deploy order: Safe to run before or after deploying any app version. The app
 -- sends entry_id and reads the new outcomes when they're there, and joins rows
@@ -35,12 +37,18 @@ AS $$
 DECLARE
   v_ids uuid[];
 BEGIN
-  -- RLS limits both statements to the caller's own imports and rows
-  SELECT array_agg(id) INTO v_ids
-  FROM bank_import_sessions
-  WHERE user_id = auth.uid()
-    AND reviewed_at IS NULL
-    AND started_at < now() - interval '14 days';
+  -- Only holding areas that still hold rows: older imports (before 041, or through the import
+  -- service) never set reviewed_at and must be left alone. Only the caller's current household,
+  -- since the update policy checks it. SKIP LOCKED: an import someone is finishing right now is theirs.
+  SELECT array_agg(s.id) INTO v_ids FROM (
+    SELECT s.id FROM bank_import_sessions s
+    WHERE s.user_id = auth.uid()
+      AND s.reviewed_at IS NULL
+      AND s.started_at < now() - interval '14 days'
+      AND user_is_in_household(s.household_id)
+      AND EXISTS (SELECT 1 FROM import_staged_rows r WHERE r.session_id = s.id)
+    FOR UPDATE OF s SKIP LOCKED
+  ) s;
   IF v_ids IS NULL THEN
     RETURN 0;
   END IF;
@@ -48,7 +56,7 @@ BEGIN
   DELETE FROM import_staged_rows WHERE session_id = ANY (v_ids);
   UPDATE bank_import_sessions
   SET status = 'cancelled', reviewed_at = now(), updated_at = now()
-  WHERE id = ANY (v_ids);
+  WHERE id = ANY (v_ids) AND reviewed_at IS NULL;
   RETURN array_length(v_ids, 1);
 END;
 $$;
@@ -97,9 +105,14 @@ BEGIN
     RAISE EXCEPTION 'import still fetching' USING ERRCODE = 'P0001';
   END IF;
 
-  -- The person's other holding areas left for two weeks: they'd only come back on a fetch
+  -- The person's other holding areas left for two weeks: they'd only come back on a fetch.
+  -- Tidying up never stands in the way of this Import.
   IF v_session.started_at >= now() - interval '14 days' THEN
-    PERFORM cleanup_stale_import_holding();
+    BEGIN
+      PERFORM cleanup_stale_import_holding();
+    EXCEPTION WHEN others THEN
+      NULL;
+    END;
   END IF;
 
   FOR v_item IN SELECT value FROM jsonb_array_elements(COALESCE(p_selected, '[]'::jsonb))
@@ -162,11 +175,12 @@ BEGIN
     ELSE
       v_count := v_count + 1;
       outcome := 'imported';
-      v_entry_id := NULLIF(v_item->>'entry_id', '')::uuid;
-      IF v_entry_id IS NOT NULL THEN
+      IF NULLIF(v_item->>'entry_id', '') IS NOT NULL THEN
         -- Join it to the manual entry it matched (038 checks the household, the types and that the
-        -- entry is still manual). Its own block: a failed join undoes only itself, not the import.
+        -- entry is still manual). Its own block: a failed join, or a malformed id, undoes only
+        -- itself, not the import.
         BEGIN
+          v_entry_id := (v_item->>'entry_id')::uuid;
           PERFORM merge_bank_transaction(v_entry_id, v_new_id);
           -- The merge moved the bank row into the entry: the entry is the transaction now
           transaction_id := v_entry_id;
