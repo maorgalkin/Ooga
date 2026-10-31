@@ -33,10 +33,10 @@ export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({
               {t('tabs.dashboard')}
               {alertsCount > 0 && (
                 <>
-                  <span aria-hidden className="-mt-1.5 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-red-500 text-white text-[0.6875rem] leading-none font-semibold flex items-center justify-center">
+                  <span aria-hidden title={t('dashboard.newAlerts', { count: alertsCount })} className="-mt-1.5 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-red-500 text-white text-[0.6875rem] leading-none font-semibold flex items-center justify-center">
                     {alertsCount}
                   </span>
-                  <span className="sr-only">{t('dashboard.performance.alerts', { count: alertsCount })}</span>
+                  <span className="sr-only">{t('dashboard.newAlerts', { count: alertsCount })}</span>
                 </>
               )}
             </span>

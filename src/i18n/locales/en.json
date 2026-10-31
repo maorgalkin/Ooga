@@ -354,7 +354,13 @@
       "manage": "Manage budget",
       "overBy": "Over by {{amount}}"
     },
-    "loading": "Loading your dashboard…"
+    "loading": "Loading your dashboard…",
+    "alertDot": {
+      "over": "New alert: over budget",
+      "near": "New alert: near the limit"
+    },
+    "newAlerts_one": "{{count}} new budget alert",
+    "newAlerts_other": "{{count}} new budget alerts"
   },
   "transactions": {
     "title": "Transactions",

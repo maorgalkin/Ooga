@@ -365,7 +365,14 @@
       "manage": "ניהול התקציב",
       "overBy": "חריגה של {{amount}}"
     },
-    "loading": "טוענים את תמונת המצב…"
+    "loading": "טוענים את תמונת המצב…",
+    "alertDot": {
+      "over": "התראה חדשה: חריגה מהתקציב",
+      "near": "התראה חדשה: קרוב לתקרה"
+    },
+    "newAlerts_one": "התראת תקציב חדשה אחת",
+    "newAlerts_two": "{{count}} התראות תקציב חדשות",
+    "newAlerts_other": "{{count}} התראות תקציב חדשות"
   },
   "transactions": {
     "title": "תנועות",

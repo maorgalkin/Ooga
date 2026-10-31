@@ -15,6 +15,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useMonthlyBudget } from '../../hooks/useBudgets';
+import { toBudgetConfiguration, useBudgetAlerts } from '../../hooks/useBudgetAlerts';
 import { budgetService } from '../../services/budgetService';
 import { ExpenseChart } from './ExpenseChart';
 import type { BudgetConfiguration, Transaction } from '../../types';
@@ -51,7 +52,8 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
   const year = monthDate.getFullYear();
   const monthName = monthDate.toLocaleDateString('en-US', { month: 'long' });
 
-  const [inspectedCategories, setInspectedCategories] = useState<Set<string>>(new Set());
+  // Unseen alerts show as dots; opening a category marks its alert seen
+  const { unseenFor, markCategorySeen } = useBudgetAlerts(monthDate);
   const [localSelected, setLocalSelected] = useState<string | null>(selectedCategory ?? null);
   const [isFused, setIsFused] = useState(false);
   // 'all' | 'over' — filter categories by budget status
@@ -102,11 +104,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
 
   // ── Budget analysis ───────────────────────────────────────────────────────
   const budgetConfig = useMemo((): BudgetConfiguration => {
-    if (personalBudget) {
-      const categories = monthlyBudget?.categories
-        ? { ...monthlyBudget.categories } : { ...personalBudget.categories };
-      return { version: '2.0.0', lastUpdated: monthlyBudget?.updated_at || personalBudget.updated_at, categories, globalSettings: personalBudget.global_settings };
-    }
+    if (personalBudget) return toBudgetConfiguration(personalBudget, monthlyBudget);
     return { version: '2.0.0', lastUpdated: new Date().toISOString(), categories: {}, globalSettings: { currency: 'ILS', warningNotifications: true, emailAlerts: false } };
   }, [personalBudget, monthlyBudget]);
 
@@ -137,7 +135,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
 
   const handleDesktopTileClick = (name: string) => {
     if (!hasCategoryTransactions(name)) return;
-    setInspectedCategories(prev => new Set([...prev, name]));
+    markCategorySeen(name);
     const next = localSelected === name ? null : name;
     setLocalSelected(next);
     setIsFused(next !== null);
@@ -145,15 +143,20 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
   };
 
   const handleSmallTileClick = (name: string) => {
-    setInspectedCategories(prev => new Set([...prev, name]));
+    markCategorySeen(name);
     setLocalSelected(prev => prev === name ? null : name);
     onCategoryClick(name);
+  };
+
+  const viewAll = (category: string) => {
+    markCategorySeen(category);
+    onViewAllTransactions(category);
   };
 
   const handleDeselect = () => { setLocalSelected(null); setIsFused(false); };
 
   const handlePieSliceSelect = (category: string) => {
-    setInspectedCategories(prev => new Set([...prev, category]));
+    markCategorySeen(category);
     setLocalSelected(category);
     setIsFused(true);
   };
@@ -301,7 +304,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
             {displayedCategories.map(comp => {
               const pct = comp.budgeted > 0 ? Math.min(100, (comp.actual / comp.budgeted) * 100) : 0;
               const catColor = personalBudget?.categories[comp.category]?.color;
-              const showDot = comp.status === 'over' && !inspectedCategories.has(comp.category);
+              const categoryAlert = unseenFor(comp.category);
               const isSelected = localSelected === comp.category;
               const noTxns = !hasCategoryTransactions(comp.category);
 
@@ -317,8 +320,12 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
                       : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-sm'
                     }`}
                 >
-                  {showDot && (
-                    <span className="absolute top-1.5 end-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-700" />
+                  {categoryAlert && (
+                    <span
+                      role="img"
+                      aria-label={t(categoryAlert.level === 'over' ? 'dashboard.alertDot.over' : 'dashboard.alertDot.near')}
+                      className={`absolute top-1.5 end-1.5 w-2 h-2 rounded-full ring-2 ring-white dark:ring-gray-700 ${categoryAlert.level === 'over' ? 'bg-red-500' : 'bg-amber-400'}`}
+                    />
                   )}
                   <div className="flex items-center gap-1.5 mb-2">
                     {catColor && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: catColor }} />}
@@ -367,7 +374,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
         <ExpenseChart
           categoryData={categoryData} transactions={transactions} personalBudget={personalBudget}
           formatCurrency={formatCurrency} selectedCategory={localSelected}
-          onEditTransaction={onEditTransaction} onViewAllTransactions={onViewAllTransactions}
+          onEditTransaction={onEditTransaction} onViewAllTransactions={viewAll}
         />
       </div>
 
@@ -417,7 +424,7 @@ export const DashboardTileLayout: React.FC<DashboardTileLayoutProps> = ({
             <ExpenseChart
               categoryData={categoryData} transactions={transactions} personalBudget={personalBudget}
               formatCurrency={formatCurrency} selectedCategory={localSelected}
-              onEditTransaction={onEditTransaction} onViewAllTransactions={onViewAllTransactions}
+              onEditTransaction={onEditTransaction} onViewAllTransactions={viewAll}
               onDeselect={handleDeselect}
               onCategorySelect={handlePieSliceSelect}
             />

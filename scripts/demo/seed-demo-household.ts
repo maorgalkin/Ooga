@@ -162,6 +162,8 @@ async function makeFresh() {
     'monthly_budgets',
     'personal_budgets',
     'categories',
+    // Seen budget alerts: otherwise a category opened while testing has no dot in the next shots
+    'user_alert_views',
   ];
   for (const table of tables) {
     const { error } = await admin.from(table).delete().eq('household_id', owner.household_id);

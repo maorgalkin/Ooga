@@ -3,9 +3,8 @@ import { useT } from '../hooks/useT';
 import { useSearchParams } from 'react-router-dom';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useActiveBudget, useCurrentMonthBudget, useAutoApplyScheduledAdjustments } from '../hooks/useBudgets';
-import { budgetService } from '../services/budgetService';
-import { userAlertViewService } from '../services/userAlertViewService';
+import { useActiveBudget, useAutoApplyScheduledAdjustments } from '../hooks/useBudgets';
+import { useBudgetAlerts } from '../hooks/useBudgetAlerts';
 import { BudgetPerformanceCard } from './BudgetPerformanceCard';
 import { TransactionDetailsModal } from './TransactionDetailsModal';
 import EditTransactionModal from './EditTransactionModal';
@@ -36,7 +35,7 @@ import { Transactions } from '../pages/Transactions';
 import { BuildInfo } from './BuildInfo';
 import CustomDateRangeModal from './CustomDateRangeModal';
 import * as HouseholdService from '../services/householdService';
-import type { Transaction, BudgetConfiguration } from '../types';
+import type { Transaction } from '../types';
 import type { Household } from '../services/householdService';
 import { getHeadingColor, getSubheadingColor } from '../utils/themeColors';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -48,7 +47,6 @@ const Dashboard: React.FC = () => {
   const t = useT();
   const { transactions, familyMembers, addTransaction, deleteTransaction, hasLoaded } = useFinance();
   const { data: personalBudget, isLoading: budgetLoading } = useActiveBudget();
-  const { data: monthlyBudget } = useCurrentMonthBudget();
   const { user } = useAuth();
   
   // Auto-apply any pending scheduled adjustments for the current month
@@ -69,7 +67,6 @@ const Dashboard: React.FC = () => {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isCustomDateRangeModalOpen, setIsCustomDateRangeModalOpen] = useState(false);
   const [showBreakdownInHeader, setShowBreakdownInHeader] = useState(false);
-  const [viewedAlertIds, setViewedAlertIds] = useState<Set<string>>(new Set());
   const [viewingTransactionDetails, setViewingTransactionDetails] = useState<Transaction | null>(null);
   // Production: tiled on desktop, wide (legacy) on phones. The picker only exists in development.
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
@@ -86,96 +83,10 @@ const Dashboard: React.FC = () => {
   // Household data
   const [household, setHousehold] = useState<Household | null>(null);
 
-  // Calculate budget alerts for the current month
-  // Count unique categories with alerts/warnings (not individual alert IDs)
-  const currentAlertsCount = useMemo(() => {
-    if (!personalBudget) return 0;
-    
-    // Use monthly budget categories if available (includes mid-month edits)
-    const categories = monthlyBudget?.categories 
-      ? { ...monthlyBudget.categories }
-      : { ...personalBudget.categories };
-    
-    const budgetConfig: BudgetConfiguration = {
-      version: "2.0.0",
-      lastUpdated: monthlyBudget?.updated_at || personalBudget.updated_at,
-      categories,
-      globalSettings: personalBudget.global_settings
-    };
-    
-    const currentDate = new Date();
-    const monthName = currentDate.toLocaleDateString('en-US', { month: 'long' });
-    const year = currentDate.getFullYear();
-    
-    const analysis = budgetService.analyzeBudgetPerformanceWithConfig(
-      transactions,
-      monthName,
-      year,
-      budgetConfig
-    );
-    
-    // Get unique categories with alerts that haven't been viewed
-    const unviewedCategories = new Set<string>();
-    const unviewedAlertsByCategory: Record<string, string[]> = {};
-    
-    analysis.alerts.forEach(alert => {
-      if (!viewedAlertIds.has(alert.id)) {
-        unviewedCategories.add(alert.category);
-        if (!unviewedAlertsByCategory[alert.category]) {
-          unviewedAlertsByCategory[alert.category] = [];
-        }
-        unviewedAlertsByCategory[alert.category].push(alert.type);
-      }
-    });
-    
-    return unviewedCategories.size;
-  }, [personalBudget, monthlyBudget, transactions, viewedAlertIds]);
-
   // Memoize callback to prevent effect re-runs
   const handleBreakdownVisible = useCallback((visible: boolean) => {
     setShowBreakdownInHeader(visible);
   }, []);
-
-  // Mark all current alerts as viewed
-  const handleAlertsViewed = useCallback(async () => {
-    if (!personalBudget || !user?.id || !household?.id) return;
-    
-    // Use monthly budget categories if available (includes mid-month edits)
-    const categories = monthlyBudget?.categories 
-      ? { ...monthlyBudget.categories }
-      : { ...personalBudget.categories };
-    
-    const budgetConfig: BudgetConfiguration = {
-      version: "2.0.0",
-      lastUpdated: monthlyBudget?.updated_at || personalBudget.updated_at,
-      categories,
-      globalSettings: personalBudget.global_settings
-    };
-    
-    const currentDate = new Date();
-    const monthName = currentDate.toLocaleDateString('en-US', { month: 'long' });
-    const year = currentDate.getFullYear();
-    
-    const analysis = budgetService.analyzeBudgetPerformanceWithConfig(
-      transactions,
-      monthName,
-      year,
-      budgetConfig
-    );
-    
-    // Get alert IDs to mark as viewed
-    const alertIds = analysis.alerts.map(alert => alert.id);
-    
-    // Save to database
-    await userAlertViewService.markAlertsAsViewed(user.id, alertIds, household.id);
-    
-    // Update local state
-    setViewedAlertIds(prev => {
-      const newSet = new Set(prev);
-      alertIds.forEach(id => newSet.add(id));
-      return newSet;
-    });
-  }, [personalBudget, monthlyBudget, transactions, user?.id, household?.id]);
 
   // Handle category click from Budget Performance Card
   const handleCategoryClick = useCallback((category: string) => {
@@ -193,19 +104,13 @@ const Dashboard: React.FC = () => {
     }, 100);
   }, []);
 
-  // Load viewed alert IDs from database and household data
+  // Household data
   useEffect(() => {
     const loadData = async () => {
       if (!user?.id) return;
       
       try {
-        const [viewedIds, householdData] = await Promise.all([
-          userAlertViewService.getViewedAlertIds(user.id),
-          HouseholdService.getUserHousehold(),
-        ]);
-        
-        setViewedAlertIds(viewedIds);
-        setHousehold(householdData);
+        setHousehold(await HouseholdService.getUserHousehold());
       } catch (error) {
         console.error('Error loading data:', error);
       }
@@ -246,6 +151,8 @@ const Dashboard: React.FC = () => {
   // months after the current one show a projection of those committed charges.
   const currentMonthStart = getMonthStart(new Date());
   const currentMonthTime = currentMonthStart.getTime();
+  // The tab's badge: this month's budget alerts the person hasn't opened yet
+  const { unseen: unseenAlerts, clearSeen: clearSeenAlerts } = useBudgetAlerts(currentMonthStart);
   const oldestMonthStart = useMemo(() => {
     const months = getMonthsWithData(transactions);
     const oldest = months[months.length - 1].start;
@@ -347,11 +254,8 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleClearViewedAlerts = async () => {
-    if (!user?.id) return;
-    
-    await userAlertViewService.clearAllViewedAlerts(user.id);
-    setViewedAlertIds(new Set());
+  const handleClearViewedAlerts = () => {
+    clearSeenAlerts().catch((e) => console.error('Clearing seen alerts failed:', e instanceof Error ? e.message : e));
   };
 
   // Dynamic background based on active tab with subtle textures
@@ -363,7 +267,7 @@ const Dashboard: React.FC = () => {
       <DashboardTabNavigation
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        alertsCount={currentAlertsCount}
+        alertsCount={unseenAlerts.length}
       />
 
       {activeTab === 'dashboard' && (
@@ -518,7 +422,6 @@ const Dashboard: React.FC = () => {
                       isCompact={false}
                       themeColor="purple"
                       onBreakdownVisible={handleBreakdownVisible}
-                      onAlertsViewed={handleAlertsViewed}
                       onCategoryClick={handleCategoryClick}
                     />
                   </div>

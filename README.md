@@ -20,7 +20,7 @@ For comprehensive documentation, please refer to:
 - **Family-Friendly**: Track transactions by family member with color-coded attribution
 - **Visual Dashboard**: Interactive charts and financial summaries
 - **Advanced Budget System**: Comprehensive budget planning with spending limits and alerts
-- **Smart Alerts**: Real-time notifications when approaching or exceeding budget limits
+- **Budget Alerts**: Categories near or over their limit are flagged on the Dashboard; the tab's badge counts the ones you haven't opened yet
 - **Cloud Storage**: Secure Supabase backend with authentication
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Real-time Sync**: Cross-device synchronization via Supabase

@@ -42,13 +42,13 @@ export class BudgetService {
     const variance = actualSpent - budgeted;
     const variancePercentage = budgeted > 0 ? (variance / budgeted) * 100 : 0;
     
-    let status: 'under' | 'over' | 'onTarget' = 'onTarget';
+    let status: 'under' | 'over' | 'near' = 'near';
     const warningAmount = budgeted * (warningThreshold / 100);
     
     if (actualSpent > budgeted) {
       status = 'over';
     } else if (actualSpent >= warningAmount) {
-      status = 'onTarget';
+      status = 'near';
     } else {
       status = 'under';
     }
@@ -139,7 +139,9 @@ export class BudgetService {
   }
 
   /**
-   * Generate budget alerts based on current spending with provided config
+   * At most one alert per active category: `budgetExceeded` past its limit, `approachingLimit` at
+   * or past its warning threshold. None at all when the budget's "Warning notifications" is off.
+   * Which alerts a person has already seen is tracked separately (hooks/useBudgetAlerts).
    */
   generateBudgetAlertsWithConfig(
     comparisons: BudgetComparison[], 
@@ -163,7 +165,7 @@ export class BudgetService {
       // Budget exceeded alert
       if (comparison.status === 'over') {
         alerts.push({
-          id: `exceeded-${comparison.category}-${month}-${year}-${Math.floor(comparison.actual)}`,
+          id: `exceeded-${comparison.category}-${month}-${year}`,
           type: 'budgetExceeded',
           severity: 'high',
           category: comparison.category,
@@ -178,7 +180,7 @@ export class BudgetService {
       else if (spentPercentage >= warningThreshold && 
           spentPercentage < 100) {
         alerts.push({
-          id: `approaching-${comparison.category}-${month}-${year}-${Math.floor(comparison.actual)}`,
+          id: `approaching-${comparison.category}-${month}-${year}`,
           type: 'approachingLimit',
           severity: 'medium',
           category: comparison.category,
