@@ -5,6 +5,10 @@
 
 import type { Transaction } from '../types';
 import { getUserLocale } from './locale';
+import { parseTransactionDate } from './dateHelpers';
+
+/** The end of the given day, so a range ending on it includes all of it. */
+const endOfDay = (year: number, month: number, day: number) => new Date(year, month, day, 23, 59, 59, 999);
 
 export type DateRangeType = 'mtd' | 'ytd' | 'qtd' | 'lastQuarter' | 'lastYear';
 
@@ -19,6 +23,8 @@ export function getDateRange(rangeType: DateRangeType): DateRange {
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
+  // Ranges "to date" include all of today: transactions carry a day, not a time
+  const endOfToday = endOfDay(currentYear, currentMonth, today.getDate());
   const currentQuarter = Math.floor(currentMonth / 3);
   const quarterNames = ['Q1', 'Q2', 'Q3', 'Q4'];
   
@@ -26,7 +32,7 @@ export function getDateRange(rangeType: DateRangeType): DateRange {
     case 'mtd':
       return {
         startDate: new Date(currentYear, currentMonth, 1),
-        endDate: today,
+        endDate: endOfToday,
         label: `${today.toLocaleDateString(getUserLocale(), { month: 'long' })} ${currentYear}`,
         abbreviation: 'MTD'
       };
@@ -34,7 +40,7 @@ export function getDateRange(rangeType: DateRangeType): DateRange {
     case 'ytd':
       return {
         startDate: new Date(currentYear, 0, 1),
-        endDate: today,
+        endDate: endOfToday,
         label: `${currentYear} (YTD)`,
         abbreviation: 'YTD'
       };
@@ -44,7 +50,7 @@ export function getDateRange(rangeType: DateRangeType): DateRange {
       
       return {
         startDate: new Date(currentYear, quarterStartMonth, 1),
-        endDate: today,
+        endDate: endOfToday,
         label: `${quarterNames[currentQuarter]} ${currentYear} (QTD)`,
         abbreviation: 'QTD'
       };
@@ -55,7 +61,7 @@ export function getDateRange(rangeType: DateRangeType): DateRange {
       
       return {
         startDate: new Date(lastQuarterYear, lastQuarter * 3, 1),
-        endDate: new Date(lastQuarterYear, (lastQuarter + 1) * 3, 0),
+        endDate: endOfDay(lastQuarterYear, (lastQuarter + 1) * 3, 0),
         label: `${quarterNames[lastQuarter]} ${lastQuarterYear}`,
         abbreviation: quarterNames[lastQuarter]
       };
@@ -69,7 +75,7 @@ export function getDateRange(rangeType: DateRangeType): DateRange {
       
       return {
         startDate: new Date(startYear, startMonth, 1),
-        endDate: new Date(lastMonthYear, lastMonth + 1, 0),
+        endDate: endOfDay(lastMonthYear, lastMonth + 1, 0),
         label: `Last 12 Months`,
         abbreviation: '12M'
       };
@@ -83,7 +89,7 @@ export function filterTransactionsByDateRange(
   const { startDate, endDate } = getDateRange(rangeType);
   
   return transactions.filter(t => {
-    const transactionDate = new Date(t.date);
+    const transactionDate = parseTransactionDate(t.date);
     return transactionDate >= startDate && transactionDate <= endDate;
   });
 }

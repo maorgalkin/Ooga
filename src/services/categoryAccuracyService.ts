@@ -3,6 +3,7 @@ import type { PersonalBudget } from '../types/budget';
 import type { CategoryAccuracy, AccuracyZone, AccuracyZoneConfig } from '../types/analytics';
 import { DEFAULT_ACCURACY_ZONES } from '../types/analytics';
 import { monthlyBudgetService } from './monthlyBudgetService';
+import { parseTransactionDate } from '../utils/dateHelpers';
 
 /**
  * Service for calculating category spending accuracy metrics
@@ -84,8 +85,8 @@ class CategoryAccuracyService {
     const categoryTransactions = transactions.filter(
       t => t.category === category &&
            t.type === 'expense' &&
-           new Date(t.date) >= startDate &&
-           new Date(t.date) <= endDate
+           parseTransactionDate(t.date) >= startDate &&
+           parseTransactionDate(t.date) <= endDate
     );
 
     const totalSpent = categoryTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -174,7 +175,7 @@ class CategoryAccuracyService {
     for (const t of sortedTransactions) {
       cumulative += t.amount;
       if (cumulative > monthlyLimit) {
-        return new Date(t.date).getDate();
+        return parseTransactionDate(t.date).getDate();
       }
     }
 

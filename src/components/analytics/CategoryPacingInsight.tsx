@@ -5,6 +5,7 @@ import type { Transaction } from '../../types';
 import type { PersonalBudget } from '../../types/budget';
 import type { DateRangeType } from '../../utils/dateRangeFilters';
 import { getDateRange } from '../../utils/dateRangeFilters';
+import { parseTransactionDate } from '../../utils/dateHelpers';
 import { formatCurrencyFromSettings } from '../../utils/formatCurrency';
 import { getUserLocale } from '../../utils/locale';
 
@@ -281,7 +282,7 @@ export const CategoryPacingInsight: React.FC<CategoryPacingInsightProps> = ({
     const startTime = dateRange.startDate.getTime();
     const endTime = dateRange.endDate.getTime();
     return transactions.filter(txn => {
-      const txnTime = new Date(txn.date).getTime();
+      const txnTime = parseTransactionDate(txn.date).getTime();
       return txnTime >= startTime && txnTime <= endTime;
     });
   }, [transactions, dateRange.startDate, dateRange.endDate]);

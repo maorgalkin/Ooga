@@ -3,6 +3,7 @@ import { useT } from '../../hooks/useT';
 import { useFinance } from '../../context/FinanceContext';
 import type { DateRangeType } from '../../utils/dateRangeFilters';
 import { getDateRange } from '../../utils/dateRangeFilters';
+import { parseTransactionDate } from '../../utils/dateHelpers';
 import { Users } from 'lucide-react';
 import { formatCurrencyFromSettings, type CurrencySettings } from '../../utils/formatCurrency';
 
@@ -34,7 +35,7 @@ export const HouseholdMemberExpenses: React.FC<HouseholdMemberExpensesProps> = (
     const { startDate, endDate } = getDateRange(selectedRange);
     const filteredTransactions = transactions.filter(t => {
       if (t.type !== 'expense') return false;
-      const transactionDate = new Date(t.date);
+      const transactionDate = parseTransactionDate(t.date);
       return transactionDate >= startDate && transactionDate <= endDate;
     });
 
