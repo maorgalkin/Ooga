@@ -32,7 +32,9 @@ const createMockChain = (finalResult: any) => {
   chain.eq = vi.fn().mockReturnValue(chain);
   chain.gte = vi.fn().mockReturnValue(chain);
   chain.is = vi.fn().mockReturnValue(chain);
-  chain.order = vi.fn().mockReturnValue(resultWithChain);
+  chain.or = vi.fn().mockReturnValue(chain);
+  chain.limit = vi.fn().mockReturnValue(resultWithChain);
+  chain.order = vi.fn().mockReturnValue(chain);
   chain.insert = vi.fn().mockReturnValue(chain);
   chain.delete = vi.fn().mockReturnValue(chain);
   
@@ -76,9 +78,9 @@ describe('Installments Feature', () => {
       }
       if (table === 'categories') {
         // Mock category lookup
-        const categoryResult = { 
-          data: { id: 'cat-123', name: 'Test Category' }, 
-          error: null 
+        const categoryResult = {
+          data: [{ id: 'cat-123', household_id: 'household-123' }],
+          error: null
         };
         return createMockChain(categoryResult) as any;
       }

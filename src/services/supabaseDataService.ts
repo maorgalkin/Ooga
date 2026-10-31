@@ -5,18 +5,21 @@ import type {
 } from '../types';
 
 // Helper to get category_id from category name
-const getCategoryId = async (categoryName: string, userId: string): Promise<string | null> => {
+// The household's category by that name; failing that, the person's own from before categories
+// belonged to households. Never one left behind in a household they've moved away from.
+const getCategoryId = async (categoryName: string, userId: string, householdId: string): Promise<string | null> => {
   if (!categoryName) return null;
-  
+
   const { data } = await supabase
     .from('categories')
-    .select('id')
-    .eq('user_id', userId)
+    .select('id, household_id')
     .eq('name', categoryName)
     .is('deleted_at', null)
-    .single();
-  
-  return data?.id || null;
+    .or(`household_id.eq.${householdId},and(household_id.is.null,user_id.eq.${userId})`)
+    .order('household_id', { ascending: true, nullsFirst: false })
+    .limit(1);
+
+  return (data as { id: string }[] | null)?.[0]?.id ?? null;
 };
 
 // Helper to get current user ID
@@ -83,7 +86,7 @@ export const addTransaction = async (transaction: Omit<Transaction, 'id'>): Prom
   const householdId = await getHouseholdId();
   
   // Look up category_id from category name
-  const categoryId = await getCategoryId(transaction.category, userId);
+  const categoryId = await getCategoryId(transaction.category, userId, householdId);
 
   const { data, error } = await supabase
     .from('transactions')
@@ -125,7 +128,7 @@ export const updateTransaction = async (id: string, transaction: Omit<Transactio
   const householdId = await getHouseholdId();
   
   // Look up category_id from category name
-  const categoryId = await getCategoryId(transaction.category, userId);
+  const categoryId = await getCategoryId(transaction.category, userId, householdId);
 
   const { data, error } = await supabase
     .from('transactions')
@@ -225,7 +228,7 @@ export const addInstallmentTransactions = async (
 ): Promise<Transaction[]> => {
   const userId = await getCurrentUserId();
   const householdId = await getHouseholdId();
-  const categoryId = await getCategoryId(transaction.category, userId);
+  const categoryId = await getCategoryId(transaction.category, userId, householdId);
   
   // Generate a unique group ID for this installment series
   const installmentGroupId = crypto.randomUUID();
