@@ -82,23 +82,29 @@ describe('supersedeOlderImports', () => {
 
 describe('import lock', () => {
   it('lets one import per account run at a time, and an all-accounts import claims each', () => {
-    expect(tryLockImports(['connection:c1'])).toBe(true);
-    expect(tryLockImports(['connection:c1'])).toBe(false);
+    expect(tryLockImports(['connection:c1'], 'a')).toBe(true);
+    expect(tryLockImports(['connection:c1'], 'b')).toBe(false);
     // "All accounts" can't start while one of them is running, and claims nothing when it can't
-    expect(tryLockImports(['connection:c1', 'connection:c2'])).toBe(false);
-    expect(tryLockImports(['connection:c2'])).toBe(true);
-    unlockImports(['connection:c1', 'connection:c2']);
-    expect(tryLockImports(['connection:c1', 'connection:c2'])).toBe(true);
-    expect(tryLockImports(['connection:c2'])).toBe(false);
-    unlockImports(['connection:c1', 'connection:c2']);
+    expect(tryLockImports(['connection:c1', 'connection:c2'], 'b')).toBe(false);
+    expect(tryLockImports(['connection:c2'], 'c')).toBe(true);
+    unlockImports(['connection:c1'], 'a');
+    unlockImports(['connection:c2'], 'c');
+    expect(tryLockImports(['connection:c1', 'connection:c2'], 'd')).toBe(true);
+    expect(tryLockImports(['connection:c2'], 'e')).toBe(false);
+    unlockImports(['connection:c1', 'connection:c2'], 'd');
   });
 
-  it('treats a lock left for more than 15 minutes as stale', () => {
+  it('treats a lock left for more than 15 minutes as stale, and the late import doesn’t free the new one', () => {
     const start = Date.parse('2026-11-01T10:00:00Z');
-    expect(tryLockImports(['connection:c9'], start)).toBe(true);
-    expect(tryLockImports(['connection:c9'], start + LOCK_STALE_MS - 1)).toBe(false);
-    expect(tryLockImports(['connection:c9'], start + LOCK_STALE_MS + 1)).toBe(true);
-    unlockImports(['connection:c9']);
+    expect(tryLockImports(['connection:c9'], 'old', start)).toBe(true);
+    expect(tryLockImports(['connection:c9'], 'new', start + LOCK_STALE_MS - 1)).toBe(false);
+    expect(tryLockImports(['connection:c9'], 'new', start + LOCK_STALE_MS + 1)).toBe(true);
+    // The old import finally ends: the lock is the new one's now, and stays
+    unlockImports(['connection:c9'], 'old');
+    expect(tryLockImports(['connection:c9'], 'third', start + LOCK_STALE_MS + 2)).toBe(false);
+    unlockImports(['connection:c9'], 'new');
+    expect(tryLockImports(['connection:c9'], 'third', start + LOCK_STALE_MS + 3)).toBe(true);
+    unlockImports(['connection:c9'], 'third');
   });
 });
 

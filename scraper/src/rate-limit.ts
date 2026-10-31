@@ -7,9 +7,11 @@ const HOUR = 60 * MINUTE;
 export const SMS_MIN_GAP_MS = MINUTE;
 export const SMS_PER_HOUR = 5;
 export const CHECKS_PER_CODE = 5;
+export const CHECKS_PER_USER_HOUR = 20;
 
 const sends = new Map<string, number[]>();                          // key → when codes were sent, last hour
-const checks = new Map<string, { count: number; first: number }>(); // Cal's handle → tries
+const checks = new Map<string, { count: number; first: number }>(); // account + Cal's handle → tries
+const userChecks = new Map<string, number[]>();                      // person → when they checked, last hour
 
 /**
  * Whether another SMS may be sent for all of `keys` (the account and the person): at most one a
@@ -22,12 +24,18 @@ export function allowSms(keys: string[], now = Date.now()): boolean {
   return true;
 }
 
-/** Whether a code may be checked again for this sign-in: CHECKS_PER_CODE tries, then ask for a new code. */
-export function allowCheck(calSessionToken: string, now = Date.now()): boolean {
+/**
+ * Whether a code may be checked again: CHECKS_PER_CODE tries per sign-in (account and Cal's
+ * handle), then ask for a new code; and CHECKS_PER_USER_HOUR tries an hour per person.
+ */
+export function allowCheck(connectionId: string, calSessionToken: string, userId: string, now = Date.now()): boolean {
   for (const [k, v] of checks) if (now - v.first > HOUR) checks.delete(k);
-  const entry = checks.get(calSessionToken) ?? { count: 0, first: now };
-  if (entry.count >= CHECKS_PER_CODE) return false;
-  checks.set(calSessionToken, { ...entry, count: entry.count + 1 });
+  const key = `${connectionId}:${calSessionToken.trim()}`;
+  const entry = checks.get(key) ?? { count: 0, first: now };
+  const recent = (userChecks.get(userId) ?? []).filter(t => now - t < HOUR);
+  if (entry.count >= CHECKS_PER_CODE || recent.length >= CHECKS_PER_USER_HOUR) return false;
+  checks.set(key, { ...entry, count: entry.count + 1 });
+  userChecks.set(userId, [...recent, now]);
   return true;
 }
 
@@ -35,4 +43,5 @@ export function allowCheck(calSessionToken: string, now = Date.now()): boolean {
 export function resetRateLimits(): void {
   sends.clear();
   checks.clear();
+  userChecks.clear();
 }

@@ -127,10 +127,19 @@ describe('rate limits', () => {
     expect(allowSms(['connection:a', 'user:u'], t0 + 3_600_000 + 1)).toBe(true);
   });
 
-  it('allows five checks per sign-in', () => {
-    for (let i = 0; i < 5; i++) expect(allowCheck('cs')).toBe(true);
-    expect(allowCheck('cs')).toBe(false);
-    expect(allowCheck('other')).toBe(true);
+  it('allows five checks per sign-in, on that account', () => {
+    for (let i = 0; i < 5; i++) expect(allowCheck('acct', 'cs', 'u1')).toBe(true);
+    expect(allowCheck('acct', ' cs ', 'u1')).toBe(false); // the same handle, however it's padded
+    expect(allowCheck('other-acct', 'cs', 'u1')).toBe(true);
+    expect(allowCheck('acct', 'new-code', 'u1')).toBe(true);
+  });
+
+  it('caps a person at twenty checks an hour, across sign-ins', () => {
+    const t0 = Date.parse('2026-11-01T10:00:00Z');
+    for (let i = 0; i < 20; i++) expect(allowCheck('acct', `cs${Math.floor(i / 5)}`, 'u1', t0 + i)).toBe(true);
+    expect(allowCheck('acct', 'fresh', 'u1', t0 + 21)).toBe(false);
+    expect(allowCheck('acct', 'fresh', 'u2', t0 + 22)).toBe(true);
+    expect(allowCheck('acct', 'fresh', 'u1', t0 + 3_600_001)).toBe(true);
   });
 });
 

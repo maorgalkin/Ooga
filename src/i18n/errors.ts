@@ -16,7 +16,7 @@ const KNOWN: [RegExp, string][] = [
   [/couldn't send the sms code/i, 'errors.smsSendFailed'],
   [/couldn't check the sms code/i, 'errors.smsCheckFailed'],
   [/sms code wasn't entered in time/i, 'errors.otpTimedOut'],
-  [/^(user )?not authenticated$/i, 'errors.signedOut'],
+  [/^(user )?not authenticated$|^sign in again to import/i, 'errors.signedOut'],
   [/not (a )?part of (a|any) household|not a member of this household|no household found|only household members can/i, 'errors.noHousehold'],
   [/owner cannot leave household/i, 'errors.ownerCannotLeave'],
   [/only (the household )?owners? can/i, 'errors.ownerOnly'],

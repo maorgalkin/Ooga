@@ -103,7 +103,8 @@ Deploy the scraper **before** merging the app change, so the app never meets an 
 
 Merging first is safe too: the app keeps today's Discount review with an older service, and when adding a Cal account it falls back to the old way if the service doesn't confirm it holds the ID. But scraper first means no Cal account is ever added the old way.
 
-3. **nginx (one-off):** the SMS sign-in also gets a per-address limit in nginx. `scraper/nginx.conf` has it, but the live site file was edited by certbot, so add these two parts to `/etc/nginx/sites-available/ooga-scraper` by hand: the `limit_req_zone` line at the top, and the `location /cal/ { … }` block inside **each** `server` block that proxies to the service (the HTTPS one certbot made included). Then `nginx -t && systemctl reload nginx`.
+   If `api.haooga.com` is proxied by Cloudflare (orange cloud), nginx sees Cloudflare's addresses, not people's: either set the record to DNS only, or add `set_real_ip_from` lines for Cloudflare's ranges plus `real_ip_header CF-Connecting-IP;` to the site file.
+3. **nginx (one-off):** the SMS sign-in also gets a per-address limit in nginx. `scraper/nginx.conf` has it, but the live site file was edited by certbot, so add these two parts to `/etc/nginx/sites-available/ooga-scraper` by hand: the `limit_req_zone` line at the top, and the `location /cal/ { … }` block inside **each** `server` block that proxies to the service (the HTTPS one certbot made included). Then `nginx -t && systemctl reload nginx`, and confirm it's live with `sudo nginx -T | grep -n ooga_cal`.
 
 ### One-off: move Cal IDs into encrypted storage
 

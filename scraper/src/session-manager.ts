@@ -41,24 +41,28 @@ const SESSION_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 // One import per account at a time: two logins to the same bank at once can fail or lock it.
 // A lock older than LOCK_STALE_MS is treated as left behind (an import never takes that long).
-const importsRunning = new Map<string, number>(); // `connection:<id>` → when it was taken
+const importsRunning = new Map<string, { since: number; owner: string }>(); // `connection:<id>` → who took it, when
 export const LOCK_STALE_MS = 15 * 60 * 1000;
 
 /**
- * Claims every key for one import, or none: false if any is held by an import still running.
- * An import of all the household's accounts claims each of them.
+ * Claims every key for one import (`owner`, e.g. its session id), or none: false if any is held by
+ * an import still running. An import of all the household's accounts claims each of them.
  */
-export function tryLockImports(keys: string[], now = Date.now()): boolean {
+export function tryLockImports(keys: string[], owner: string, now = Date.now()): boolean {
   if (keys.some(k => {
-    const since = importsRunning.get(k);
-    return since !== undefined && now - since < LOCK_STALE_MS;
+    const lock = importsRunning.get(k);
+    return lock !== undefined && now - lock.since < LOCK_STALE_MS;
   })) return false;
-  for (const k of keys) importsRunning.set(k, now);
+  for (const k of keys) importsRunning.set(k, { since: now, owner });
   return true;
 }
 
-export function unlockImports(keys: string[]): void {
-  for (const k of keys) importsRunning.delete(k);
+/**
+ * Releases the keys this import still holds. One taken over after going stale belongs to the newer
+ * import, so an old one finishing late leaves it alone.
+ */
+export function unlockImports(keys: string[], owner: string): void {
+  for (const k of keys) if (importsRunning.get(k)?.owner === owner) importsRunning.delete(k);
 }
 
 export function createSession(userId: string): ScrapeSession {

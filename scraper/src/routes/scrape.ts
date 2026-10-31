@@ -3,6 +3,7 @@ import {
   createSession,
   getSession,
   updateSession,
+  deleteSession,
   tryLockImports,
 } from '../session-manager.js';
 import { startScrape } from '../scraper.js';
@@ -33,7 +34,14 @@ async function getOwnSession(req: Request) {
 router.post('/start', async (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization ?? '';
-    const { userId, householdId } = await getUserAndHousehold(authHeader);
+    let userId: string;
+    let householdId: string;
+    try {
+      ({ userId, householdId } = await getUserAndHousehold(authHeader));
+    } catch {
+      res.status(401).json({ error: 'Sign in again to import.' });
+      return;
+    }
 
     const { connectionId, startDate: startParam, endDate: endParam } = req.body ?? {};
     if ((startParam && !ISO_DATE.test(startParam)) || (endParam && !ISO_DATE.test(endParam))) {
@@ -60,12 +68,12 @@ router.post('/start', async (req: Request, res: Response) => {
 
     // One import per account at a time; "all accounts" claims each of them
     const lockKeys = ids.map((id) => `connection:${id}`);
-    if (!tryLockImports(lockKeys)) {
+    const session = createSession(userId);
+    if (!tryLockImports(lockKeys, session.id)) {
+      deleteSession(session.id);
       res.status(409).json({ error: 'This account is already being imported. Try again in a few minutes.' });
       return;
     }
-
-    const session = createSession(userId);
 
     // Run the scrape asynchronously — don't await here
     startScrape(session.id, userId, householdId, startDate, endDate, connectionId, lockKeys).catch(

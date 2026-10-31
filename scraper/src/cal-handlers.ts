@@ -60,7 +60,7 @@ export async function handleOtpVerify(authHeader: string, body: unknown): Promis
   if (!caller) return { status: 401, body: { error: 'Sign in again to import.' } };
   try {
     const creds = await loadCalCredentials(supabase, caller.householdId, connectionId);
-    if (!allowCheck(calSessionToken)) return { status: 429, body: { error: TOO_MANY_CHECKS } };
+    if (!allowCheck(connectionId, calSessionToken, caller.userId)) return { status: 429, body: { error: TOO_MANY_CHECKS } };
     const otpToken = await verifyCalOtp(creds.id, calSessionToken, code.trim());
     return { status: 200, body: { otpToken } };
   } catch (err) {

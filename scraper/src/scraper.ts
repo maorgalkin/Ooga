@@ -70,7 +70,7 @@ export async function startScrape(
   try {
     dbSessionId = await createImportSessionRecord(userId, householdId, startDate, endDate, connectionId);
   } catch (err) {
-    unlockImports(lockKeys);
+    unlockImports(lockKeys, sessionId);
     throw err;
   }
 
@@ -183,6 +183,6 @@ export async function startScrape(
     updateSession(sessionId, { status: 'error', error: msg });
     await recordImportSession(dbSessionId, 'error', 0, 0, msg).catch(() => {});
   } finally {
-    unlockImports(lockKeys);
+    unlockImports(lockKeys, sessionId);
   }
 }
