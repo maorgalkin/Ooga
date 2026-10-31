@@ -64,20 +64,38 @@ describe('ImportReviewStep with rows in the holding area', () => {
     expect(reconcile.mergeBankIntoEntry).not.toHaveBeenCalled();
   });
 
-  it('imports the ticked rows with their categories, joins the matched one, and reports the outcome', async () => {
+  it('imports the ticked rows with their categories and the entry each joins', async () => {
     const { onDone } = renderStaged();
     await screen.findByRole('button', { name: 'Import 2 transactions' });
     // The bulk picker comes first, then each row's (desktop and phone layouts): Shufersal's is next
     fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'c-food' } });
     fireEvent.click(screen.getByRole('button', { name: 'Import 2 transactions' }));
 
-    await waitFor(() => expect(onDone).toHaveBeenCalledWith({ imported: 1, alreadyImported: 1, updated: 1, notJoined: 0 }));
+    await waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(bankImport.commitImportWithReplan).toHaveBeenCalledWith('session-1', [
-      { id: 's1', category: 'Groceries', category_id: 'c-food' },
+      { id: 's1', category: 'Groceries', category_id: 'c-food', entry_id: 'e1' },
       { id: 's2' },
     ]);
-    expect(reconcile.mergeBankIntoEntry).toHaveBeenCalledWith('e1', 't1');
     expect(bankImport.deleteTransactions).not.toHaveBeenCalled();
+  });
+
+  it('joins the row itself when the database imported it without joining (before migration 042)', async () => {
+    const { onDone } = renderStaged();
+    fireEvent.click(await screen.findByRole('button', { name: 'Import 2 transactions' }));
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith({ imported: 1, alreadyImported: 1, updated: 1, notJoined: 0, deletedMeanwhile: 0 }));
+    expect(reconcile.mergeBankIntoEntry).toHaveBeenCalledWith('e1', 't1');
+  });
+
+  it('leaves joining to the database when it did it (migration 042), and reports what it couldn\'t do', async () => {
+    vi.mocked(bankImport.commitImportWithReplan).mockResolvedValue([
+      { stagedId: 's1', transactionId: 'e1', outcome: 'imported_joined' },
+      { stagedId: 's2', transactionId: 't2', outcome: 'imported_not_joined' },
+      { stagedId: 's3', transactionId: null, outcome: 'deleted_meanwhile' },
+    ]);
+    const { onDone } = renderStaged();
+    fireEvent.click(await screen.findByRole('button', { name: 'Import 2 transactions' }));
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith({ imported: 2, alreadyImported: 0, updated: 0, notJoined: 1, deletedMeanwhile: 1 }));
+    expect(reconcile.mergeBankIntoEntry).not.toHaveBeenCalled();
   });
 
   it("doesn't join rows the person kept separate", async () => {

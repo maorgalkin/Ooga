@@ -118,7 +118,8 @@ Choose your provider, enter credentials, and click **Test & Save**.
      - a waiting billed row whose pending version is stored updates that row ("updated");
      - a waiting pending row whose billed version is stored, or a row stored meanwhile, counts as "already imported".
 
-     Then one step in the database (`commit_import`): what's still new moves into transactions, rows deleted earlier lose their tombstone, and the holding area empties. The previewed matches are joined after that. Import is disabled when nothing is ticked, in both review modes.
+     Then one step in the database (`commit_import`): what's still new moves into transactions, each joined to the "Paid with" entry it matched (`entry_id`; a failed join leaves the row on its own, `imported_not_joined`), rows deleted earlier lose their tombstone, rows a member deleted after the fetch stay out (`deleted_meanwhile`), and the holding area empties. Before migration 042 the database doesn't join, and the browser joins the rows right after. Import is disabled when nothing is ticked, in both review modes.
+   - Import also cancels the person's own holding areas left unreviewed for 14 days (`cleanup_stale_import_holding`, 042); their rows come back with the next fetch.
    - **Unticked rows are "not now":** they're not imported, and the next import offers them again.
    - **Finish later** (or closing the window): the rows keep waiting. The Dashboard shows "Unfinished imports", and Review reopens them. A new fetch of the same account cancels the person's older postponed imports of it, so one charge never waits twice.
    - **Cancel import:** the holding area empties, and nothing ever reached the budget.
@@ -128,10 +129,11 @@ Only the person who fetched an import sees its holding area. Imports are recorde
 
 ### Known gaps
 
-- **Joins to "Paid with" entries run in the browser, after `commit_import`.** If the tab closes in between, the bank rows are imported but not joined to their manual entries, so those purchases count twice until merged by hand. Making the joins resumable means moving them into `commit_import` (planned as migration 042).
-- **Nothing clears abandoned holding areas yet.** Rows postponed and never reviewed stay until the person reviews or cancels them, or fetches the same account again; a cleanup after ~14 days is still to come.
+- **Until migration 042 is applied, joins to "Paid with" entries run in the browser after `commit_import`.** If the tab closes in between, those rows count twice until merged by hand. With 042 they're joined in the same step.
+- **Abandoned holding areas are cleared only when their owner next presses Import** (after 14 days). Someone who never imports again keeps an invisible holding area until then.
 - **Imports through the import service (Discount) don't use the holding area yet.** They need the scraper change and a deploy.
-- **A pending row merged into a "Paid with" entry isn't paired with its billed version.** The pairing key includes the description, and the merge keeps the entry's own, so the billed version can come in as a new row. This predates the holding area and affects ordinary fetches too; a fix will follow.
+
+A pending charge merged into a "Paid with" entry is paired with its billed version by the bank row's own description, kept in the entry's `merge_snapshot`; the billed update keeps the entry's description, category and memo and updates the snapshot, so undoing the merge restores the billed charge.
 
 **Still writing straight to transactions:** imports through the import service (Discount), until the scraper writes to the holding area too. They also do so as a fallback before migration 041. There, the review is of rows already in the budget: unticked rows are deleted, and closing the window undoes the import.
 

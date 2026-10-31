@@ -250,14 +250,19 @@ export interface CommitOutcome {
   stagedId: string;
   transactionId: string | null;
   /**
-   * imported · updated (it was the billed version of a charge already stored, which now carries
-   * the billed amount) · already_imported (stored already, by another member or another import)
-   * · missing (no longer waiting)
+   * imported · imported_joined (and joined to the "Paid with" entry named; transactionId is the
+   * entry) · imported_not_joined (the join failed, so it came in on its own) · updated (it was the
+   * billed version of a charge already stored, which now carries the billed amount) ·
+   * already_imported (stored already, by another member or another import) · deleted_meanwhile
+   * (a member deleted it after it was fetched) · missing (no longer waiting).
+   * Before migration 042 the database only answers imported / already_imported / missing, and
+   * ignores entry_id.
    */
-  outcome: 'imported' | 'updated' | 'already_imported' | 'missing';
+  outcome: 'imported' | 'imported_joined' | 'imported_not_joined' | 'updated' | 'already_imported' | 'deleted_meanwhile' | 'missing';
 }
 
-type Selection = { id: string; category?: string; category_id?: string | null };
+/** A ticked row, its category choice, and the manual "Paid with" entry it joins, if any */
+type Selection = { id: string; category?: string; category_id?: string | null; entry_id?: string };
 
 /** Imports the given rows in one step (commit_import) and finishes the import. */
 export async function commitImport(dbSessionId: string, selected: Selection[]): Promise<CommitOutcome[]> {
@@ -298,7 +303,7 @@ export async function commitImportWithReplan(dbSessionId: string, selected: Sele
     // A waiting pending row never overwrites a stored pending one: that came from a later fetch
     const { toInsert, toUpdate, duplicates } = planImport([...asTx.values()], existing, budgetCurrency, { pendingRows, billedRows, refreshPending: false });
 
-    await applyBilledUpdates(toUpdate);
+    await applyBilledUpdates(toUpdate, [...existing, ...pendingRows], householdId);
     const settled = new Set<string>();
     for (const { tx } of toUpdate) {
       const stagedId = stagedIdOf.get(tx)!;

@@ -1131,7 +1131,10 @@
     },
     "updatedExisting_one": ", <b>אחת</b> עדכנה חיוב שכבר היה בתקציב",
     "updatedExisting_two": ", <b>{{count}}</b> עדכנו חיובים שכבר היו בתקציב",
-    "updatedExisting_other": ", <b>{{count}}</b> עדכנו חיובים שכבר היו בתקציב"
+    "updatedExisting_other": ", <b>{{count}}</b> עדכנו חיובים שכבר היו בתקציב",
+    "deletedMeanwhile_one": ", <b>אחת</b> לא יובאה: מישהו במשק הבית מחק אותה אחרי שנמשכה",
+    "deletedMeanwhile_two": ", <b>{{count}}</b> לא יובאו: מישהו במשק הבית מחק אותן אחרי שנמשכו",
+    "deletedMeanwhile_other": ", <b>{{count}}</b> לא יובאו: מישהו במשק הבית מחק אותן אחרי שנמשכו"
   },
   "insights": {
     "loading": "טוענים את התובנות…",

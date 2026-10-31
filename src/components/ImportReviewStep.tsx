@@ -36,6 +36,8 @@ export interface ImportOutcome {
   updated: number;
   /** Rows imported on their own because joining them to an entry failed */
   notJoined: number;
+  /** Ticked rows a household member deleted after they were fetched, so they stayed out */
+  deletedMeanwhile: number;
 }
 
 interface Props {
@@ -210,28 +212,36 @@ export default function ImportReviewStep({ dbSessionId, result, mode = 'live', o
     setSaving(true);
     if (staged) {
       try {
+        // Each row names the entry it joins: the database joins it in the same step as Import (042)
+        const entryOf = new Map(merged.map((m) => [m.bank.id, m.entry.id]));
         const picked = transactions.filter((tx) => selected.has(tx.id)).map((tx) => {
           const override = categoryOverrides.get(tx.id);
-          return override ? { id: tx.id, category: override.name, category_id: override.id } : { id: tx.id };
+          const entryId = entryOf.get(tx.id);
+          return {
+            id: tx.id,
+            ...(override ? { category: override.name, category_id: override.id } : {}),
+            ...(entryId ? { entry_id: entryId } : {}),
+          };
         });
         const outcomes = await commitImportWithReplan(dbSessionId, picked);
-        const imported = new Map(outcomes.filter((o) => o.outcome === 'imported' && o.transactionId).map((o) => [o.stagedId, o.transactionId!]));
-        // Join the imported rows to the entries they matched; a failure leaves the row on its own
-        let notJoined = 0;
-        for (const match of merged) {
-          const transactionId = imported.get(match.bank.id);
-          if (!transactionId) continue;
+        const count = (...kinds: string[]) => outcomes.filter((o) => kinds.includes(o.outcome)).length;
+        let notJoined = count('imported_not_joined');
+        // A database without 042 imports the row but doesn't join it ("imported" with an entry named): join it here
+        for (const o of outcomes) {
+          const entryId = entryOf.get(o.stagedId);
+          if (o.outcome !== 'imported' || !o.transactionId || !entryId) continue;
           try {
-            await mergeBankIntoEntry(match.entry.id, transactionId);
+            await mergeBankIntoEntry(entryId, o.transactionId);
           } catch {
             notJoined++;
           }
         }
         onDone({
-          imported: imported.size,
-          alreadyImported: outcomes.filter((o) => o.outcome === 'already_imported').length,
-          updated: outcomes.filter((o) => o.outcome === 'updated').length,
+          imported: count('imported', 'imported_joined', 'imported_not_joined'),
+          alreadyImported: count('already_imported'),
+          updated: count('updated'),
           notJoined,
+          deletedMeanwhile: count('deleted_meanwhile'),
         });
       } catch (e) {
         setError(errorMessage(e, t, 'import.review.saveFailed'));
@@ -248,7 +258,7 @@ export default function ImportReviewStep({ dbSessionId, result, mode = 'live', o
       );
       await Promise.all(updatePromises);
 
-      onDone({ imported: selected.size, alreadyImported: 0, updated: 0, notJoined: 0 });
+      onDone({ imported: selected.size, alreadyImported: 0, updated: 0, notJoined: 0, deletedMeanwhile: 0 });
     } catch (e) {
       setError(errorMessage(e, t, 'import.review.saveFailed'));
       setSaving(false);

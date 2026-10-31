@@ -513,15 +513,29 @@ export interface ExistingImportRow {
   bank_card_last4?: string | null;
   installment_number?: number | null;
   installment_total?: number | null;
+  memo?: string | null;
+  /** Set when this is a manual "Paid with" entry the bank row was merged into (038) */
+  merge_snapshot?: { entry?: Record<string, unknown>; bank_row?: Partial<Record<keyof ExistingImportRow, unknown>> & Record<string, unknown> } | null;
 }
 
-const storedLinkKey = (row: ExistingImportRow) => linkKey({
-  card: row.bank_card_last4 ?? null,
-  date: (row.date ?? '').slice(0, 10),
-  description: row.description ?? '',
-  type: row.type ?? '',
-  installmentPart: row.installment_number ? `${row.installment_number}/${row.installment_total}` : '',
-});
+/**
+ * A stored row's pairing key. For an entry a bank row was merged into, the bank row's own fields
+ * (its merchant name, its installment): the entry keeps the person's description, which the bank's
+ * billed version of the charge doesn't carry.
+ */
+const storedLinkKey = (row: ExistingImportRow) => {
+  const bank = row.merge_snapshot?.bank_row;
+  const pick = <K extends 'bank_card_last4' | 'date' | 'description' | 'type' | 'installment_number' | 'installment_total'>(key: K) =>
+    (bank && key in bank ? bank[key] : row[key]) as ExistingImportRow[K];
+  const installmentNumber = pick('installment_number');
+  return linkKey({
+    card: pick('bank_card_last4') ?? null,
+    date: String(pick('date') ?? '').slice(0, 10),
+    description: String(pick('description') ?? ''),
+    type: String(pick('type') ?? ''),
+    installmentPart: installmentNumber ? `${installmentNumber}/${pick('installment_total')}` : '',
+  });
+};
 
 /** A stored foreign-currency row whose amount was never converted (amount still equals the foreign amount) */
 function isUnconvertedForeign(row: Pick<ExistingImportRow, 'amount' | 'original_amount' | 'original_currency'>, budgetCurrency: string) {
@@ -658,14 +672,14 @@ export async function loadStoredForPlanning(txns: NormalizedTx[], householdId: s
   // Stored rows under any of the keys (household-wide: any member may have imported them)
   const existing = await selectInChunks<ExistingImportRow>(keys, chunk => supabase
     .from('transactions')
-    .select('id, dedupe_hash, status, amount, original_amount, original_currency')
+    .select('id, dedupe_hash, status, amount, original_amount, original_currency, memo, merge_snapshot')
     .eq('household_id', householdId)
     .in('dedupe_hash', chunk));
 
   // Pending rows from this account, to pair with their billed version
   const { data: pendingRows } = await supabase
     .from('transactions')
-    .select('id, dedupe_hash, status, amount, original_amount, original_currency, date, description, type, bank_card_last4, installment_number, installment_total')
+    .select('id, dedupe_hash, status, amount, original_amount, original_currency, date, description, type, bank_card_last4, installment_number, installment_total, memo, merge_snapshot')
     .eq('household_id', householdId)
     .eq('bank_connection_id', connectionId)
     .eq('status', 'pending');
@@ -682,7 +696,7 @@ export async function loadStoredForPlanning(txns: NormalizedTx[], householdId: s
   const pendingDates = [...new Set(txns.filter(t => t.status === 'pending').map(t => t.date))];
   const billedRows = await selectInChunks<ExistingImportRow>(pendingDates, chunk => supabase
     .from('transactions')
-    .select('id, dedupe_hash, status, amount, original_amount, original_currency, date, description, type, bank_card_last4, installment_number, installment_total')
+    .select('id, dedupe_hash, status, amount, original_amount, original_currency, date, description, type, bank_card_last4, installment_number, installment_total, memo, merge_snapshot')
     .eq('household_id', householdId)
     .eq('bank_connection_id', connectionId)
     .eq('status', 'completed')
@@ -696,21 +710,43 @@ export async function loadStoredForPlanning(txns: NormalizedTx[], householdId: s
   };
 }
 
-/** Puts a charge's billed amount (or its real shekel charge) on the stored row; the user's category and description stay. */
-export async function applyBilledUpdates(toUpdate: { id: string; tx: NormalizedTx }[]): Promise<void> {
+/**
+ * Puts a charge's billed amount (or its real shekel charge) on the stored row; the user's category
+ * and description stay. On an entry a bank row was merged into (pass the stored rows to know which),
+ * the entry's own memo stays too, and the merge's record of the bank row is brought up to date, so
+ * undoing the merge restores the billed charge rather than the pending one.
+ */
+export async function applyBilledUpdates(
+  toUpdate: { id: string; tx: NormalizedTx }[],
+  stored: ExistingImportRow[] = [],
+  householdId?: string,
+): Promise<void> {
+  const storedById = new Map(stored.map(row => [row.id, row]));
   for (const { id, tx } of toUpdate) {
-    const { error } = await supabase
-      .from('transactions')
-      .update({
-        amount: tx.amount,
-        original_amount: tx.original_amount,
-        original_currency: tx.original_currency,
-        processed_date: tx.processed_date,
-        status: tx.status,
-        memo: tx.memo,
-        dedupe_hash: tx.dedupe_hash,
-      })
-      .eq('id', id);
+    const bankFields = {
+      amount: tx.amount,
+      original_amount: tx.original_amount,
+      original_currency: tx.original_currency,
+      processed_date: tx.processed_date,
+      status: tx.status,
+      dedupe_hash: tx.dedupe_hash,
+    };
+    const snapshot = storedById.get(id)?.merge_snapshot;
+    let query;
+    if (snapshot?.bank_row && householdId) {
+      // Rewrites the merge's record only on a merged entry of this household
+      query = supabase.from('transactions')
+        .update({ ...bankFields, merge_snapshot: { ...snapshot, bank_row: { ...snapshot.bank_row, ...bankFields, memo: tx.memo } } })
+        .eq('id', id)
+        .not('merge_snapshot', 'is', null)
+        .eq('household_id', householdId);
+    } else if (snapshot?.bank_row) {
+      // Without the household to scope it, leave the merge's record as it is
+      query = supabase.from('transactions').update(bankFields).eq('id', id);
+    } else {
+      query = supabase.from('transactions').update({ ...bankFields, memo: tx.memo }).eq('id', id);
+    }
+    const { error } = await query;
     if (error) throw new Error(`Supabase update failed: ${error.message}`);
   }
 }
@@ -728,7 +764,7 @@ export async function pushToSupabase(
   const { toInsert, toUpdate, duplicates, deleted } = planImport(txns, existing, budgetCurrency, { pendingRows, billedRows, tombstoneKeys });
 
   // Replace pending / unconverted rows with the billed amounts; keep the user's category and description
-  await applyBilledUpdates(toUpdate);
+  await applyBilledUpdates(toUpdate, [...existing, ...pendingRows], householdId);
 
   // Drop internal `_` fields (card id, charge currency, match keys) that aren't columns
   const toRow = (tx: NormalizedTx) => ({
