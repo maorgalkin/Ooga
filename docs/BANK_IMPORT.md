@@ -107,14 +107,24 @@ Choose your provider, enter credentials, and click **Test & Save**.
 
 ## Import Flow
 
-1. Click **Import from Bank** in the Transactions tab.
-2. Choose the import period (1–12 months).
-3. Click **Start Import** — all connected accounts are scraped in parallel.
-4. A summary shows how many transactions were imported and how many duplicates were skipped.
+1. **Start it:** Add transaction → a connected account under "Import transactions" (or the account's import in Settings). Choose the period, then send the code (Visa Cal) or start the import (accounts the import service logs in to).
+2. **Fetch:** the bank's rows are read and compared with what the household already has:
+   - **Already there:** rows any member imported before. They're skipped and listed in the "skipped" bubble.
+   - **Already there, but changed:** a pending charge that's now billed, or a foreign amount now charged in shekels. These update the stored row straight away; that's bookkeeping on a row that's already in the budget, not a new decision.
+   - **New:** wait in the **holding area** (`import_staged_rows`, migration 041) and aren't in the budget yet.
+   - **Deleted earlier:** rows a household member deleted on purpose (they have a tombstone in `import_tombstones`). They wait in the holding area too, **unticked**, tagged "Deleted earlier".
+3. **Review:** the waiting rows, with a category picker for each. Before anything is imported, the review also previews which manual "Paid with" entries the rows will join.
+   - **Import N:** one step in the database (`commit_import`). The ticked rows move into transactions, rows deleted earlier lose their tombstone, the previewed matches are joined, and the holding area empties. It's disabled when nothing is ticked. A row another member's import brought in first counts as "already imported".
+   - **Unticked rows are "not now":** they're not imported, and the next import offers them again.
+   - **Finish later** (or closing the window): the rows keep waiting. The Dashboard shows "Unfinished imports", and Review reopens them.
+   - **Cancel import:** the holding area empties, and nothing ever reached the budget.
+4. **Summary:** how many were imported, skipped, or already imported by someone else.
 
-All imported transactions are assigned **Uncategorized** and `source = 'bank_import'`.
+Only the person who fetched an import sees its holding area. Imports are recorded in `bank_import_sessions` (`importing` → `complete` or `error`; `cancelled`; `reviewed_at` once imported or cancelled).
 
-**Duplicate detection:** SHA-256 of `date + chargedAmount + description`. Same user + same hash = skipped.
+**Still writing straight to transactions:** imports through the import service (Discount), until the scraper writes to the holding area too. They also do so as a fallback before migration 041. There, the review is of rows already in the budget: unticked rows are deleted, and closing the window undoes the import.
+
+Imported rows start **Uncategorized**, with `source = 'bank_import'`. Duplicates are recognised household-wide by `dedupe_hash` (browser imports) or `external_id` (import service), each with a unique index.
 
 ---
 

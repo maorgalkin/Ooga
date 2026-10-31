@@ -44,7 +44,8 @@ App (nav bar: Help → /guide; Add Transaction → AddTransaction modal → Bank
 ├── / Dashboard — tabs:
 │   ├── Dashboard: tiled layout on desktop, wide on phones; pulsing tiles while loading;
 │   │              empty state; projected months; budget alerts (hooks/useBudgetAlerts,
-│   │              docs/BUDGET_ARCHITECTURE.md): tab badge + dots until a category is opened
+│   │              docs/BUDGET_ARCHITECTURE.md): tab badge + dots until a category is opened;
+│   │              "Unfinished imports" banner → BankImportModal review (docs/BANK_IMPORT.md)
 │   ├── Transactions → pages/Transactions (MonthCarousel, filter tree, list, EditTransactionModal)
 │   ├── Budget → pages/BudgetManagement
 │   │   ├── Overview: BudgetOverviewTab, or PersonalBudgetEditor when no budget exists

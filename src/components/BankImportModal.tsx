@@ -12,9 +12,11 @@ import {
   deleteTransactions,
   type BankConnection,
   type DuplicateSummary,
+  type ImportMode,
   type ImportPeriod,
 } from '../services/bankImportService';
-import ImportReviewStep from './ImportReviewStep';
+import ImportReviewStep, { type ImportOutcome } from './ImportReviewStep';
+import { notifyImportsChanged } from '../hooks/useUnfinishedImports';
 import { undoMergesForSession } from '../services/reconcileService';
 import {
   startServerImport,
@@ -29,6 +31,8 @@ interface Props {
   onAddAccount?: () => void;
   /** Pre-select a connection and skip the account picker step. */
   selectedConnectionId?: string;
+  /** Open straight into the review of an unfinished import (its rows wait in the holding area). */
+  resumeSessionId?: string;
 }
 
 type Step = 'loading' | 'confirm' | 'no_accounts' | 'requesting_otp' | 'awaiting_otp' | 'importing' | 'review' | 'complete' | 'error';
@@ -56,14 +60,19 @@ function periodDateRange(period: ImportPeriod, now: Date = new Date()): { startD
   return { startDate, endDate: toIsoDay(now) };
 }
 
-export default function BankImportModal({ onClose, onImportComplete, onAddAccount, selectedConnectionId }: Props) {
+export default function BankImportModal({ onClose, onImportComplete, onAddAccount, selectedConnectionId, resumeSessionId }: Props) {
   const t = useT();
-  const [step, setStep] = useState<Step>('loading');
+  const [step, setStep] = useState<Step>(resumeSessionId ? 'review' : 'loading');
   const [period, setPeriod] = useState<ImportPeriod>({ type: 'current_month' });
   const [customStart, setCustomStart] = useState(SIX_MONTHS_AGO);
   const [connections, setConnections] = useState<BankConnection[]>([]);
-  const [result, setResult] = useState<{ imported: number; skipped: number; duplicates?: DuplicateSummary[] } | null>(null);
-  const [dbSessionId, setDbSessionId] = useState<string | null>(null);
+  const [result, setResult] = useState<{ imported: number; skipped: number; duplicates?: DuplicateSummary[] } | null>(
+    resumeSessionId ? { imported: 0, skipped: 0 } : null
+  );
+  const [dbSessionId, setDbSessionId] = useState<string | null>(resumeSessionId ?? null);
+  // staged: the rows wait in the holding area until Import; live: they were written on fetch
+  const [mode, setMode] = useState<ImportMode>(resumeSessionId ? 'staged' : 'live');
+  const [outcome, setOutcome] = useState<ImportOutcome | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [calSessionToken, setCalSessionToken] = useState<string | null>(null);
   const [activeConnection, setActiveConnection] = useState<BankConnection | null>(null);
@@ -73,6 +82,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
   const [skippedCardBills, setSkippedCardBills] = useState<SkippedCardBill[]>([]);
 
   useEffect(() => {
+    if (resumeSessionId) return;
     listConnections()
       .then((conns) => {
         setConnections(conns);
@@ -118,7 +128,7 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
     const activePeriod: ImportPeriod =
       period.type === 'custom' ? { type: 'custom', startDate: customStart } : period;
     try {
-      const { dbSessionId: sid, imported, skipped, duplicates } = await importCalDirect(
+      const { dbSessionId: sid, mode: importMode, imported, skipped, duplicates } = await importCalDirect(
         activeConnection,
         calSessionToken,
         otpCode.trim(),
@@ -126,8 +136,11 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       );
       setResult({ imported, skipped, duplicates });
       setDbSessionId(sid ?? null);
+      setMode(importMode);
       setStep(sid ? 'review' : 'complete');
-      onImportComplete?.(imported);
+      // Staged rows reach the budget only on Import
+      if (importMode === 'live') onImportComplete?.(imported);
+      notifyImportsChanged();
     } catch (err) {
       setErrorMsg(errorMessage(err, t, 'import.failed'));
       setStep('error');
@@ -165,8 +178,14 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
 
   const isCalProvider = (p: string) => p === 'visaCal' || p === 'visaCalFast';
 
-  // When closing during review, undo the import's merges and delete its transactions first
+  // Closing during review: a staged import waits for later ("Finish later"); a live one is undone
+  // (its merges, then its transactions), as it was written before any decision
   const handleClose = async () => {
+    if (step === 'review' && mode === 'staged') {
+      notifyImportsChanged();
+      onClose();
+      return;
+    }
     if (step === 'review' && dbSessionId) {
       try {
         await undoMergesForSession(dbSessionId);
@@ -416,15 +435,26 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
             <ImportReviewStep
               dbSessionId={dbSessionId}
               result={result}
-              onDone={(kept) => {
-                setResult((r) => r ? { ...r, imported: kept } : r);
+              mode={mode}
+              onDone={(done) => {
+                setOutcome(done);
+                setResult((r) => r ? { ...r, imported: done.imported } : r);
                 setStep('complete');
+                if (mode === 'staged') onImportComplete?.(done.imported);
+                notifyImportsChanged();
               }}
-              onCancel={onClose}
+              onCancel={() => {
+                notifyImportsChanged();
+                onClose();
+              }}
+              onFinishLater={() => {
+                notifyImportsChanged();
+                onClose();
+              }}
             />
           )}
           {step === 'complete' && result && (
-            <CompleteStep result={result} onClose={onClose} />
+            <CompleteStep result={result} outcome={outcome} onClose={onClose} />
           )}
           {step === 'error' && (
             <ErrorStep message={errorMsg} onRetry={() => { setStep('confirm'); setErrorMsg(''); }} onClose={onClose} />
@@ -449,7 +479,7 @@ function SpinnerStep({ message, detail }: { message: string; detail: string }) {
   );
 }
 
-function CompleteStep({ result, onClose }: { result: { imported: number; skipped: number }; onClose: () => void }) {
+function CompleteStep({ result, outcome, onClose }: { result: { imported: number; skipped: number }; outcome: ImportOutcome | null; onClose: () => void }) {
   const t = useT();
   return (
     <div className="flex flex-col items-center gap-4 py-4">
@@ -461,7 +491,13 @@ function CompleteStep({ result, onClose }: { result: { imported: number; skipped
           {result.skipped > 0 && (
             <Trans i18nKey="import.duplicatesSkipped" count={result.skipped} values={{ count: result.skipped }} components={{ b: <span className="font-medium" /> }} />
           )}
+          {!!outcome?.alreadyImported && (
+            <Trans i18nKey="import.alreadyImported" count={outcome.alreadyImported} values={{ count: outcome.alreadyImported }} components={{ b: <span className="font-medium" /> }} />
+          )}
         </p>
+        {!!outcome?.notJoined && (
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">{t('import.notJoined')}</p>
+        )}
         {result.imported > 0 && (
           <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
             <Trans i18nKey="import.uncategorizedNote" components={{ b: <strong /> }} />

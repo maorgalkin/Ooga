@@ -7,6 +7,7 @@ import { Loader2, AlertCircle, Link2 } from 'lucide-react';
 import DuplicatesBubble from './DuplicatesBubble';
 import {
   reconcileImport,
+  previewMatches,
   mergeBankIntoEntry,
   undoMerge,
   undoMergesForSession,
@@ -15,18 +16,38 @@ import {
 import { useCategories } from '../hooks/useCategories';
 import {
   fetchImportedTransactions,
+  fetchStagedRows,
+  commitImport,
+  discardImport,
   updateTransactionCategory,
   deleteTransactions,
   type DuplicateSummary,
+  type ImportMode,
   type ReviewTransaction,
 } from '../services/bankImportService';
 import type { Category } from '../types/category';
 
+/** What an import ended with, for the window's summary */
+export interface ImportOutcome {
+  imported: number;
+  /** Ticked rows another household member's import had brought in first */
+  alreadyImported: number;
+  /** Rows imported on their own because joining them to an entry failed */
+  notJoined: number;
+}
+
 interface Props {
   dbSessionId: string;
   result: { imported: number; skipped: number; duplicates?: DuplicateSummary[] };
-  onDone: (kept: number) => void;
+  /**
+   * staged: the fetched rows wait in the holding area and nothing is in the budget until Import;
+   * live: the rows were written on fetch (server imports, or before migration 041).
+   */
+  mode?: ImportMode;
+  onDone: (outcome: ImportOutcome) => void;
   onCancel: () => void;
+  /** Staged only: close and keep the rows waiting */
+  onFinishLater?: () => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -43,7 +64,8 @@ function formatAmount(tx: ReviewTransaction, currency: string): string {
   return base;
 }
 
-export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel }: Props) {
+export default function ImportReviewStep({ dbSessionId, result, mode = 'live', onDone, onCancel, onFinishLater }: Props) {
+  const staged = mode === 'staged';
   const t = useT();
   const [transactions, setTransactions] = useState<ReviewTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,15 +89,18 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
 
   const transactionsRef = useRef<ReviewTransaction[]>([]);
   const loadRows = useCallback(async () => {
-    const txns = await fetchImportedTransactions(dbSessionId);
+    const txns = staged ? await fetchStagedRows(dbSessionId) : await fetchImportedTransactions(dbSessionId);
     setTransactions(txns);
-    // Keep earlier choices; new rows (e.g. restored by an undo) start selected
-    setSelected((prev) => {
-      const known = new Set(transactionsRef.current.map((t) => t.id));
-      return new Set(txns.filter((t) => prev.has(t.id) || !known.has(t.id)).map((t) => t.id));
-    });
+    // Keep earlier choices; new rows (e.g. restored by an undo) start selected. The rows known
+    // before this load are read now: the updater below runs later, after the ref has moved on.
+    const known = new Set(transactionsRef.current.map((t) => t.id));
     transactionsRef.current = txns;
-  }, [dbSessionId]);
+    setSelected((prev) =>
+      // Rows deleted earlier start unticked: bringing one back is the person's call
+      new Set(txns.filter((t) => prev.has(t.id) || (!known.has(t.id) && !t.deletedEarlier)).map((t) => t.id))
+    );
+    return txns;
+  }, [dbSessionId, staged]);
 
   // Match the new rows against manual entries once per import, then load what's left to review
   const reconciledFor = useRef<string | null>(null);
@@ -84,19 +109,32 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
     reconciledFor.current = dbSessionId;
     (async () => {
       try {
-        const result = await reconcileImport(dbSessionId).catch(() => ({ merged: [], suggestions: [] }));
-        setMerged(result.merged);
-        setSuggestions(result.suggestions);
-        await loadRows();
+        if (staged) {
+          // Nothing is merged until Import: show which entries the rows would join
+          const rows = await loadRows();
+          const preview = await previewMatches(rows).catch(() => ({ certain: [], possible: [] }));
+          setMerged(preview.certain);
+          setSuggestions(preview.possible);
+        } else {
+          const result = await reconcileImport(dbSessionId).catch(() => ({ merged: [], suggestions: [] }));
+          setMerged(result.merged);
+          setSuggestions(result.suggestions);
+          await loadRows();
+        }
       } catch (e) {
         setError(errorMessage(e, t, 'import.review.loadFailed'));
       } finally {
         setLoading(false);
       }
     })();
-  }, [dbSessionId, loadRows, t]);
+  }, [dbSessionId, loadRows, staged, t]);
 
   const handleUndoMerge = useCallback(async (match: MatchedEntry) => {
+    if (staged) {
+      // Not merged yet: just don't join them on import
+      setMerged((prev) => prev.filter((m) => m.entry.id !== match.entry.id));
+      return;
+    }
     setBusyId(match.entry.id);
     try {
       await undoMerge(match.entry.id);
@@ -107,9 +145,15 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
     } finally {
       setBusyId(null);
     }
-  }, [loadRows, t]);
+  }, [loadRows, staged, t]);
 
   const handleMergeSuggestion = useCallback(async (match: MatchedEntry) => {
+    if (staged) {
+      // Joined on import, like the certain matches
+      setSuggestions((prev) => prev.filter((m) => m.bank.id !== match.bank.id));
+      setMerged((prev) => [...prev, match]);
+      return;
+    }
     setBusyId(match.bank.id);
     try {
       await mergeBankIntoEntry(match.entry.id, match.bank.id);
@@ -121,7 +165,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
     } finally {
       setBusyId(null);
     }
-  }, [loadRows, t]);
+  }, [loadRows, staged, t]);
 
   const handleKeepBoth = useCallback((match: MatchedEntry) => {
     setSuggestions((prev) => prev.filter((m) => m.bank.id !== match.bank.id));
@@ -162,6 +206,36 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
 
   const handleAccept = useCallback(async () => {
     setSaving(true);
+    if (staged) {
+      try {
+        const picked = transactions.filter((tx) => selected.has(tx.id)).map((tx) => {
+          const override = categoryOverrides.get(tx.id);
+          return override ? { id: tx.id, category: override.name, category_id: override.id } : { id: tx.id };
+        });
+        const outcomes = await commitImport(dbSessionId, picked);
+        const imported = new Map(outcomes.filter((o) => o.outcome === 'imported' && o.transactionId).map((o) => [o.stagedId, o.transactionId!]));
+        // Join the imported rows to the entries they matched; a failure leaves the row on its own
+        let notJoined = 0;
+        for (const match of merged) {
+          const transactionId = imported.get(match.bank.id);
+          if (!transactionId) continue;
+          try {
+            await mergeBankIntoEntry(match.entry.id, transactionId);
+          } catch {
+            notJoined++;
+          }
+        }
+        onDone({
+          imported: imported.size,
+          alreadyImported: outcomes.filter((o) => o.outcome === 'already_imported').length,
+          notJoined,
+        });
+      } catch (e) {
+        setError(errorMessage(e, t, 'import.review.saveFailed'));
+        setSaving(false);
+      }
+      return;
+    }
     try {
       const toDelete = transactions.filter((t) => !selected.has(t.id)).map((t) => t.id);
       await deleteTransactions(toDelete);
@@ -171,16 +245,22 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       );
       await Promise.all(updatePromises);
 
-      onDone(selected.size);
+      onDone({ imported: selected.size, alreadyImported: 0, notJoined: 0 });
     } catch (e) {
       setError(errorMessage(e, t, 'import.review.saveFailed'));
       setSaving(false);
     }
-  }, [transactions, selected, categoryOverrides, onDone, t]);
+  }, [staged, transactions, selected, categoryOverrides, dbSessionId, merged, onDone, t]);
 
   const handleCancel = useCallback(async () => {
     setSaving(true);
     try {
+      if (staged) {
+        // Nothing reached the budget: empty the holding area
+        await discardImport(dbSessionId);
+        onCancel();
+        return;
+      }
       // Cancelling the import also undoes its merges, so your entries are as they were
       await undoMergesForSession(dbSessionId);
       const rows = await fetchImportedTransactions(dbSessionId);
@@ -190,7 +270,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       setError(errorMessage(e, t, 'import.review.cancelFailed'));
       setSaving(false);
     }
-  }, [dbSessionId, onCancel, t]);
+  }, [dbSessionId, onCancel, staged, t]);
 
   const allChecked = transactions.length > 0 && selected.size === transactions.length;
   const someChecked = selected.size > 0 && selected.size < transactions.length;
@@ -241,8 +321,8 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
       {/* Bank rows merged into manual entries paid with this account */}
       {merged.length > 0 && (
         <MatchList
-          title={t('import.review.matchedTitle', { count: merged.length })}
-          hint={t('import.review.matchedHint')}
+          title={t(staged ? 'import.review.willMatchTitle' : 'import.review.matchedTitle', { count: merged.length })}
+          hint={t(staged ? 'import.review.willMatchHint' : 'import.review.matchedHint')}
           matches={merged}
           busyId={busyId}
           renderActions={(m) => (
@@ -251,7 +331,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
               disabled={busyId !== null}
               className="px-2 py-1 rounded text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
             >
-              {t('import.review.undo')}
+              {t(staged ? 'import.review.keepSeparate' : 'import.review.undo')}
             </button>
           )}
           busyKey={(m) => m.entry.id}
@@ -273,7 +353,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                 disabled={busyId !== null}
                 className="px-2 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40"
               >
-                {t('import.review.merge')}
+                {t(staged ? 'import.review.match' : 'import.review.merge')}
               </button>
               <button
                 onClick={() => handleKeepBoth(m)}
@@ -379,6 +459,14 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                             {t('import.review.installment', { number: tx.installment_number, total: tx.installment_total })}
                           </span>
                         )}
+                        {tx.deletedEarlier && (
+                          <span
+                            title={tx.deletedEarlier.at ? t('import.review.deletedOn', { date: formatDate(tx.deletedEarlier.at) }) : t('import.review.deletedHint')}
+                            className="text-[10px] rounded px-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200"
+                          >
+                            {t('import.review.deletedEarlier')}
+                          </span>
+                        )}
                         {tx.memo && (
                           <p dir="auto" className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
                         )}
@@ -446,6 +534,14 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
                               {tx.installment_number}/{tx.installment_total}
                             </span>
                           )}
+                          {tx.deletedEarlier && (
+                          <span
+                            title={tx.deletedEarlier.at ? t('import.review.deletedOn', { date: formatDate(tx.deletedEarlier.at) }) : t('import.review.deletedHint')}
+                            className="text-[10px] rounded px-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200"
+                          >
+                            {t('import.review.deletedEarlier')}
+                          </span>
+                        )}
                           {tx.memo && (
                             <p dir="auto" className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{tx.memo}</p>
                           )}
@@ -475,7 +571,7 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
           </div>
 
           <p className="text-xs text-gray-400 dark:text-gray-500">
-            <Trans i18nKey="import.review.uncheckedNote" components={{ b: <strong /> }} />
+            {staged ? t('import.review.notNowNote') : <Trans i18nKey="import.review.uncheckedNote" components={{ b: <strong /> }} />}
           </p>
         </>
       )}
@@ -489,15 +585,24 @@ export default function ImportReviewStep({ dbSessionId, result, onDone, onCancel
         >
           {saving ? <><Loader2 className="w-4 h-4 animate-spin inline me-1" />{t('import.review.cancelling')}</> : t('import.review.cancelImport')}
         </button>
+        {staged && onFinishLater && (
+          <button
+            onClick={onFinishLater}
+            disabled={saving}
+            className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
+          >
+            {t('import.review.finishLater')}
+          </button>
+        )}
         <button
           onClick={handleAccept}
-          disabled={saving}
+          disabled={saving || selected.size === 0}
           className="flex-1 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
         >
           {saving ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> {t('import.review.saving')}</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> {t(staged ? 'import.review.importing' : 'import.review.saving')}</>
           ) : (
-            t('import.review.accept', { count: selected.size })
+            t(staged ? 'import.review.import' : 'import.review.accept', { count: selected.size })
           )}
         </button>
       </div>
