@@ -14,6 +14,7 @@ import { PersonalBudgetService } from './personalBudgetService';
 import { toCurrencyCode } from './exchangeRateService';
 export type { ImportPeriod } from './calDirectService';
 import type { CalImportResult } from './calDirectService';
+import { requestCalOtpViaServer, verifyCalOtpViaServer } from './scraperService';
 export type { DuplicateSummary, CalImportResult, ImportMode } from './calDirectService';
 
 export type ImportStatus =
@@ -131,11 +132,13 @@ export async function deleteConnection(connectionId: string): Promise<void> {
 // ─── Cal import flow ──────────────────────────────────────────────────────────
 
 /**
- * Request OTP for a Cal connection.
- * Reads nationalId and last4Digits from the connection's metadata.
- * Returns calSessionToken to pass to importCalDirect().
+ * Asks Cal to text the sign-in code for a Cal connection; returns the handle to pass to
+ * importCalDirect(). An account added since the ID moved to the import service (metadata.secure)
+ * signs in through the service, which holds the ID encrypted; older ones still read it from
+ * their metadata until it's moved.
  */
 export async function requestCalOtpForConnection(connection: BankConnection): Promise<string> {
+  if (connection.metadata?.secure === true) return requestCalOtpViaServer(connection.id);
   const nationalId = (connection.metadata?.id as string | undefined) ?? '';
   const last4Digits = (connection.metadata?.last4Digits as string | undefined) ?? '';
   if (!nationalId) throw new Error('Connection is missing national ID in metadata. Please reconnect your account.');
@@ -152,10 +155,14 @@ export async function importCalDirect(
   period: import('./calDirectService').ImportPeriod,
   onProgress?: (msg: string) => void
 ): Promise<CalImportResult> {
-  const nationalId = (connection.metadata?.id as string | undefined) ?? '';
-  if (!nationalId) throw new Error('Connection is missing national ID in metadata. Please reconnect your account.');
-
-  const otpToken = await verifyCalOtp(nationalId, calSessionToken, otpCode);
+  let otpToken: string;
+  if (connection.metadata?.secure === true) {
+    otpToken = await verifyCalOtpViaServer(connection.id, calSessionToken, otpCode);
+  } else {
+    const nationalId = (connection.metadata?.id as string | undefined) ?? '';
+    if (!nationalId) throw new Error('Connection is missing national ID in metadata. Please reconnect your account.');
+    otpToken = await verifyCalOtp(nationalId, calSessionToken, otpCode);
+  }
   return importCalTransactions(connection.id, otpToken, period, onProgress);
 }
 

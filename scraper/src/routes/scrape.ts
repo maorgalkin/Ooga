@@ -3,9 +3,12 @@ import {
   createSession,
   getSession,
   updateSession,
+  deleteSession,
+  tryLockImports,
 } from '../session-manager.js';
 import { startScrape } from '../scraper.js';
-import { getUserAndHousehold } from '../supabase-push.js';
+import { getUserAndHousehold, supabase } from '../supabase-push.js';
+import { GuardError, importableConnectionIds } from '../scrape-guards.js';
 
 const router = Router();
 
@@ -31,7 +34,14 @@ async function getOwnSession(req: Request) {
 router.post('/start', async (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization ?? '';
-    const { userId, householdId } = await getUserAndHousehold(authHeader);
+    let userId: string;
+    let householdId: string;
+    try {
+      ({ userId, householdId } = await getUserAndHousehold(authHeader));
+    } catch {
+      res.status(401).json({ error: 'Sign in again to import.' });
+      return;
+    }
 
     const { connectionId, startDate: startParam, endDate: endParam } = req.body ?? {};
     if ((startParam && !ISO_DATE.test(startParam)) || (endParam && !ISO_DATE.test(endParam))) {
@@ -44,10 +54,29 @@ router.post('/start', async (req: Request, res: Response) => {
     const startDate = startParam ? new Date(`${startParam}T00:00:00Z`) : new Date();
     if (!startParam) startDate.setMonth(startDate.getMonth() - months);
 
+    // The account must be the household's, checked before anything is locked or recorded
+    let ids: string[];
+    try {
+      ids = await importableConnectionIds(supabase, householdId, connectionId);
+    } catch (err) {
+      if (err instanceof GuardError) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
+
+    // One import per account at a time; "all accounts" claims each of them
+    const lockKeys = ids.map((id) => `connection:${id}`);
     const session = createSession(userId);
+    if (!tryLockImports(lockKeys, session.id)) {
+      deleteSession(session.id);
+      res.status(409).json({ error: 'This account is already being imported. Try again in a few minutes.' });
+      return;
+    }
 
     // Run the scrape asynchronously — don't await here
-    startScrape(session.id, userId, householdId, startDate, endDate, connectionId).catch(
+    startScrape(session.id, userId, householdId, startDate, endDate, connectionId, lockKeys).catch(
       (err) => {
         console.error('Unhandled scrape error:', err);
         updateSession(session.id, {
@@ -59,8 +88,8 @@ router.post('/start', async (req: Request, res: Response) => {
 
     res.json({ sessionId: session.id });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Failed to start import';
-    res.status(400).json({ error: msg });
+    console.error('Starting an import failed:', err instanceof Error ? err.name : 'unknown');
+    res.status(400).json({ error: "Couldn't start the import. Try again." });
   }
 });
 

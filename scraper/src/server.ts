@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import scrapeRouter from './routes/scrape.js';
 import connectionsRouter from './routes/connections.js';
+import calRouter from './routes/cal.js';
 
 // Fail fast if required env vars are missing or placeholder
 const REQUIRED_VARS: Record<string, string> = {
@@ -69,6 +70,7 @@ function apiKeyGuard(req: express.Request, res: express.Response, next: express.
 
 app.use('/scrape', apiKeyGuard, scrapeRouter);
 app.use('/connections', apiKeyGuard, connectionsRouter);
+app.use('/cal', apiKeyGuard, calRouter);
 
 app.listen(PORT, () => {
   console.log(`Ooga scraper service running on port ${PORT}`);

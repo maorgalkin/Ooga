@@ -162,11 +162,15 @@ export default function BankImportModal({ onClose, onImportComplete, onAddAccoun
       const state = await waitForServerImport(sessionId, setServerStatus);
       if (state.status === 'error' || !state.result) throw new Error(state.error ?? t('import.failed'));
 
+      // An updated import service keeps the rows in the holding area for Import; an older one wrote them already
+      const serverMode: ImportMode = state.result.mode === 'staged' ? 'staged' : 'live';
       setResult({ imported: state.result.imported, skipped: state.result.skipped, duplicates: state.result.duplicates });
       setSkippedCardBills(state.result.skippedCardBills ?? []);
       setDbSessionId(state.dbSessionId);
+      setMode(serverMode);
       setStep(state.dbSessionId ? 'review' : 'complete');
-      onImportComplete?.(state.result.imported);
+      if (serverMode === 'live') onImportComplete?.(state.result.imported);
+      notifyImportsChanged();
     } catch (err) {
       setErrorMsg(errorMessage(err, t, 'import.failed'));
       setStep('error');
