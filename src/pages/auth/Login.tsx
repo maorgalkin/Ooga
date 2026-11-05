@@ -4,7 +4,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { authErrorMessage } from '../../i18n/authErrors';
 import { useAuth } from '../../contexts/AuthContext';
 import { safeReturnPath } from '../../utils/returnPath';
-import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Loader2, ChevronDown } from 'lucide-react';
 import { PublicLayout } from '../../components/info/PublicLayout';
 import wordmarkInk from '../../assets/ooga-wordmark-ink.svg';
 import wordmarkWhite from '../../assets/ooga-wordmark.svg';
@@ -62,18 +62,21 @@ const Login: React.FC = () => {
             </div>
           </div>
 
-      <div className="max-w-md w-full mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-5 sm:p-8">
+      <div className="max-w-md w-full mx-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-5 sm:p-8">
         {/* Laid out as text, so English keeps its space before the logo and Hebrew's ב־ joins it */}
         <h2 className="mb-5 sm:mb-8 text-center text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
           <Trans
             i18nKey="auth.signIn.title"
             components={{
               logo: (
-                <span className="inline-block align-[-0.3em]">
+                <span>
                   {/* One name for screen readers, whichever logo the colour scheme shows */}
                   <span className="sr-only">Ooga</span>
-                  <img src={wordmarkInk} alt="" aria-hidden width={146} height={56} className="h-9 sm:h-11 w-auto dark:hidden" />
-                  <img src={wordmarkWhite} alt="" aria-hidden width={146} height={56} className="hidden h-9 sm:h-11 w-auto dark:inline" />
+                  {/* The wordmark's letters sit 68% down its box (the rest is the g's tail): lowering the
+                      image by 31.8% of its height puts them on the text's baseline */}
+                  <img src={wordmarkInk} alt="" aria-hidden width={146} height={56} className="inline h-7 sm:h-9 w-auto align-[-0.557rem] sm:align-[-0.716rem] dark:hidden" />
+                  <img src={wordmarkWhite} alt="" aria-hidden width={146} height={56} className="hidden h-7 sm:h-9 w-auto align-[-0.557rem] sm:align-[-0.716rem] dark:inline" />
                 </span>
               ),
             }}
@@ -185,6 +188,23 @@ const Login: React.FC = () => {
             </Link>
           </p>
         </div>
+      </div>
+
+      {/* For people who aren't budgeting yet: down to what Ooga does */}
+      <a
+        href="#discover"
+        onClick={(e) => {
+          const target = document.getElementById('discover');
+          if (!target) return;
+          e.preventDefault();
+          const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+          target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+        }}
+        className="mt-4 sm:mt-6 mx-auto flex w-fit flex-col items-center gap-0.5 rounded-lg px-3 py-1 text-sm font-medium text-purple-700 hover:text-purple-600 dark:text-purple-300 dark:hover:text-purple-200"
+      >
+        {t('landing.takeCharge')}
+        <ChevronDown aria-hidden className="h-5 w-5 motion-safe:animate-bounce" />
+      </a>
       </div>
         </div>
       </section>

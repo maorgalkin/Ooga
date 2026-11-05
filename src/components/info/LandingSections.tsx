@@ -52,7 +52,7 @@ export function LandingSections() {
 
   return (
     <>
-      <section className="max-w-6xl mx-auto px-4 py-16">
+      <section id="discover" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-4">
         <motion.h2 {...rise()} className="text-center text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
           {t('landing.featuresTitle')}
         </motion.h2>

@@ -89,13 +89,26 @@ describe('Login page', () => {
 
   it('introduces Ooga in three steps, then its maker', () => {
     renderLogin();
-    expect(screen.getByRole('heading', { level: 2, name: 'Budgeting on Ooga' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Budgeting on Ooga ?' })).toBeInTheDocument();
     // The feature cards' headings come first
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent).slice(-3)).toEqual([
       'Set up your household', 'Build your budget', 'Track and adjust',
     ]);
     expect(screen.getByRole('heading', { name: "Who's behind Ooga" })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Ready to budget?' })).toBeInTheDocument();
+  });
+});
+
+describe('Login: for people not budgeting yet', () => {
+  it('offers a link down to what Ooga does', async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    renderLogin();
+    const link = screen.getByRole('link', { name: 'Want to take charge?' });
+    expect(link).toHaveAttribute('href', '#discover');
+    await userEvent.setup().click(link);
+    expect(scrollIntoView).toHaveBeenCalled();
+    expect(document.getElementById('discover')).toHaveTextContent('Everything a family budget needs');
   });
 });
 
