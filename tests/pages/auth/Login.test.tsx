@@ -89,7 +89,7 @@ describe('Login page', () => {
 
   it('introduces Ooga in three steps, then its maker', () => {
     renderLogin();
-    expect(screen.getByRole('heading', { level: 2, name: 'Already on Ooga?' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Budgeting on Ooga' })).toBeInTheDocument();
     // The feature cards' headings come first
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent).slice(-3)).toEqual([
       'Set up your household', 'Build your budget', 'Track and adjust',
