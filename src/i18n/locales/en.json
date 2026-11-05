@@ -71,7 +71,7 @@
     "signIn": {
       "heroTitle": "Your family's money, <highlight>finally clear</highlight>",
       "heroBody": "Ooga brings everyone's spending into one budget, so you know where the money goes and stay in control of the bottom line every month.",
-      "title": "Budgeting on <logo/>",
+      "title": "Budgeting on <logo/>?",
       "forgot": "Forgot your password?",
       "submit": "Sign in",
       "submitting": "Signing in…",
@@ -191,7 +191,8 @@
       "title": "Who's behind Ooga",
       "body": "Hi, I'm Maor. I'm 38, a husband and a father of two, and I work as a test automation developer at a semiconductor manufacturer. Somewhere along the way I developed an unexplained passion for finance. Ooga is what came of it.",
       "initials": "MG"
-    }
+    },
+    "takeCharge": "Want to take charge?"
   },
   "hero": {
     "leftToSpend": "Left to spend this month",
